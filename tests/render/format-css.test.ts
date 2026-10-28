@@ -13,7 +13,7 @@ import {
  */
 
 const rgb = (n: number): { rgb: number; alpha: number } => ({ rgb: n, alpha: 1 });
-const WHITE = 'var(--xs-xlsx-cell-bg)';
+const WHITE = 'var(--xs-cell-bg)';
 
 /** 書式 1 件の規則の本文（`{ … }` の中。連番 1・書式番号 0 で作った 1 行から取り出す） */
 function body(f: CellFormat): string {
@@ -167,7 +167,7 @@ describe('TD-100-5 セレクタ・書式番号・空', () => {
 });
 
 describe('TD-100-6 CSS にファイル由来の文字列が入らない', () => {
-  it('宣言は固定の語・整数・#rrggbb・小数の比・var(--xs-xlsx-cell-bg) だけ', () => {
+  it('宣言は固定の語・整数・#rrggbb・小数の比・var(--xs-cell-bg) だけ', () => {
     const formats: CellFormat[] = [
       {
         fill: rgb(0xff0000),
@@ -185,7 +185,7 @@ describe('TD-100-6 CSS にファイル由来の文字列が入らない', () => 
     // 値として許す語を取り除くと、記号類だけが残る
     const stripped = css
       .replace(/\.xs-sheet\[data-xs-fmt="\d+"\] td\.xs-xf-\d+/g, '')
-      .replace(/var\(--xs-xlsx-cell-bg\)/g, '')
+      .replace(/var\(--xs-cell-bg\)/g, '')
       .replace(/#[0-9a-f]{6}\b/g, '')
       .replace(/calc\(\d+(\.\d+)? \* 1em\)/g, '')
       .replace(

@@ -4,14 +4,14 @@
  * - 書式ごとに規則 1 行：`.xs-sheet[data-xs-fmt="<連番>"] td.xs-xf-<番号> { … }`。
  *   連番の属性で絞るため、既存の `.xs-grid td`（グリッド線）より詳細度が強く、同じ文書の別の表示と混ざらない。
  * - 文字列は固定の語・整数・整数から組んだ `#rrggbb`・小数（文字サイズの比）・固定のテーマ変数の参照
- *   （白の塗りの `var(--xs-xlsx-cell-bg)` だけ）で組む。ファイルの文字列は入れない。
+ *   （白の塗りの `var(--xs-cell-bg)` だけ）で組む。ファイルの文字列は入れない。
  * - ダーク表示の描き分けは規則に焼き込む（テーマ変数は増やさず、切替で描き直さない）：
  *   白以外の塗り＝Excel の色の面と黒の文字（明示色はそのまま）、塗りなし・白の塗り（紙）＝画面の面と文字色（明示色だけ書く）。
  */
 import { type CellFormat, isPaperFill } from '../core/index';
 
 /** 白の塗り（紙）の面の色。`style.css` の `.xs-body` が定義する変数（ライト・ダークで切り替わる） */
-const PAPER_BG = 'var(--xs-xlsx-cell-bg)';
+const PAPER_BG = 'var(--xs-cell-bg)';
 
 /** 文字サイズの比として描く範囲（`cell-format.ts` の丸めと同じ 0.5〜4） */
 const MIN_RATIO = 0.5;

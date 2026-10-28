@@ -2,7 +2,7 @@
 /**
  * `.xlsx` の罫線層（ISSUE-98）：`svg.xs-borders` 1 枚の中身を、{@link buildBorderPaths} の結果から作る。
  * - `createElementNS` だけで作る（`innerHTML` は使わない）。`d`・`stroke-width`・`stroke-dasharray` は数値から組み立てた文字列だけ。
- * - 墨色（自動・黒）は class `is-ink` だけ（色は CSS のテーマ変数 `--xs-xlsx-border-ink`。テーマの切替で描き直さない）。
+ * - 墨色（自動・黒）は class `is-ink` だけ（色は CSS のテーマ変数 `--xs-border-ink`。テーマの切替で描き直さない）。
  *   ほかの明示色は整数から組み立てた `#rrggbb` を CSSOM（`style.setProperty`）で入れる（CSP のため style 属性の文字列は組み立てない）。
  * - 二重線は、セルの面の色の隙間（`is-gap`・幅 3）の上に 1px の線 2 本。隙間は全 path の線より先（下）に描く。
  * - 位置と大きさは描いた線の外接矩形だけ（A1 の左上を原点とする座標を viewBox で保つ）。線が無ければ中身を空にする。

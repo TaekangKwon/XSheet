@@ -10,7 +10,39 @@
  */
 import type { SheetDrawing, DrawingLine, LineDash, LineEnd, ShapeGeom } from '../core/index';
 import type { PxRect } from './drawings';
-import { evaluateGeom, getPresetGeom, type GeomDef, type PathSeg, type Pt } from '../geom/index';
+import type { GeomDef, PathSeg, Pt } from '../geom/index';
+
+/** geom の入口（形の表 `preset-geom.json`・約 171 KB と式の評価器）。{@link loadGeom} で読む */
+type GeomModule = typeof import('../geom/index');
+
+/** 読み込んだ geom（読む前・失敗は null。null の間、形のある図形は代替＝種類名の破線枠で描く） */
+let geomLib: GeomModule | null = null;
+/** 読み込み中・読み込み済みの約束（失敗したら捨て、次の呼び出しで読み直す） */
+let geomLoading: Promise<void> | null = null;
+
+/**
+ * 形の表と評価器（geom）を読む（M2-3）。表が大きいため render からは動的 import にし、形のある図形を描くシートを開く時だけ読む。
+ * 何度呼んでも読むのは 1 回（約束を共有する）。読めなければ例外（呼び出し側は代替で描き、通知を出す）。
+ */
+export function loadGeom(): Promise<void> {
+  if (!geomLoading) {
+    geomLoading = import('../geom/index').then(
+      (lib) => {
+        geomLib = lib;
+      },
+      (e: unknown) => {
+        geomLoading = null;
+        throw e;
+      },
+    );
+  }
+  return geomLoading;
+}
+
+/** geom を読み込み済みか（未読なら `renderShape` は形のある図形も代替を返す） */
+export function isGeomLoaded(): boolean {
+  return geomLib !== null;
+}
 
 /** 1px あたりの EMU（`drawings.ts` の `EMU_PER_PX` と同じ値。循環 import を避けるためここにも持つ） */
 const EMU_PER_PX = 9525;
@@ -727,15 +759,15 @@ export function textShown(drawing: SheetDrawing): boolean {
   );
 }
 
-/** 形（`SheetDrawing.geom`）を評価器の定義と調整値にする。表に無い `prst`・形なしは null */
+/** 形（`SheetDrawing.geom`）を評価器の定義と調整値にする。表に無い `prst`・形なし・geom が未読は null */
 function geomDefOf(
   geom: ShapeGeom | undefined,
 ): { def: GeomDef; adjust: ReadonlyMap<string, number> | undefined } | null {
-  if (!geom) {
-    return null;
+  if (!geom || !geomLib) {
+    return null; // geom が未読・読めなかったときも、評価できない形と同じ代替
   }
   if (geom.type === 'preset') {
-    const def = getPresetGeom(geom.prst);
+    const def = geomLib.getPresetGeom(geom.prst);
     return def ? { def, adjust: new Map(geom.adj) } : null;
   }
   return { def: geom.def, adjust: undefined };
@@ -764,7 +796,7 @@ export function renderShape(
     return { kind: 'fallback' };
   }
   const box = preRotated ? { ...rect } : preRotationRect(rect, drawing.rot, xfrmExtPx(drawing));
-  const ev = evaluateGeom(resolved.def, resolved.adjust, box.w, box.h);
+  const ev = geomLib!.evaluateGeom(resolved.def, resolved.adjust, box.w, box.h);
   if (!ev.ok) {
     return { kind: 'fallback' };
   }

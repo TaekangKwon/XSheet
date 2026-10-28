@@ -123,6 +123,41 @@
   - `xlsx-format.perf.test.ts`：`spreadsheet.ts` の `buildGridTable` を使う。M2-3 で写す。
   - `xlsx-format-css-static.test.ts`・`xlsx-backdrop-css.test.ts`・`xlsx-borders-css.test.ts`：`global.css` の文面を読む。M3-1（`style.css`）で写す。
 
+### M2-3 で写した結果（2026-10-28）
+
+- 元は `spreadsheet.ts`（`943e4f0`）の .xlsx の部分。`.xls`（SheetJS）の経路・`fitTableBodyToWindow`・タブ列・`renderSpreadsheet` の振り分けは写さない。
+
+  | 元（spreadsheet.ts の行） | 先 |
+  | --- | --- |
+  | `spacerRow`・`spillOut`・`inkSpill`・`cellBox`・`buildGridTable`（304〜543） | `src/render/grid-table.ts`（`buildGridTable` は計測テストのため export） |
+  | `xlsxErrorMessage`（286〜301）・`renderXlsxView` の中の `showSheet`・`draw`・`dispose` ほか（551〜948 のうちタブ以外） | `src/render/sheet-view.ts`（内部の `createSheetView`） |
+  | — | `src/render/render-sheet.ts`（公開の `renderSheet`・`RenderOptions`・`SheetView`。`index.ts` から出す） |
+
+- クラス名：`ih-xlsx-grid`→`xs-grid`、`ih-xlsx-collapsed`→`xs-collapsed`、`ih-dv-rownum`→`xs-rownum`、`ih-xlsx-spacer`→`xs-spacer`、`ih-xlsx-cell`→`xs-cell`、`ih-xlsx-text`→`xs-text`、`ih-xlsx-wrap`→`xs-wrap`、`ih-xlsx-body`（と共用の `ih-data-body ih-data-body--table`）→`xs-body`、`ih-xlsx-notice`（と共用の `ih-data-banner`）→`xs-notice`、`ih-data-banner`→`xs-banner`、`ih-dv-empty`→`xs-empty`、表示の根 `ih-data-view ih-spreadsheet`→`xs-sheet`。状態のクラス（`is-spill`・`is-over-fill`・`is-right`・`is-center`）はそのまま。
+- 決めたこと：
+  - 状態は表示のインスタンスに持つ（`renderGeneration`・`disposeXlsxView` は無い）。`formatSeq` だけモジュールの連番。新しい `showSheet`・`destroy` は `openSeq` を進め、読み込み中の結果を捨てる。
+  - 根は自前の `div.xs-sheet`（`container` の子）。子は `div.xs-notice`・`div.xs-body`・`<style>`（`nonce` を付けられる）。タブ列は持たない（M2-4）。
+  - 枠の大きさは `clientWidth`・`clientHeight` だけで測る（`getComputedStyle(...).maxHeight` と `refit` はやめた）。`window` の `resize` の代わりにスクロール枠の `ResizeObserver`（無い環境ではガード）。スクロールと大きさの変化は rAF 1 回にまとめる。取り付け後の rAF の描き直し（`initFrame`）は残した。
+  - `destroy`：層の `dispose`（blob URL の revoke）を最初に行い、rAF の取り消し・リスナと ResizeObserver の解除・DOM を空にして根を外す。何度呼んでもよい。ブックは閉じない（`renderWorkbook` が閉じる）。
+  - `renderSheet` はブックに無い番号を `RangeError` にする（DOM に何も足さない）。`openSheet` の例外は種類ごとの文言の `div.xs-banner` を枠の中に出して解決する。
+  - `drawings: false` は `openDrawings` を呼ばず、図の層は空のまま（要素は残す）。
+- 形の表の動的 import（M2-3）：`shapes.ts` は geom を型だけ引き、`loadGeom()`（約束を共有・失敗したら捨てて次に読み直す）で `import('../geom/index')` する。読む前・読めないときの `renderShape` は代替（評価できない形と同じ）。表示は形のある図形（`geom` を持つ図）があるシートを開く時だけ読み、読めなければ通知 `libLoadFailed` を出す（文言を「図形の形の表を読み込めなかったため…」に替えた）。ESLint で `src/render/**` の `../geom` を型だけに限った（`@typescript-eslint/no-restricted-imports` の `allowTypeImports`。動的 import は対象外）。render のテストは `tests/render/setup.ts`（vitest の `setupFiles`）で先に読む。
+- InterHub との振る舞いの違い：
+  - 別のファイルを開いても前の表示を後始末しない（表示ごとに独立。壊すのは使う側の `destroy`）。
+  - 通知の出入りで枠の高さを合わせ直さない（`refit` が無い。高さは CSS のレイアウトで決まる）。
+  - `libLoadFailed` は xlsx の読み込み失敗ではなく、形の表の読み込み失敗の通知。
+- テスト（`tests/render/`）：
+  - `spreadsheet.render.test.ts` → `render-sheet.test.ts`（23 件）、`spreadsheet.borders.render.test.ts` → `render-sheet.borders.test.ts`（5 件）、`spreadsheet.cols.render.test.ts` → `render-sheet.cols.test.ts`（6 件）、`spreadsheet.format.render.test.ts` → `render-sheet.format.test.ts`（11 件）、`spreadsheet.image.render.test.ts` → `render-sheet.image.test.ts`（25 件）、`xlsx-format.perf.test.ts` → `format.perf.test.ts`（2 件）。共通の部品は `render-sheet.helpers.ts`。
+  - 書き直し：`renderSpreadsheet(buffer, name)` → `renderSheet(container, book, index)`。キーの文字列の期待値は `MESSAGES_JA` の文言に。`cleanupSpreadsheetRendering` → `destroy`（「次のファイルを開くと前が消える」は明示の `destroy` に）。`vi.mock('../xlsx')` → 通知・画像を差し替えたブックを渡す。暗号化などの `openXlsx` の失敗は、文言の対応（`xlsxErrorMessage`）の試験にした（表示は M2-4）。
+  - 時間の待ち：並行して走るほかのテストで rAF・画像の読み込みが遅れても落ちないよう、`wait` は先に次のフレームを待ち、画像のテストは読み込み中の画像が無くなるまで待つ。
+  - 新しく足した：`render-sheet.lifecycle.test.ts`（2 つの表示を同時に作って壊し、blob URL・リスナ・ResizeObserver・rAF の漏れが 0・根が外れ・ブックが使えること。同じ表示でシートを替えても `<style>` が同じこと）、`render-sheet.geom.test.ts`（geom を読む前の代替・読めないときの通知）、ほか `RangeError`・根の構造・`nonce`・`drawings: false`・読み込み中の `destroy`。
+  - 写さないテスト：`.xls` の 4 件（TD-84-12・TD-82-6 の 2 件・TD-86-15）。
+  - M2-4（`renderWorkbook`）で写すテスト：
+    - `spreadsheet.render.test.ts`：「TD-82-2: シートタブを作り、非表示シートは ⌀ 付きで最初の表示シートを出す」・「シートタブ列は ◀ ▶ ボタンとスクロール領域を持ち…」・「シートタブは title にシート名全文を持つ…」・TD-82-2 の後半（シートが 0 枚なら `noSheets`）・TD-82-4（`openXlsx` の失敗をバナーにする表示）・TD-82-5 の 1 つ目（読み込み中の離脱で空の要素）・「シートタブ列の ResizeObserver 通知」の 2 件。
+    - `spreadsheet.borders.render.test.ts`：TD-98-11 の 2 つ目の後半（シートを切り替えると罫線を作り直す）。
+    - `spreadsheet.format.render.test.ts`：TD-100-14（シートを切り替えても `<style>` を作り直さない）。
+    - `spreadsheet.image.render.test.ts`：TD-86-11 の 2 つ目（タブ切替で revoke・戻ると読み直す）・TD-86-12 の 1 つ目（素早いタブ切替）・TD-86-13 の over-budget の後半（タブ切替で通知が消える）・TD-88-20 の 2 つ目の前半（別のシートで消え、戻ると再表示）。
+
 ## 4. 直す 6 点
 
 | # | 直すこと | 場所 | 方法 |

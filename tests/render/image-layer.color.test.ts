@@ -14,7 +14,7 @@ import { createImageLayer, type ImageLayer } from '../../src/render/image-layer'
 /**
  * 画像レイヤー（DOM）：Excel の色（ISSUE-96・ADR-0028 §決定 6.6）とダーク表示の下地（§決定 6.7）。
  * 色は整数と不透明度から組み立てた `#rrggbb`・数値だけが style に入る。下地は図ごとの独立した `svg.xs-backdrop`（図の直前の兄弟）で、
- * 色は CSS のテーマ変数（`--xs-xlsx-backdrop`）が決める（要素の style に色を入れない）。実寸・実際の色は目視（TV-42）で確認する。
+ * 色は CSS のテーマ変数（`--xs-backdrop`）が決める（要素の style に色を入れない）。実寸・実際の色は目視（TV-42）で確認する。
  */
 
 const px = (n: number): number => n * EMU_PER_PX;

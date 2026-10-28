@@ -24,6 +24,8 @@ export default defineConfig({
           name: 'render',
           include: ['tests/render/**/*.test.ts'],
           environment: 'node',
+          // 形の表（geom）は render から動的 import するため、部品のテストの前に読み込んでおく（M2-3）
+          setupFiles: ['tests/render/setup.ts'],
         },
       },
     ],

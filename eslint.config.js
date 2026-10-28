@@ -63,6 +63,20 @@ export default tseslint.config(
           ],
         },
       ],
+      // render は geom を型だけ静的に引く（M2-3）。形の表（約 171 KB）は `shapes.ts` の `loadGeom` が動的 import で読む。
+      // 動的 import（`import('../geom/index')`）はこの規則の対象外
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../geom', '../geom/*'],
+              allowTypeImports: true,
+              message: 'render は geom を型だけ引く（実体は shapes.ts の loadGeom で動的 import）',
+            },
+          ],
+        },
+      ],
     },
   },
   {

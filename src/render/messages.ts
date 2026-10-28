@@ -7,7 +7,7 @@
 
 /** 文言の表（23 キー。元は InterHub `locales/ja.ts` の `spreadsheet.*` と `data.noData`） */
 export interface XSheetMessages {
-  /** 図形の形の表など、描画に要る部品を読み込めない */
+  /** 図形の形の表（geom）を読み込めない（図の通知。形のある図形は代替で描く）。InterHub では xlsx の読み込み失敗の文言だった */
   libLoadFailed: string;
   /** ファイルを解析できない（`{detail}` は例外の文言。セル値・シート名は入らない） */
   parseFailed: string;
@@ -44,7 +44,7 @@ export interface XSheetMessages {
 
 /** 日本語（既定） */
 export const MESSAGES_JA: Readonly<XSheetMessages> = Object.freeze({
-  libLoadFailed: 'Excel 表示ライブラリ（xlsx）を読み込めませんでした。',
+  libLoadFailed: '図形の形の表を読み込めなかったため、図形は簡略化して表示しています。',
   parseFailed: 'Excel ファイルの解析に失敗しました: {detail}',
   noSheets: '（シートがありません）',
   noData: '（データがありません）',
@@ -72,7 +72,7 @@ export const MESSAGES_JA: Readonly<XSheetMessages> = Object.freeze({
 
 /** 英語 */
 export const MESSAGES_EN: Readonly<XSheetMessages> = Object.freeze({
-  libLoadFailed: 'Failed to load the Excel viewer library (xlsx).',
+  libLoadFailed: 'Failed to load the shape definitions, so shapes are shown in a simplified form.',
   parseFailed: 'Failed to parse the Excel file: {detail}',
   noSheets: '(No sheets)',
   noData: '(No data)',

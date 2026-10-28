@@ -35,3 +35,9 @@
 - `image-layer.ts` の `t()` を、`createImageLayer({ messages })`・`frameLabel(…, messages)` に替え、仮置きの `i18n.ts` を消した（`t(` は 0 件）。
 - テストの期待値をキーの文字列から日本語の既定値へ直し、文言の表・差し込み・上書きのテストを足した。型の名前は `XlsxViewMessages` をやめて `XSheetMessages` にした。
 - テスト 1,510 件（55 ファイル）・typecheck・lint・format:check が通る。
+
+## 2026-10-28 M2-3（renderSheet を切り出す）
+- `spreadsheet.ts` の .xlsx の部分を、表の組み立て `grid-table.ts`・表示のインスタンス `sheet-view.ts`・公開の `renderSheet`（`render-sheet.ts`）に分けた。状態はインスタンスに持ち、window のリスナをやめて枠の ResizeObserver にした。
+- geom は動的 import（`shapes.ts` の `loadGeom`）。図形のあるシートだけ形の表を読み、読めなければ図形を代替で描いて `libLoadFailed` を通知する（render から geom の値の import は ESLint で禁止）。
+- 描画のテスト 5 本を `renderSheet` を呼ぶ形に書き直し、2 つの表示を同時に作って壊す後始末のテスト・geom の読み込みのテストを足した。タブの関係のテストは M2-4 で写す。
+- M2-1 で残っていた `--xs-xlsx-*`（置き換えの順の誤り）を `--xs-*` に直した。テスト 1,586 件（63 ファイル）・typecheck・lint・format:check が通る（全体を並列で回すと perf の時間のテストがまれに落ちる）。
