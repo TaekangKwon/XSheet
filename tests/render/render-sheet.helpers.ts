@@ -1,6 +1,11 @@
-// renderSheet の DOM テスト（render-sheet*.test.ts）の共通の部品。jsdom の環境で使う。
+// renderSheet・renderWorkbook の DOM テスト（render-sheet*.test.ts・render-workbook*.test.ts）の共通の部品。jsdom の環境で使う。
 import { openXlsx, type XlsxBook } from '../../src/core/index';
 import { renderSheet, type RenderOptions, type SheetView } from '../../src/render/render-sheet';
+import {
+  renderWorkbook,
+  type WorkbookOptions,
+  type WorkbookView,
+} from '../../src/render/render-workbook';
 import { buildXlsx, type XlsxSpec } from '../../src/testing/make-xlsx';
 
 /** Uint8Array → ArrayBuffer */
@@ -19,6 +24,16 @@ export interface Mounted {
 }
 
 const live: Mounted[] = [];
+
+/** タブ付きの表示 1 つ（後始末の対象） */
+export interface MountedBook {
+  /** 表示の根（`div.xs-workbook`） */
+  root: HTMLElement;
+  container: HTMLElement;
+  view: WorkbookView;
+}
+
+const liveBooks: MountedBook[] = [];
 
 /** 合成のブックを開く */
 export async function openBook(spec: XlsxSpec): Promise<XlsxBook> {
@@ -45,6 +60,27 @@ export async function renderSpec(
   return (await mount(await openBook(spec), index, options)).root;
 }
 
+/** 新しい container（document.body の子）に、xlsx をタブ付きで表示する（後始末は {@link cleanupViews}） */
+export async function mountWorkbook(
+  data: XlsxSpec | Uint8Array,
+  options?: WorkbookOptions,
+): Promise<MountedBook> {
+  // TextEncoder の結果は別の realm の Uint8Array のことがあるため instanceof で見ない
+  const bytes = ArrayBuffer.isView(data) ? data : await buildXlsx(data);
+  const container = document.createElement('div');
+  document.body.append(container);
+  const view = await renderWorkbook(container, bytes, options);
+  const root = container.querySelector<HTMLElement>(':scope > .xs-workbook')!;
+  const m = { root, container, view };
+  liveBooks.push(m);
+  return m;
+}
+
+/** タブ（`button.xs-sheet-tab`）の並び */
+export function sheetTabs(root: HTMLElement): HTMLButtonElement[] {
+  return [...root.querySelectorAll<HTMLButtonElement>('.xs-sheet-tabs .xs-sheet-tab')];
+}
+
 /** 作った表示をすべて壊し、ブックを閉じ、container を外す（afterEach で呼ぶ） */
 export function cleanupViews(): void {
   const books = new Set<XlsxBook>();
@@ -54,6 +90,10 @@ export function cleanupViews(): void {
     m.container.remove();
   }
   books.forEach((b) => b.close());
+  for (const m of liveBooks.splice(0)) {
+    m.view.destroy();
+    m.container.remove();
+  }
 }
 
 /**

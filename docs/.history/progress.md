@@ -41,3 +41,9 @@
 - geom は動的 import（`shapes.ts` の `loadGeom`）。図形のあるシートだけ形の表を読み、読めなければ図形を代替で描いて `libLoadFailed` を通知する（render から geom の値の import は ESLint で禁止）。
 - 描画のテスト 5 本を `renderSheet` を呼ぶ形に書き直し、2 つの表示を同時に作って壊す後始末のテスト・geom の読み込みのテストを足した。タブの関係のテストは M2-4 で写す。
 - M2-1 で残っていた `--xs-xlsx-*`（置き換えの順の誤り）を `--xs-*` に直した。テスト 1,586 件（63 ファイル）・typecheck・lint・format:check が通る（全体を並列で回すと perf の時間のテストがまれに落ちる）。
+
+## 2026-10-28 M2-4（renderWorkbook）
+- 公開の `renderWorkbook(container, data, { limits, … })` を作った。タブ列（`sheet-tabs.ts`）の後ろに 1 冊 1 つの表示を置き、タブの切り替えで書式の `<style>` を作り直さない。開けないファイルは種類ごとのバナー、シート 0 枚は `noSheets`。
+- `destroy` はタブのリスナ・ResizeObserver・rAF → 表示（blob URL）→ `book.close()` の順に放す。タブのクリックは `addEventListener` にした。
+- タブの関係のテスト（M2-3 で残したもの）を写し、切り替えて壊す後始末のテストを足した。perf のテストは別の project で 1 本ずつ最後に回す（全体の並列でまれに落ちたため）。
+- テスト 1,610 件（65 ファイル）・typecheck・lint・format:check が通る。

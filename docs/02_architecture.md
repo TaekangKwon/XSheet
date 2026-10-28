@@ -102,8 +102,13 @@ export interface SheetView {
 }
 export function renderSheet(container: HTMLElement, book: XlsxBook, sheetIndex: number, options?: RenderOptions): Promise<SheetView>;
 
-export interface WorkbookView extends SheetView { showSheet(index: number): Promise<void> }
-export function renderWorkbook(container: HTMLElement, data: ArrayBuffer, options?: RenderOptions): Promise<WorkbookView>; // タブ付き・book も閉じる
+export interface WorkbookOptions extends RenderOptions {
+  limits?: Partial<XlsxLimits>;         // openXlsx に渡す上限
+}
+export interface WorkbookView extends SheetView {
+  showSheet(index: number): Promise<void>; // SheetInfo.index。無い番号は RangeError。表示中なら何もしない
+}
+export function renderWorkbook(container: HTMLElement, data: ArrayBuffer | Uint8Array, options?: WorkbookOptions): Promise<WorkbookView>; // タブ付き・destroy で book も閉じる
 ```
 
 - `container` は高さが決まっていて、中でスクロールする前提（スクロール枠 `.xs-body` の `overflow` などは `style.css`（M3-1）が付ける）。render は `container` の子に自前の根 `div.xs-sheet` を足すだけで、`container` 自身には属性もクラスも付けない。
@@ -118,7 +123,11 @@ export function renderWorkbook(container: HTMLElement, data: ArrayBuffer, option
   4. 範囲と座標（`gridExtent`・`createGeometry`）。
   5. スクロールごとに `getRows` → 表（`buildGridTable`）→ 罫線（`buildBorderPaths`）。
   6. `destroy` で層（blob URL を revoke）・罫線・シートを放し、根を `container` から外す。ブックは閉じない。
-- `renderWorkbook`（M2-4）は同じインスタンスの `showSheet(index)` でシートを替える（書式の `<style>` はブックで 1 つのまま）。
+- `renderWorkbook`（M2-4）：
+  - DOM：`container` の子に `div.xs-workbook` ＞ [`div.xs-sheet-strip`（タブ列）・`div.xs-sheet`（上のシートの表示）]。タブ列は `button.xs-sheet-nav`（◀）・`div.xs-sheet-tabs`（横スクロール）＞ `button.xs-sheet-tab`…・`button.xs-sheet-nav`（▶）。タブは `is-active`・`is-hidden-sheet`（名前に ` ⌀`、title に名前と `hiddenSheet`）。
+  - シートの表示は 1 冊に 1 つ（`createSheetView`）で、タブは同じインスタンスの `showSheet` でシートを替える（書式の `<style>` はブックで 1 つのまま）。最初に出すのは最初の表示（非表示でない）シート、全部非表示なら先頭。
+  - 開けない（`openXlsx` の例外）ときは例外にせず `div.xs-workbook` ＞ `div.xs-banner`（種類ごとの文言）、シートが 0 枚なら `div.xs-empty`（`noSheets`。ブックは閉じる）で解決する。どちらも `showSheet` は `RangeError`。
+  - `destroy`：タブ列（リスナ・ResizeObserver・rAF）→ シートの表示 → `book.close()` → 根を外す。何度呼んでもよい。
 
 ## 4. データモデル（要点）
 

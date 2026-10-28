@@ -5,3 +5,4 @@
  */
 export { MESSAGES_EN, MESSAGES_JA, type XSheetMessages } from './messages';
 export { renderSheet, type RenderOptions, type SheetView } from './render-sheet';
+export { renderWorkbook, type WorkbookOptions, type WorkbookView } from './render-workbook';

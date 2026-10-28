@@ -158,6 +158,32 @@
     - `spreadsheet.format.render.test.ts`：TD-100-14（シートを切り替えても `<style>` を作り直さない）。
     - `spreadsheet.image.render.test.ts`：TD-86-11 の 2 つ目（タブ切替で revoke・戻ると読み直す）・TD-86-12 の 1 つ目（素早いタブ切替）・TD-86-13 の over-budget の後半（タブ切替で通知が消える）・TD-88-20 の 2 つ目の前半（別のシートで消え、戻ると再表示）。
 
+### M2-4 で写した結果（2026-10-28）
+
+- 元は `spreadsheet.ts`（`943e4f0`）の `makeToggleButton`・`SheetTabStrip`・`buildSheetTabStrip`（112〜254）と、`renderXlsxView` のうちブックを開く・シートが無い・タブの作成とクリック・選択中の印・最初のシート（555〜583・815〜817・889〜903・939）。
+
+  | 元 | 先 |
+  | --- | --- |
+  | `makeToggleButton`・`buildSheetTabStrip` | `src/render/sheet-tabs.ts`（`makeSheetTab`・`buildSheetTabStrip`） |
+  | `renderXlsxView` のブック・タブの部分 | `src/render/render-workbook.ts`（公開の `renderWorkbook`・`WorkbookOptions`・`WorkbookView`。`index.ts` から出す） |
+
+- クラス名：`ih-toolbar ih-sheet-strip`→`xs-sheet-strip`、`ih-sheet-tabs`→`xs-sheet-tabs`、`ih-sheet-nav`→`xs-sheet-nav`、`ih-toggle`（タブ）→`xs-sheet-tab`、表示の根→`xs-workbook`（中に `xs-sheet-strip` と M2-3 の `xs-sheet`）。`is-active`・`is-hidden-sheet` はそのまま。
+- 決めたこと：
+  - シートの表示は 1 冊に 1 つ。`createSheetView` に `div.xs-workbook` を親として渡し、タブ列の後ろに `div.xs-sheet` を足させる（`createSheetView` は変えていない）。
+  - 開けないファイルは例外にせず `div.xs-banner`（種類ごとの文言）、シートが 0 枚は `div.xs-empty`（`noSheets`）で解決する。どちらの `showSheet` も `RangeError`、`destroy` は根を外すだけ。
+  - `destroy` の順：タブのクリック・タブ列（◀▶ のクリック・scroll・wheel・ResizeObserver・rAF）→ シートの表示（blob URL の revoke）→ `book.close()` → 根を外す。`openXlsx` の途中の `destroy` は公開の API からは呼べない（約束が解決していない）ため判定しない。
+  - ◀▶・タブのクリックは `onclick` ではなく `addEventListener` にし、`destroy` で外す（リスナの漏れを数えて確かめるため）。
+- InterHub との違い：
+  - 表示中のシートの押し直しは、`activeIndex` が同じなら何もしない。InterHub は空のシート（`sheet` が null）なら開き直していた。開けなかったシートは `activeIndex` が null なので、今までどおり開き直す。
+  - `WorkbookView.showSheet(index)` を公開した（タブを押したのと同じ。無い番号は `RangeError`）。`WorkbookOptions.limits` は `openXlsx` に渡す。
+- M3-1 の `style.css` に要るもの（タブ列）：`.xs-sheet-strip { display: flex }`、`.xs-sheet-tabs { position: relative; display: flex; flex: 1 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none }`（`position: relative` は、タブの `offsetLeft` をスクロール領域の中の座標にするのに要る）、`.xs-sheet-tab { flex-shrink: 0; white-space: nowrap; max-width: 240px; overflow: hidden; text-overflow: ellipsis }`、`.xs-sheet-tab.is-hidden-sheet`（斜体・破線）、`.xs-sheet-nav[hidden] { display: none }`。`div.xs-workbook` は縦の flex にし、`div.xs-sheet` を残りの高さ（`flex: 1; min-height: 0`）にする。元は InterHub `global.css` の 690〜711・1417〜1470 行。
+- テスト（`tests/render/`）：
+  - `render-workbook.test.ts`（15 件）：タブ（⌀・`is-active`・最初の表示シート・全部非表示なら先頭）・根の構造・◀▶ とスクロール領域・文言の差し替え・title・シート名は textContent・`showSheet`（`RangeError`・押し直し）・`destroy` の後・シートが 0 枚・開けないファイルの文言（暗号化・zip でない・Strict・壊れた zip・`limits` の上限超え）・ArrayBuffer・タブ列の ResizeObserver の 2 件（シートの表示もスクロール枠を観察するため、`.xs-sheet-tabs` を観察するものだけを呼ぶ）。
+  - `render-workbook.switch.test.ts`（9 件）：TD-98-11・TD-100-14・TD-86-11・TD-86-12・TD-86-13・TD-88-20 のタブの部分、TD-82-5 の書き直し 2 件、後始末の試験 1 件。`openXlsx` を包んで開いたブックを捕まえ（`vi.mock('../../src/core/index')`）、図の通知・画像の結果を差し替える。
+  - TD-82-5（読み込み中の離脱で空の要素を返す）は、公開の API では約束の解決前に壊せないため、「画像の読み込み中に `destroy`」と「タブの切替の途中で `destroy`」に書き直した。
+  - 後始末の試験：タブを替えてから `destroy` すると、blob URL はすべて revoke、リスナ（`EventTarget` の add・remove を数える）・ResizeObserver（タブ列とスクロール枠の 2 つ）・予約中の rAF が 0、根が外れ、捕まえたブックの `openSheet` が例外になる（閉じた）。
+- 計測（`*.perf.test.ts`）：ほかのテストと同時に走ると時間がぶれて落ちることがあった（M2-3 の後の全体の実行で `borders.perf`）。vitest の project `perf` に分け、ほかが終わってから（`sequence.groupOrder: 1`）1 ファイルずつ（`fileParallelism: false`）走らせる。計測の中身・閾値は変えていない。
+
 ## 4. 直す 6 点
 
 | # | 直すこと | 場所 | 方法 |
