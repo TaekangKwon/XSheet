@@ -8,11 +8,16 @@ import tseslint from 'typescript-eslint';
  */
 export default tseslint.config(
   {
-    // 生成物・変換器の原本・文書は対象外
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'docs/**', 'tools/geom/**'],
+    // 生成物・文書は対象外
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'docs/**'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  {
+    // tools/ は Node で動かす補助スクリプト（変換器など）
+    files: ['tools/**/*.mjs'],
+    languageOptions: { globals: { console: 'readonly' } },
+  },
   {
     languageOptions: {
       ecmaVersion: 2022,

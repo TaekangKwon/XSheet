@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 /**
  * XSheet のテスト設定。
- * core（tests/core/ と直下）は node 環境、render（tests/render/）は jsdom 環境で 1 回実行する。
+ * core・geom（tests/core/・tests/geom/ と直下）は node 環境、render（tests/render/）は jsdom 環境で 1 回実行する。
  */
 export default defineConfig({
   test: {
@@ -12,7 +12,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'core',
-          include: ['tests/*.test.ts', 'tests/core/**/*.test.ts'],
+          include: ['tests/*.test.ts', 'tests/core/**/*.test.ts', 'tests/geom/**/*.test.ts'],
           environment: 'node',
         },
       },

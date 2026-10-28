@@ -50,6 +50,22 @@
 | `tools/geom/presetShapeDefinitions.xml`・`build-preset-geom.mjs`・`.d.mts`・`.gitattributes` | `tools/geom/` | `npm run geom:build` で JSON を作り直せること |
 | `tools/geom/NOTICE` | ルートの `NOTICE` | Ecma の著作権表示。配布物に必ず含める |
 
+### M1-1 で写した結果（2026-10-28）
+
+- 元はすべて `git show 943e4f0:<パス>` で取り出した（XML・NOTICE・JSON はバイト単位で一致を確認）。元の変換器と元の NOTICE からの再生成も、元の JSON とバイト単位で一致した。
+- **`src/geom/defs.ts` を新しく作った**。評価器が core と render から引いていたものを geom に移した（直す 6 点の 1）。
+  - `GUIDE_ARITY`（元は core の `drawing-geom.ts`）。M1-2 で `drawing-geom.ts` はここから引く。
+  - `MAX_GEOM_GUIDES`・`MAX_GEOM_COMMANDS`（元は core の `limits.ts`）。M1-2 で `limits.ts` はここから引いて `DEFAULT_LIMITS` に入れる（「定数の置き場は limits.ts の 1 か所」の例外）。
+  - `Pt`・`PathSeg`（元は render の `xlsx-shapes.ts`）。M2-1 で `xlsx-shapes.ts` はここから引く。
+  - `defs.ts` は形の表を読まない。core が geom から引いても 171 KB の表がバンドルに入らないようにするため。
+- 変換器：既定の出力を `src/geom/preset-geom.json`、NOTICE をルートの `NOTICE` にした。InterHub の `public/vendor/` への NOTICE の写し（`--notice-out`）はやめた（`package.json` の `files` で NOTICE を配る）。
+- NOTICE：冒頭の日本語の説明（パス・同梱先）だけを直した。Ecma の著作権表示の本文は変えていない。
+- 再生成した JSON は、176 形の定義が元と同じ。`_source`・`_notice` の中のパスだけが違う。
+- テスト：`xlsx-geom.test.ts` → `tests/geom/evaluate.test.ts`、`xlsx-preset-geom.test.ts` → `tests/geom/preset-geom.test.ts`。
+  - `public/vendor` の写しのテストは、「NOTICE が `files` に入る」テストに替えた。
+  - core の `LINE_PRESETS` との照合は、core が無いので `it.todo` にした。M1-2 で戻す。
+- 元のコードは Prettier で整っていない。写したファイルは 1 ファイルずつ `prettier --write <ファイル>` で整えた（中身は変えない。リポジトリ全体への `--write` はしない）。
+
 ## 3. render（`lib/viewers/` → `src/render/`）
 
 | ファイル | 行数 | 役割 | 注意 |
@@ -70,7 +86,7 @@
 
 | # | 直すこと | 場所 | 方法 |
 | --- | --- | --- | --- |
-| 1 | 層の逆転 | `drawing-geom.ts`・`types.ts` が `viewers/xlsx-geom` を import | geom を独立の層にする（§2） |
+| 1 | 層の逆転 | `drawing-geom.ts`・`types.ts` が `viewers/xlsx-geom` を import（`943e4f0` で確かめると、本体ではなく評価器 `xlsx-geom.ts` が core の `drawing-geom.ts`・`limits.ts` と render の `xlsx-shapes.ts` を import していた。core から評価器を引くのはテストだけ） | geom を独立の層にする（§2。M1-1 で `defs.ts` を作った） |
 | 2 | InterHub の文言関数 | `spreadsheet.ts`・`xlsx-image-layer.ts` の `t()` | `RenderOptions.messages` を引数で回す |
 | 3 | 接頭辞 | `ih-xlsx-*`・`ih-xf-N`・`data-ih-xlsx-fmt`・`--ih-*` | `xv-` 系へ一括で置き換え、テストの期待値も合わせる |
 | 4 | モジュール変数の状態 | `spreadsheet.ts` の `disposeXlsxView`・`renderGeneration` | `SheetView` のインスタンスへ |
