@@ -41,6 +41,23 @@
 | `image.ts` | 254 | 画像の読み取り・形式の判定・予算 | そのまま |
 | `make-xlsx.ts`・`make-image.ts` | 811・197 | 合成の xlsx・画像を作る（テストだけが使う） | `src/testing/` へ。公開しない |
 
+### M1-2 で写した結果（2026-10-28）
+
+- 元はすべて InterHub `943e4f0` から取り出した。本体 24・テストの道具 2（`src/testing/`）・テスト 32（`tests/core/`）・fixtures 23（ルートの `fixtures/excel/`）。
+  - fixtures の xlsx・JSON・`.ps1`・`.d.mts` は元の blob と一致（git のハッシュで確認）。`.mjs` の 5 本は Prettier で整えた分だけ違う。
+  - `git archive` は `core.autocrlf` で改行を CRLF に変えて出す。原本のバイトが要るものは `git cat-file blob` で取り出す。
+- 直したのは次だけ（Prettier の整形と import のパスを除くと、元との差はこれで全部）：
+  - `drawing-geom.ts`：`GUIDE_ARITY` を `../geom/defs` から引いて出し直す（同じ表を 2 か所に持たない）。
+  - `limits.ts`：`MAX_GEOM_GUIDES`・`MAX_GEOM_COMMANDS` を `../geom/defs` から引いて出し直す（「定数の置き場は limits.ts の 1 か所」の唯一の例外。冒頭の説明にも書いた）。
+  - `color.ts` の `hslToRgb`：ESLint 10 の `no-useless-assignment` に当たる初期値（どの分岐でも代入し直す `let r = 0` など）を、型の宣言だけにした（動きは同じ）。
+  - 冒頭の出典（`// 正: docs/...`）を `// 正: InterHub docs/...` に、`viewers/xlsx-geom.ts` を指すコメントを geom の `evaluate.ts` に直した。
+- `types.ts` は geom を import していなかった（コメントで触れていただけ）。§1 の表の注意は不要だった。
+- `import type`：元が `import type` で書かれており、`verbatimModuleSyntax` のままの型検査で直すところは無かった。
+- テスト：`./x` → `../../src/core/x`、`./make-xlsx` → `../../src/testing/make-xlsx`、`../viewers/xlsx-geom` → `../../src/geom/evaluate`、`./__fixtures__/excel/` → `../../fixtures/excel/`。`vi.mock` のパスも同じく直した。
+  - `tests/geom/preset-geom.test.ts` の `LINE_PRESETS` の照合を `it.todo` から戻した。
+- **Node 固有の API の止め方を足した**（[ADR-0001](adr/0001-library-decision.md) 追記）。jszip の型が `@types/node` を引き込み、`tsconfig.core.json` では `process`・`Buffer` が通ってしまう（DOM は止まる）。ESLint で `src/core/**`・`src/geom/**` の Node の大域変数と `node:*`・組み込みモジュールの import を止める。
+- `fixtures/excel/compare-ref-geoms.mjs` のハーネスは InterHub の描画を指したまま（M2 で向け直す。[05_quality.md](05_quality.md) §2）。
+
 ## 2. geom（→ `src/geom/`・`tools/geom/`）
 
 | 元 | 先 | 注意 |
@@ -97,9 +114,9 @@
 
 | 元 | 件数 | 先 |
 | --- | --- | --- |
-| `lib/xlsx/*.test.ts` | 36 ファイル | `tests/core/` |
+| `lib/xlsx/*.test.ts` | 32 ファイル（当初の見積もりは 36） | `tests/core/` |
 | `lib/viewers/xlsx-*.test.ts`・`spreadsheet.*.render.test.ts` | 26＋5 ファイル | `tests/render/`（`spreadsheet.*` は `renderSheet` を呼ぶ形に書き直す） |
-| `lib/xlsx/__fixtures__/excel/` | 22 ファイル | `fixtures/excel/`（[05_quality.md](05_quality.md) §2） |
+| `lib/xlsx/__fixtures__/excel/` | 23 ファイル | `fixtures/excel/`（[05_quality.md](05_quality.md) §2） |
 
 - テストは vitest＋jsdom。`node:fs` で fixtures を読むテストがある（Node で走る前提）。
 - InterHub の版：vitest 3.2・jsdom 29・TypeScript 5.9・vite 6.4。新しい版（xrag は vitest 5・jsdom 30・TS 7・vite 8）へ上げるときの落ちは M1・M2 で直す。

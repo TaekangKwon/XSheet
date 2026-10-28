@@ -1,0 +1,820 @@
+{
+  "version": 1,
+  "issue": "ISSUE-93",
+  "excelVersion": "16.0",
+  "thresholdPx": 1.5,
+  "textPosTolPx": 5,
+  "scale": 1.25,
+  "notes": [],
+  "summary": {
+    "total": 25,
+    "outlineOk": 20,
+    "textOk": 23,
+    "rot180": [
+      "u4_homePlate_none",
+      "u4_homePlate_flipH"
+    ]
+  },
+  "shapes": {
+    "u4_ellipse_none": {
+      "kind": "ellipse",
+      "variant": "none",
+      "outline": {
+        "p95": 0.8,
+        "max": 1.131,
+        "mean": 0.318,
+        "dw": 0.8,
+        "dh": -0.8,
+        "nA": 517,
+        "nB": 524,
+        "ok": true
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 2.4,
+        "p95Rot180": 4,
+        "dCentroid": {
+          "x": 2.774,
+          "y": 0.047
+        },
+        "excel": {
+          "cx": 56.361,
+          "cy": 36.28
+        },
+        "interhub": {
+          "cx": 59.135,
+          "cy": 36.328
+        }
+      },
+      "textOk": true
+    },
+    "u4_ellipse_flipH": {
+      "kind": "ellipse",
+      "variant": "flipH",
+      "outline": {
+        "p95": 0.8,
+        "max": 1.131,
+        "mean": 0.318,
+        "dw": 0.8,
+        "dh": -0.8,
+        "nA": 517,
+        "nB": 524,
+        "ok": true
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 2.4,
+        "p95Rot180": 4,
+        "dCentroid": {
+          "x": 2.774,
+          "y": 0.047
+        },
+        "excel": {
+          "cx": 56.361,
+          "cy": 36.28
+        },
+        "interhub": {
+          "cx": 59.135,
+          "cy": 36.328
+        }
+      },
+      "textOk": true
+    },
+    "u4_ellipse_flipV": {
+      "kind": "ellipse",
+      "variant": "flipV",
+      "outline": {
+        "p95": 0.8,
+        "max": 1.131,
+        "mean": 0.318,
+        "dw": 0.8,
+        "dh": -0.8,
+        "nA": 517,
+        "nB": 524,
+        "ok": true
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 2.4,
+        "p95Rot180": 4,
+        "dCentroid": {
+          "x": 0.552,
+          "y": -0.144
+        },
+        "excel": {
+          "cx": 89.457,
+          "cy": 70.977
+        },
+        "interhub": {
+          "cx": 90.009,
+          "cy": 70.834
+        }
+      },
+      "textOk": true
+    },
+    "u4_ellipse_flipHV": {
+      "kind": "ellipse",
+      "variant": "flipHV",
+      "outline": {
+        "p95": 0.8,
+        "max": 1.131,
+        "mean": 0.318,
+        "dw": 0.8,
+        "dh": -0.8,
+        "nA": 517,
+        "nB": 524,
+        "ok": true
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 2.4,
+        "p95Rot180": 4,
+        "dCentroid": {
+          "x": 0.552,
+          "y": -0.144
+        },
+        "excel": {
+          "cx": 89.457,
+          "cy": 70.977
+        },
+        "interhub": {
+          "cx": 90.009,
+          "cy": 70.834
+        }
+      },
+      "textOk": true
+    },
+    "u4_ellipse_flipVRot30": {
+      "kind": "ellipse",
+      "variant": "flipVRot30",
+      "outline": {
+        "p95": 2.884,
+        "max": 3.298,
+        "mean": 1.397,
+        "dw": 0.8,
+        "dh": 2.4,
+        "nA": 474,
+        "nB": 546,
+        "ok": false
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 1.789,
+        "p95Rot180": 4.308,
+        "dCentroid": {
+          "x": -2.538,
+          "y": 0.523
+        },
+        "excel": {
+          "cx": 74.642,
+          "cy": 82.503
+        },
+        "interhub": {
+          "cx": 72.104,
+          "cy": 83.026
+        }
+      },
+      "textOk": true
+    },
+    "u4_diamond_none": {
+      "kind": "diamond",
+      "variant": "none",
+      "outline": {
+        "p95": 1.131,
+        "max": 1.131,
+        "mean": 0.415,
+        "dw": 1.6,
+        "dh": 0.8,
+        "nA": 582,
+        "nB": 506,
+        "ok": true
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 2.4,
+        "p95Rot180": 4,
+        "dCentroid": {
+          "x": 3.165,
+          "y": 2.388
+        },
+        "excel": {
+          "cx": 71.17,
+          "cy": 45.94
+        },
+        "interhub": {
+          "cx": 74.335,
+          "cy": 48.328
+        }
+      },
+      "textOk": true
+    },
+    "u4_diamond_flipH": {
+      "kind": "diamond",
+      "variant": "flipH",
+      "outline": {
+        "p95": 1.131,
+        "max": 1.131,
+        "mean": 0.415,
+        "dw": 1.6,
+        "dh": 0.8,
+        "nA": 582,
+        "nB": 506,
+        "ok": true
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 2.4,
+        "p95Rot180": 4,
+        "dCentroid": {
+          "x": 3.165,
+          "y": 2.388
+        },
+        "excel": {
+          "cx": 71.17,
+          "cy": 45.94
+        },
+        "interhub": {
+          "cx": 74.335,
+          "cy": 48.328
+        }
+      },
+      "textOk": true
+    },
+    "u4_diamond_flipV": {
+      "kind": "diamond",
+      "variant": "flipV",
+      "outline": {
+        "p95": 1.131,
+        "max": 1.131,
+        "mean": 0.415,
+        "dw": 1.6,
+        "dh": 0.8,
+        "nA": 582,
+        "nB": 506,
+        "ok": true
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 1.789,
+        "p95Rot180": 4.079,
+        "dCentroid": {
+          "x": -0.588,
+          "y": 1.606
+        },
+        "excel": {
+          "cx": 73.955,
+          "cy": 58.076
+        },
+        "interhub": {
+          "cx": 73.367,
+          "cy": 59.681
+        }
+      },
+      "textOk": true
+    },
+    "u4_diamond_flipHV": {
+      "kind": "diamond",
+      "variant": "flipHV",
+      "outline": {
+        "p95": 1.131,
+        "max": 1.131,
+        "mean": 0.415,
+        "dw": 1.6,
+        "dh": 0.8,
+        "nA": 582,
+        "nB": 506,
+        "ok": true
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 1.789,
+        "p95Rot180": 4.079,
+        "dCentroid": {
+          "x": -0.588,
+          "y": 1.606
+        },
+        "excel": {
+          "cx": 73.955,
+          "cy": 58.076
+        },
+        "interhub": {
+          "cx": 73.367,
+          "cy": 59.681
+        }
+      },
+      "textOk": true
+    },
+    "u4_diamond_flipVRot30": {
+      "kind": "diamond",
+      "variant": "flipVRot30",
+      "outline": {
+        "p95": 1.789,
+        "max": 2.53,
+        "mean": 0.928,
+        "dw": 0.8,
+        "dh": 4.8,
+        "nA": 432,
+        "nB": 444,
+        "ok": false
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 2.263,
+        "p95Rot180": 4,
+        "dCentroid": {
+          "x": -2.289,
+          "y": 2.138
+        },
+        "excel": {
+          "cx": 62.101,
+          "cy": 52.763
+        },
+        "interhub": {
+          "cx": 59.812,
+          "cy": 54.901
+        }
+      },
+      "textOk": true
+    },
+    "u4_triangle_none": {
+      "kind": "triangle",
+      "variant": "none",
+      "outline": {
+        "p95": 0.8,
+        "max": 2.53,
+        "mean": 0.201,
+        "dw": 4,
+        "dh": 0.8,
+        "nA": 508,
+        "nB": 544,
+        "ok": true
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 2.4,
+        "p95Rot180": 4,
+        "dCentroid": {
+          "x": 4.045,
+          "y": 2.057
+        },
+        "excel": {
+          "cx": 71.09,
+          "cy": 72.671
+        },
+        "interhub": {
+          "cx": 75.135,
+          "cy": 74.728
+        }
+      },
+      "textOk": true
+    },
+    "u4_triangle_flipH": {
+      "kind": "triangle",
+      "variant": "flipH",
+      "outline": {
+        "p95": 0.8,
+        "max": 2.53,
+        "mean": 0.201,
+        "dw": 4,
+        "dh": 0.8,
+        "nA": 508,
+        "nB": 544,
+        "ok": true
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 2.4,
+        "p95Rot180": 4,
+        "dCentroid": {
+          "x": 4.045,
+          "y": 2.057
+        },
+        "excel": {
+          "cx": 71.09,
+          "cy": 72.671
+        },
+        "interhub": {
+          "cx": 75.135,
+          "cy": 74.728
+        }
+      },
+      "textOk": true
+    },
+    "u4_triangle_flipV": {
+      "kind": "triangle",
+      "variant": "flipV",
+      "outline": {
+        "p95": 0.8,
+        "max": 1.6,
+        "mean": 0.269,
+        "dw": 0.8,
+        "dh": 0,
+        "nA": 508,
+        "nB": 544,
+        "ok": true
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 1.789,
+        "p95Rot180": 4,
+        "dCentroid": {
+          "x": 0.083,
+          "y": 0.788
+        },
+        "excel": {
+          "cx": 74.084,
+          "cy": 32.494
+        },
+        "interhub": {
+          "cx": 74.167,
+          "cy": 33.281
+        }
+      },
+      "textOk": true
+    },
+    "u4_triangle_flipHV": {
+      "kind": "triangle",
+      "variant": "flipHV",
+      "outline": {
+        "p95": 0.8,
+        "max": 1.6,
+        "mean": 0.269,
+        "dw": 0.8,
+        "dh": 0,
+        "nA": 508,
+        "nB": 544,
+        "ok": true
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 1.789,
+        "p95Rot180": 4,
+        "dCentroid": {
+          "x": 0.083,
+          "y": 0.788
+        },
+        "excel": {
+          "cx": 74.084,
+          "cy": 32.494
+        },
+        "interhub": {
+          "cx": 74.167,
+          "cy": 33.281
+        }
+      },
+      "textOk": true
+    },
+    "u4_triangle_flipVRot30": {
+      "kind": "triangle",
+      "variant": "flipVRot30",
+      "outline": {
+        "p95": 2.263,
+        "max": 4.525,
+        "mean": 0.769,
+        "dw": 1.6,
+        "dh": 4,
+        "nA": 487,
+        "nB": 515,
+        "ok": false
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 1.789,
+        "p95Rot180": 4.308,
+        "dCentroid": {
+          "x": -2.782,
+          "y": 0.036
+        },
+        "excel": {
+          "cx": 48.382,
+          "cy": 66.154
+        },
+        "interhub": {
+          "cx": 45.6,
+          "cy": 66.19
+        }
+      },
+      "textOk": true
+    },
+    "u4_rightArrow_none": {
+      "kind": "rightArrow",
+      "variant": "none",
+      "outline": {
+        "p95": 0.8,
+        "max": 1.789,
+        "mean": 0.36,
+        "dw": 0.8,
+        "dh": 1.6,
+        "nA": 492,
+        "nB": 628,
+        "ok": true
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 2.4,
+        "p95Rot180": 4,
+        "dCentroid": {
+          "x": 2.59,
+          "y": 1.557
+        },
+        "excel": {
+          "cx": 34.852,
+          "cy": 46.771
+        },
+        "interhub": {
+          "cx": 37.443,
+          "cy": 48.328
+        }
+      },
+      "textOk": true
+    },
+    "u4_rightArrow_flipH": {
+      "kind": "rightArrow",
+      "variant": "flipH",
+      "outline": {
+        "p95": 0.8,
+        "max": 1.789,
+        "mean": 0.347,
+        "dw": 0.8,
+        "dh": 1.6,
+        "nA": 492,
+        "nB": 595,
+        "ok": true
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 1.789,
+        "p95Rot180": 4,
+        "dCentroid": {
+          "x": 4.541,
+          "y": 1.7
+        },
+        "excel": {
+          "cx": 59.822,
+          "cy": 46.693
+        },
+        "interhub": {
+          "cx": 64.362,
+          "cy": 48.393
+        }
+      },
+      "textOk": true
+    },
+    "u4_rightArrow_flipV": {
+      "kind": "rightArrow",
+      "variant": "flipV",
+      "outline": {
+        "p95": 0.8,
+        "max": 1.789,
+        "mean": 0.36,
+        "dw": 0.8,
+        "dh": 1.6,
+        "nA": 492,
+        "nB": 628,
+        "ok": true
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 1.789,
+        "p95Rot180": 4,
+        "dCentroid": {
+          "x": -1.228,
+          "y": 1.598
+        },
+        "excel": {
+          "cx": 84.398,
+          "cy": 58.834
+        },
+        "interhub": {
+          "cx": 83.17,
+          "cy": 60.432
+        }
+      },
+      "textOk": true
+    },
+    "u4_rightArrow_flipHV": {
+      "kind": "rightArrow",
+      "variant": "flipHV",
+      "outline": {
+        "p95": 0.8,
+        "max": 1.789,
+        "mean": 0.347,
+        "dw": 0.8,
+        "dh": 1.6,
+        "nA": 492,
+        "nB": 595,
+        "ok": true
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 1.789,
+        "p95Rot180": 4,
+        "dCentroid": {
+          "x": -0.546,
+          "y": 1.687
+        },
+        "excel": {
+          "cx": 110.798,
+          "cy": 58.834
+        },
+        "interhub": {
+          "cx": 110.252,
+          "cy": 60.521
+        }
+      },
+      "textOk": true
+    },
+    "u4_rightArrow_flipVRot30": {
+      "kind": "rightArrow",
+      "variant": "flipVRot30",
+      "outline": {
+        "p95": 1.6,
+        "max": 2.53,
+        "mean": 0.659,
+        "dw": 0,
+        "dh": 0,
+        "nA": 529,
+        "nB": 593,
+        "ok": false
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 1.789,
+        "p95Rot180": 4.308,
+        "dCentroid": {
+          "x": -3.531,
+          "y": -0.173
+        },
+        "excel": {
+          "cx": 84.092,
+          "cy": 71.069
+        },
+        "interhub": {
+          "cx": 80.561,
+          "cy": 70.896
+        }
+      },
+      "textOk": true
+    },
+    "u4_homePlate_none": {
+      "kind": "homePlate",
+      "variant": "none",
+      "outline": {
+        "p95": 0.8,
+        "max": 1.131,
+        "mean": 0.447,
+        "dw": 0.8,
+        "dh": 0.8,
+        "nA": 497,
+        "nB": 633,
+        "ok": true
+      },
+      "text": {
+        "orientation": "rot180",
+        "p95Upright": 61.434,
+        "p95Rot180": 61.324,
+        "dCentroid": {
+          "x": 0.028,
+          "y": -16.401
+        },
+        "excel": {
+          "cx": 37.415,
+          "cy": 38.329
+        },
+        "interhub": {
+          "cx": 37.443,
+          "cy": 21.928
+        }
+      },
+      "textOk": false
+    },
+    "u4_homePlate_flipH": {
+      "kind": "homePlate",
+      "variant": "flipH",
+      "outline": {
+        "p95": 0.8,
+        "max": 1.131,
+        "mean": 0.425,
+        "dw": 0.8,
+        "dh": 0.8,
+        "nA": 497,
+        "nB": 566,
+        "ok": true
+      },
+      "text": {
+        "orientation": "rot180",
+        "p95Upright": 65.233,
+        "p95Rot180": 64.399,
+        "dCentroid": {
+          "x": -4.32,
+          "y": -18.101
+        },
+        "excel": {
+          "cx": 70.857,
+          "cy": 40.667
+        },
+        "interhub": {
+          "cx": 66.537,
+          "cy": 22.565
+        }
+      },
+      "textOk": false
+    },
+    "u4_homePlate_flipV": {
+      "kind": "homePlate",
+      "variant": "flipV",
+      "outline": {
+        "p95": 0.8,
+        "max": 1.131,
+        "mean": 0.447,
+        "dw": 0.8,
+        "dh": 0.8,
+        "nA": 497,
+        "nB": 633,
+        "ok": true
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 2.4,
+        "p95Rot180": 5.06,
+        "dCentroid": {
+          "x": -1.55,
+          "y": 0.582
+        },
+        "excel": {
+          "cx": 82.594,
+          "cy": 85.662
+        },
+        "interhub": {
+          "cx": 81.044,
+          "cy": 86.244
+        }
+      },
+      "textOk": true
+    },
+    "u4_homePlate_flipHV": {
+      "kind": "homePlate",
+      "variant": "flipHV",
+      "outline": {
+        "p95": 0.8,
+        "max": 1.131,
+        "mean": 0.425,
+        "dw": 0.8,
+        "dh": 0.8,
+        "nA": 497,
+        "nB": 566,
+        "ok": true
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 2.4,
+        "p95Rot180": 4,
+        "dCentroid": {
+          "x": -0.696,
+          "y": 0.746
+        },
+        "excel": {
+          "cx": 110.948,
+          "cy": 86.175
+        },
+        "interhub": {
+          "cx": 110.252,
+          "cy": 86.921
+        }
+      },
+      "textOk": true
+    },
+    "u4_homePlate_flipVRot30": {
+      "kind": "homePlate",
+      "variant": "flipVRot30",
+      "outline": {
+        "p95": 2.53,
+        "max": 2.884,
+        "mean": 0.979,
+        "dw": 0.8,
+        "dh": 3.2,
+        "nA": 520,
+        "nB": 576,
+        "ok": false
+      },
+      "text": {
+        "orientation": "upright",
+        "p95Upright": 1.789,
+        "p95Rot180": 5.367,
+        "dCentroid": {
+          "x": -3.298,
+          "y": 2.266
+        },
+        "excel": {
+          "cx": 81.885,
+          "cy": 115.176
+        },
+        "interhub": {
+          "cx": 78.587,
+          "cy": 117.442
+        }
+      },
+      "textOk": true
+    }
+  }
+}

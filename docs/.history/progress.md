@@ -11,3 +11,9 @@
 - InterHub 943e4f0 から評価器・形の表・変換器・XML・NOTICE を写した（バイト一致を確認）。`npm run geom:build` を作った。
 - 評価器が core・render から引いていた演算子の表・上限・経路の型を `src/geom/defs.ts` へ移し、geom を他の層に依存しない層にした。
 - 再生成した JSON は 176 形とも元と同じ（`_source`・`_notice` のパスだけ違う）。テスト 60 件が通る（LINE_PRESETS の照合は M1-2 まで todo）。
+
+## 2026-10-28 M1-2（core を写す）
+- InterHub 943e4f0 から core 24・`src/testing/` 2・テスト 32・fixtures 23（ルートの `fixtures/excel/`。データは blob と一致）を写した。
+- `drawing-geom.ts` の `GUIDE_ARITY`・`limits.ts` の `MAX_GEOM_*` を `src/geom/defs.ts` から引く形にし、LINE_PRESETS の照合のテストを戻した。
+- jszip の型が `@types/node` を引き込み `tsconfig.core.json` で Node を止められないため、ESLint で core・geom の Node API を止めた（ADR-0001 追記）。
+- テスト 810 件（36 ファイル）・typecheck・lint・format:check が通る。

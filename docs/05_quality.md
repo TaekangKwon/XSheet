@@ -41,7 +41,7 @@
 | `ref-colors.xlsx`＋`.expected.json` | 図形・線・文字の色（128 図形） |
 | `ref-geoms.compare.json`・`ref-flips.compare.json` | 画像の輪郭の比較の基準値 |
 | `make-ref-*.ps1`（4 本）・`make-ref-*.extract.mjs`（3 本） | Excel 16 の COM でファイルと基準値を作る（Windows＋Excel が要る・手動） |
-| `geom-compare.mjs`・`.d.mts`・`compare-ref-geoms.mjs` | 輪郭の比較器と、Playwright で描画を撮って比べる道具（手動） |
+| `geom-compare.mjs`・`.d.mts`・`compare-ref-geoms.mjs` | 輪郭の比較器と、Playwright で描画を撮って比べる道具（手動）。`compare-ref-geoms.mjs` の描画の組み立て（ハーネス）は、まだ InterHub の `src_V1/src/lib/viewers/` を指す。render を写したあと（M2）に XSheet の render へ向け直す |
 
 - 照合の結果（InterHub）：
   - 列幅・行高・図の位置は差 0px。
