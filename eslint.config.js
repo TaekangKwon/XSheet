@@ -1,4 +1,5 @@
 // @ts-check
+import { builtinModules } from 'node:module';
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
@@ -14,9 +15,37 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    // tools/ は Node で動かす補助スクリプト（変換器など）
-    files: ['tools/**/*.mjs'],
+    // tools/ と fixtures/ の .mjs は Node で動かす補助スクリプト（変換器・期待値の抽出など）
+    files: ['tools/**/*.mjs', 'fixtures/**/*.mjs'],
     languageOptions: { globals: { console: 'readonly' } },
+  },
+  {
+    // 図形の画像の照合は、Playwright で開いたページの中（page.evaluate）でも動く
+    files: ['fixtures/excel/compare-ref-geoms.mjs'],
+    languageOptions: { globals: { window: 'readonly', document: 'readonly' } },
+  },
+  {
+    // core・geom は Node 固有の API を使わない。jszip の型が `@types/node` を引き込み、
+    // tsconfig.core.json（types: []）だけでは process・Buffer を止められないため、ここで止める（DOM は tsconfig.core.json が止める）
+    files: ['src/core/**', 'src/geom/**'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        ...['process', 'Buffer', 'global', 'require', 'module', '__dirname', '__filename'].map(
+          (name) => ({ name, message: 'core・geom は Node 固有の API を使わない' }),
+        ),
+      ],
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: builtinModules.map((name) => ({
+            name,
+            message: 'core・geom は Node 固有の API を使わない',
+          })),
+          patterns: [{ group: ['node:*'], message: 'core・geom は Node 固有の API を使わない' }],
+        },
+      ],
+    },
   },
   {
     languageOptions: {

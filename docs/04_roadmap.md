@@ -39,7 +39,7 @@ flowchart LR
 | Issue | 内容 | 完了の条件 |
 | --- | --- | --- |
 | M1-1 | geom を写す（評価器・JSON・変換器・NOTICE）。`npm run geom:build` を作る | geom のテストが通る。JSON を作り直して差分 0 |
-| M1-2 | core を写す（[03](03_source-map.md) §1）。import を geom へ付け替え、`import type` へ直す | core のテスト（36 ファイル）が通る |
+| M1-2 | core を写す（[03](03_source-map.md) §1）。import を geom へ付け替え、`import type` へ直す | core のテスト（32 ファイル。当初の見積もりは 36）が通る |
 | M1-3 | 公開の範囲を決める（`index.ts`・`internal`）。DOM 非依存の確認（core だけを Node で import するテスト） | 公開 API のテスト（型の import を含む）が通る |
 
 ## M2 render

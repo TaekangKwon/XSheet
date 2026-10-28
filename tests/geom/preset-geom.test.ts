@@ -7,6 +7,7 @@ import {
   convertPresetGeom,
   parseXml,
 } from '../../tools/geom/build-preset-geom.mjs';
+import { LINE_PRESETS } from '../../src/core/drawing-shape';
 import { getPresetGeom, presetNames } from '../../src/geom/evaluate';
 
 const read = (rel: string): string => readFileSync(new URL(rel, import.meta.url), 'utf8');
@@ -135,8 +136,10 @@ describe('形の表（preset-geom.json）', () => {
     expect(lf(table._notice)).toBe(lf(NOTICE).trimEnd());
   });
 
-  // 変換器の除外 10 種は、線として別経路で描く core の LINE_PRESETS（drawing-shape.ts）と一致する。core を写す M1-2 で戻す
-  it.todo('除外の 10 種は core の LINE_PRESETS と一致する（M1-2）');
+  it('除外の 10 種は core の LINE_PRESETS と一致する', () => {
+    // 変換器の除外 10 種は、線として別経路で描く LINE_PRESETS（core の drawing-shape.ts）と一致する
+    expect(new Set(EXCLUDED_PRESETS)).toEqual(new Set(LINE_PRESETS));
+  });
 
   it('ahLst・cxnLst と線の 10 種を含まず、lineInv を含む', () => {
     expect(EXCLUDED_PRESETS).toHaveLength(10);

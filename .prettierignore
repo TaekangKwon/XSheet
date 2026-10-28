@@ -6,5 +6,7 @@ package-lock.json
 src/geom/preset-geom.json
 tools/geom/presetShapeDefinitions.xml
 NOTICE
+# テストの期待値（Excel で作ったファイルから抽出・照合の結果を書き出したもの）
+fixtures/**/*.json
 # 文書は手で整えた表を使う（Prettier の表の詰め直しで差分が大きくなるため）
 *.md

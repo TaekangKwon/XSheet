@@ -51,6 +51,7 @@ accepted（2026-10-28 起票・名前はユーザーが決定）
 | @types/node | 24.19.2 | テストが `node:fs` で fixtures を読むため。core の型には入れない |
 
 - core の DOM 非依存は、`tsconfig.core.json`（`lib` を ES2022 だけにし `types` を空にする）で型検査して確かめる（N8）。
+- 追記（M1-2）：jszip の型（`index.d.ts`）が `/// <reference types="node" />` で `@types/node` を引き込むため、`tsconfig.core.json` では `process`・`Buffer` を止められない（DOM は止まる）。Node 固有の API は ESLint（`src/core/**`・`src/geom/**` に `no-restricted-globals` と、`node:*`・組み込みモジュールへの `no-restricted-imports`）で止める。`TextDecoder` はブラウザ・Worker・Node に共通の API なので使ってよい（型は `@types/node` から来る）。
 
 ## 却下した案
 
