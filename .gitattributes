@@ -1,0 +1,5 @@
+# テキストは LF にそろえる（core.autocrlf=true の環境でも作業ツリーを LF にする）
+* text=auto eol=lf
+# Excel のファイル・画像は変換しない
+*.xlsx binary
+*.png binary

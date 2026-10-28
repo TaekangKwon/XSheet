@@ -1,0 +1,10 @@
+{
+  // core と geom は DOM・Node 固有の API を使わない（01_requirements.md N8）。
+  // lib に DOM を入れず types を空にして、使ったら型検査で落ちるようにする。
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": []
+  },
+  "include": ["src/core", "src/geom"]
+}

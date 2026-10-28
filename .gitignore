@@ -1,0 +1,22 @@
+# Node
+node_modules/
+coverage/
+*.tsbuildinfo
+*.log
+# dist/ は非公開の間タグに含めて配る（D5・M4）。それまでは作業中の生成物として除外する
+dist/
+
+# Claude Code の個人設定・セッション引き継ぎ（progress.md はコミットする）
+CLAUDE.local.md
+docs/.history/handoff.md
+
+# エディタ・OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Playwright の出力（性能の計測・照合の撮影）
+.playwright-cli/
+.screenshots/

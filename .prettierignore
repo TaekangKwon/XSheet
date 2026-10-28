@@ -1,0 +1,10 @@
+# 生成物・依存の固定
+dist/
+coverage/
+package-lock.json
+# 生成物・原本は整形しない（変換器の出力を差分で確かめるため／原本は改変しない）
+src/geom/preset-geom.json
+tools/geom/presetShapeDefinitions.xml
+NOTICE
+# 文書は手で整えた表を使う（Prettier の表の詰め直しで差分が大きくなるため）
+*.md
