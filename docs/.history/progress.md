@@ -23,3 +23,9 @@
 - `src/render/**` は core を index・internal からだけ引く（ESLint）。値・型の公開の範囲をテストで固定した。
 - core の入口を Vite で束ね、素の Node（コード生成の禁止付き）で Excel のファイルを開いて元のソースと同じ結果になることを確かめるテストを足した。
 - テスト 817 件（38 ファイル）・typecheck・lint・format:check が通る。
+
+## 2026-10-28 M2-1（描画の部品を写す）
+- D6 を `xs-` に決め（ユーザー）、ADR-0001・README・02〜04 の `xv-` を直した。
+- InterHub 943e4f0 の `xlsx-*.ts` 8 本を `src/render/`（名前から `xlsx-` を外す）、テスト 17 本を `tests/render/` へ写し、`ih-` を `xs-` 系に置き換えた（0 件）。
+- 文言の `t()` は仮置きの `src/render/i18n.ts`（キーを返す）から引く（M2-2 で消す）。perf の 1 本は M2-3、CSS の 3 本は M3-1 で写す。
+- テスト 1,497 件（55 ファイル）・typecheck・lint・format:check が通る。

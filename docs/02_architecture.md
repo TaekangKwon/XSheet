@@ -9,7 +9,7 @@
 ## TL;DR
 - 3 層：**core**（.xlsx → データモデル・DOM 非依存）／**geom**（図形の形の表と式の評価・遅延読み込み）／**render**（DOM の表と重ねる層・CSS 1 枚）。
 - 公開の入口は `openXlsx`（core）と `renderSheet`・`renderWorkbook`（render）。表示は 1 回の呼び出しごとのインスタンスで、`destroy()` で全部放す。
-- 見た目は CSS 変数 `--xv-*` で、文言は `messages` で、使う側が差し替える。
+- 見た目は CSS 変数 `--xs-*` で、文言は `messages` で、使う側が差し替える。
 
 ---
 
@@ -26,7 +26,7 @@ flowchart LR
   S --> R[render<br/>renderSheet]
   D --> R
   R --> V[表 table＋罫線 SVG＋図の層]
-  CSS[style.css<br/>--xv-* 変数] --> V
+  CSS[style.css<br/>--xs-* 変数] --> V
 ```
 
 | 層 | 入口（サブパス） | 依存 | 動く場所 |
@@ -107,7 +107,7 @@ export function renderWorkbook(container: HTMLElement, data: ArrayBuffer, option
 ```
 
 - `container` は高さが決まっていて、中でスクロールする前提（`overflow` は render が付ける）。
-- InterHub の `spreadsheet.ts` はモジュール変数（`disposeXlsxView`・`renderGeneration`・`formatSeq`）で表示を 1 つだけ持つ。render では状態を `SheetView` に持たせ、同じページに複数の表示を置けるようにする。書式の CSS の連番（`data-xv-fmt`）はモジュールで 1 つの連番のままでよい。
+- InterHub の `spreadsheet.ts` はモジュール変数（`disposeXlsxView`・`renderGeneration`・`formatSeq`）で表示を 1 つだけ持つ。render では状態を `SheetView` に持たせ、同じページに複数の表示を置けるようにする。書式の CSS の連番（`data-xs-fmt`）はモジュールで 1 つの連番のままでよい。
 - 描画の順（InterHub の `renderXlsxView` と同じ）：
   1. `openSheet` → `openDrawings`。
   2. 書式の CSS をブックで 1 回作る（`buildFormatCss`）。
@@ -149,18 +149,18 @@ export function renderWorkbook(container: HTMLElement, data: ArrayBuffer, option
 
 | ライブラリの変数 | 役割 | 明るい既定値 | ダークの例 | InterHub の元 |
 | --- | --- | --- | --- | --- |
-| `--xv-fg` | 文字の色（塗りの無いセル・自動の文字） | `#1a1a1a` | `#e6e6e6` | `--ih-fg` |
-| `--xv-bg` | 見出し・面の地 | `#ffffff` | `#1e1e1e` | `--ih-bg` |
-| `--xv-cell-bg` | セルの地（白の塗り＝「紙」もこれ） | `#f5f6f8` | `#0f1115` | `--ih-xlsx-cell-bg`（＝`--ih-canvas`） |
-| `--xv-head-bg` | 列記号・行番号の地 | `#eef0f4` | `#1f232c` | `--ih-bg-elev2` |
-| `--xv-grid` | グリッド線 | `#d0d0d0` | `#3a3a3a` | `--ih-border` |
-| `--xv-muted`・`--xv-faint` | 行番号・破線枠の文字 | `#6b7280`・`#8a92a2` | `#9ca3af`・`#6b7386` | `--ih-muted`・`--ih-faint` |
-| `--xv-border-ink` | 自動・黒の罫線（墨色） | `#000000` | `#d4d4d4` | `--ih-xlsx-border-ink` |
-| `--xv-backdrop`・`--xv-backdrop-display` | ダーク時の図の白い下地 | `transparent`・`none` | `#ffffff`・`block` | `--ih-xlsx-backdrop*` |
+| `--xs-fg` | 文字の色（塗りの無いセル・自動の文字） | `#1a1a1a` | `#e6e6e6` | `--ih-fg` |
+| `--xs-bg` | 見出し・面の地 | `#ffffff` | `#1e1e1e` | `--ih-bg` |
+| `--xs-cell-bg` | セルの地（白の塗り＝「紙」もこれ） | `#f5f6f8` | `#0f1115` | `--ih-xlsx-cell-bg`（＝`--ih-canvas`） |
+| `--xs-head-bg` | 列記号・行番号の地 | `#eef0f4` | `#1f232c` | `--ih-bg-elev2` |
+| `--xs-grid` | グリッド線 | `#d0d0d0` | `#3a3a3a` | `--ih-border` |
+| `--xs-muted`・`--xs-faint` | 行番号・破線枠の文字 | `#6b7280`・`#8a92a2` | `#9ca3af`・`#6b7386` | `--ih-muted`・`--ih-faint` |
+| `--xs-border-ink` | 自動・黒の罫線（墨色） | `#000000` | `#d4d4d4` | `--ih-xlsx-border-ink` |
+| `--xs-backdrop`・`--xs-backdrop-display` | ダーク時の図の白い下地 | `transparent`・`none` | `#ffffff`・`block` | `--ih-xlsx-backdrop*` |
 
 - `style.css` は明るい既定値だけを持つ。ダーク表示は使う側が変数を上書きする（`prefers-color-scheme` か自前のテーマ属性）。例を `examples/` に置く。
 - Excel の色（塗り・文字の色・図形の色）は変数ではなく、書式の CSS とインラインの値で入る。ダーク表示の描き分けの規則（塗りのあるセルは Excel の色のまま、白の塗りは「紙」など）は InterHub ADR-0030 のとおり。
-- クラス名は InterHub の `ih-xlsx-*`・`ih-xf-N`・`data-ih-xlsx-fmt` を `xv-*`・`xv-xf-N`・`data-xv-fmt` にする。InterHub 共用のクラス（`ih-data-view`・`ih-data-banner`・`ih-dv-rownum`・`ih-sheet-tabs` など）は、render が要るものだけ `xv-` で作り直す。
+- クラス名は InterHub の `ih-xlsx-*`・`ih-xf-N`・`data-ih-xlsx-fmt` を `xs-*`・`xs-xf-N`・`data-xs-fmt` にする（D6）。表の根の `.ih-spreadsheet` は `.xs-sheet`。InterHub 共用のクラス（`ih-data-view`・`ih-data-banner`・`ih-dv-rownum`・`ih-sheet-tabs` など）は、render が要るものだけ `xs-` で作り直す。
 
 ## 7. 文言（`XlsxViewMessages`・22 キー）
 

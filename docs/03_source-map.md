@@ -87,17 +87,41 @@
 
 | ファイル | 行数 | 役割 | 注意 |
 | --- | --- | --- | --- |
-| `xlsx-grid.ts` | 659 | 範囲・行と列の仮想化・はみ出し・`###`・余白の書式 | `ih-` → `xv-` |
+| `xlsx-grid.ts` | 659 | 範囲・行と列の仮想化・はみ出し・`###`・余白の書式 | `ih-` → `xs-` |
 | `xlsx-borders.ts` | 465 | 罫線の線分・辺の優先・path | そのまま |
-| `xlsx-border-layer.ts` | 128 | 罫線の SVG 層 | `ih-` → `xv-` |
-| `xlsx-format-css.ts` | 165 | 書式のクラスとブック単位の CSS | `ih-xf-`・`data-ih-xlsx-fmt`・`.ih-spreadsheet` → `xv-` 系。`nonce` を付けられるように（M3） |
+| `xlsx-border-layer.ts` | 128 | 罫線の SVG 層 | `ih-` → `xs-` |
+| `xlsx-format-css.ts` | 165 | 書式のクラスとブック単位の CSS | `ih-xf-`・`data-ih-xlsx-fmt`・`.ih-spreadsheet` → `xs-` 系。`nonce` を付けられるように（M3） |
 | `xlsx-drawings.ts` | 327 | アンカー → px・グループの写像・見えている図 | そのまま |
 | `xlsx-image-store.ts` | 147 | 画像の blob URL と後始末 | そのまま |
-| `xlsx-image-layer.ts` | 778 | 図の DOM 層・破線枠・下地 | `t()` → `messages`、`ih-` → `xv-` |
+| `xlsx-image-layer.ts` | 778 | 図の DOM 層・破線枠・下地 | `t()` → `messages`、`ih-` → `xs-` |
 | `xlsx-shapes.ts` | 912 | 図形と線の SVG・矢じり・外接矩形 | そのまま |
 | `spreadsheet.ts`（1,076 行のうち .xlsx の部分） | — | 表と層の組み立て・スクロール・後始末 | `renderXlsxView`（551 行〜）・`showSheet`（813 行〜）・`draw`（707 行〜）・`buildGridTable`（409 行〜）・`dispose`（907 行〜）を `renderSheet` へ。`.xls`（SheetJS）の経路・`fitTableBodyToWindow`・InterHub のバナーとツールバーは写さない |
 | `styles/global.css` の `.ih-spreadsheet`・`.ih-xlsx-*` | 31〜1442 行に散在（74 か所） | 表・層・図・罫線・下地の規則と変数 | `src/style.css` へ。変数は [02](02_architecture.md) §6 |
 | `locales/ja.ts`・`en.ts` の `spreadsheet.*` | 22 キー（ja.ts 275〜302 行） | 文言 | `src/render/messages.ts` の既定値に |
+
+### M2-1 で写した結果（2026-10-28）
+
+- 元はすべて `git cat-file blob 943e4f0:<パス>` で取り出し、1 ファイルずつ Prettier で整えた。
+- ファイル名から `xlsx-` を外した（`src/render/` の中はすべて xlsx の描画のため）。テストも同じ（`xlsx-grid.test.ts` → `tests/render/grid.test.ts`）。
+- 接頭辞（D6）は次のとおり置き換えた。`ih-` は src・テストとも 0 件。
+
+  | InterHub | XSheet |
+  | --- | --- |
+  | `ih-xlsx-*`（`ih-xlsx-figure`・`ih-xlsx-frame` など 17 種） | `xs-*`（`xs-figure`・`xs-frame` など） |
+  | `ih-xf-N` | `xs-xf-N` |
+  | `data-ih-xlsx-fmt` | `data-xs-fmt` |
+  | `.ih-spreadsheet`（表の根） | `.xs-sheet` |
+  | `--ih-fg`・`--ih-xlsx-cell-bg`・`--ih-xlsx-border-ink`・`--ih-xlsx-backdrop` | `--xs-fg`・`--xs-cell-bg`・`--xs-border-ink`・`--xs-backdrop` |
+
+- import：core は `../core/index`（型を含む）と `../core/internal`（`applyFillMode`）から、geom は `../geom/index` から引く。同じ入口からの import は 1 文にまとめた。
+- `shapes.ts` の `Pt`・`PathSeg` は geom の `defs.ts` の型を引いて出し直す（定義は同じ。M1-1 の予定どおり）。
+- 文言：`image-layer.ts` の `t()` は、仮置きの `src/render/i18n.ts`（キーをそのまま返す。InterHub の試験と同じ状態）から引く。M2-2 で `messages` に替えて消す。
+- コメントの `global.css` は `style.css`（M3-1 で作る）に直した。
+- 整形した元に同じ置き換えをかけて比べ、差は上の import・`Pt`・`PathSeg`・`t()` だけであることを確かめた。
+- テスト：17 ファイル（681 件）を写した。vitest の render は node 環境にし、DOM が要るファイルは元どおり先頭の `// @vitest-environment jsdom` で jsdom にする（jsdom では fixtures を `new URL(…, import.meta.url)` で読めないため）。
+- まだ写さないテスト：
+  - `xlsx-format.perf.test.ts`：`spreadsheet.ts` の `buildGridTable` を使う。M2-3 で写す。
+  - `xlsx-format-css-static.test.ts`・`xlsx-backdrop-css.test.ts`・`xlsx-borders-css.test.ts`：`global.css` の文面を読む。M3-1（`style.css`）で写す。
 
 ## 4. 直す 6 点
 
@@ -105,9 +129,9 @@
 | --- | --- | --- | --- |
 | 1 | 層の逆転 | `drawing-geom.ts`・`types.ts` が `viewers/xlsx-geom` を import（`943e4f0` で確かめると、本体ではなく評価器 `xlsx-geom.ts` が core の `drawing-geom.ts`・`limits.ts` と render の `xlsx-shapes.ts` を import していた。core から評価器を引くのはテストだけ） | geom を独立の層にする（§2。M1-1 で `defs.ts` を作った） |
 | 2 | InterHub の文言関数 | `spreadsheet.ts`・`xlsx-image-layer.ts` の `t()` | `RenderOptions.messages` を引数で回す |
-| 3 | 接頭辞 | `ih-xlsx-*`・`ih-xf-N`・`data-ih-xlsx-fmt`・`--ih-*` | `xv-` 系へ一括で置き換え、テストの期待値も合わせる |
+| 3 | 接頭辞 | `ih-xlsx-*`・`ih-xf-N`・`data-ih-xlsx-fmt`・`--ih-*` | `xs-` 系へ一括で置き換え、テストの期待値も合わせる |
 | 4 | モジュール変数の状態 | `spreadsheet.ts` の `disposeXlsxView`・`renderGeneration` | `SheetView` のインスタンスへ |
-| 5 | InterHub の共用部品 | `table-fit.ts`（`fitTableBodyToWindow`）・`ih-data-view`・`ih-data-banner`・`ih-dv-rownum`・`ih-sheet-tabs` | render に要るものだけ `xv-` で作り直す。枠の高さは使う側の仕事 |
+| 5 | InterHub の共用部品 | `table-fit.ts`（`fitTableBodyToWindow`）・`ih-data-view`・`ih-data-banner`・`ih-dv-rownum`・`ih-sheet-tabs` | render に要るものだけ `xs-` で作り直す。枠の高さは使う側の仕事 |
 | 6 | 型だけの import | 全体 | `verbatimModuleSyntax: true` にして `import type` へ直す（xrag-Viewer はこの設定） |
 
 ## 5. テスト（写す）
@@ -115,7 +139,7 @@
 | 元 | 件数 | 先 |
 | --- | --- | --- |
 | `lib/xlsx/*.test.ts` | 32 ファイル（当初の見積もりは 36） | `tests/core/` |
-| `lib/viewers/xlsx-*.test.ts`・`spreadsheet.*.render.test.ts` | 26＋5 ファイル | `tests/render/`（`spreadsheet.*` は `renderSheet` を呼ぶ形に書き直す） |
+| `lib/viewers/xlsx-*.test.ts`・`spreadsheet.*.render.test.ts` | 22（geom の 2 を含む。当初の見積もりは 26）＋5 ファイル | `tests/render/`（`spreadsheet.*` は `renderSheet` を呼ぶ形に書き直す） |
 | `lib/xlsx/__fixtures__/excel/` | 23 ファイル | `fixtures/excel/`（[05_quality.md](05_quality.md) §2） |
 
 - テストは vitest＋jsdom。`node:fs` で fixtures を読むテストがある（Node で走る前提）。
