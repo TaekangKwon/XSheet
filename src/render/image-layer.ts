@@ -4,7 +4,7 @@
  * - 構造：`position: absolute` のレイヤー要素（原点＝A1 の左上）の中に、図ごとの要素を `left/top/width/height`（px）で置く。
  *   表とは独立で、スクロールは枠ごと動くため位置の再計算は要らない。可視範囲（上下左右 1 画面分）と交わる図だけを DOM に出し入れする。
  * - 画像は `<img>`（`decoding="async"`・`alt` は説明か名前）。画像以外・描けない画像・壊れた画像は種類名入りの破線枠。
- *   種類名は i18n の文言を `textContent` で入れる（図の名前・パスは画面にも console にも出さない。名前は `alt` のみ）。
+ *   種類名は文言（`messages`）を `textContent` で入れる（図の名前・パスは画面にも console にも出さない。名前は `alt` のみ）。
  * - 図形・テキストボックスは、形を評価できれば形どおりに描く（ISSUE-92）：`div.xs-figure`（外接矩形）＞ `<svg>`（path 1 つにつき `<path>` 1 つ。枠線・塗り・面の濃淡はクラスと CSS）
  *   ＋ `div.xs-shape-box`（回転前の矩形・回転・図形の矩形で切る）＞ `div.xs-shape-text`（文字領域）。枠も塗りも文字も無い図形は描かない（配置の時点で除く）。
  * - 形を評価できない図形（代替）で文字のあるものは種類名ではなく文字を描く（ISSUE-88。段落＝`div`・ラン＝`span`・改行＝`br`、すべて `textContent`）。
@@ -18,7 +18,6 @@
  * - blob URL は {@link createImageStore}（シート 1 枚ぶん）が持つ。シートの差し替え・{@link ImageLayer.dispose} で revoke する。
  * 位置の計算は DOM 非依存の `drawings.ts`、blob の管理は `image-store.ts` に切り出している。
  */
-import { t } from './i18n';
 import type {
   ImageResult,
   SheetDrawing,
@@ -44,6 +43,7 @@ import {
   type ShapeShade,
 } from './shapes';
 import { createImageStore, type ImageEntry, type ImageStore } from './image-store';
+import { formatMessage, MESSAGES_JA, type XSheetMessages } from './messages';
 
 /** 画像レイヤーに渡すシートの図 */
 export interface LayerSheet {
@@ -71,24 +71,29 @@ export interface ImageLayer {
   dispose(): void;
 }
 
-/** 図の種類名（破線枠の文字）の i18n キー。画像の `image` は「表示できない画像」の枠に使う */
-const KIND_KEYS: Record<SheetDrawing['kind'], string> = {
-  image: 'spreadsheet.drawing.imageBroken',
-  chart: 'spreadsheet.drawing.chart',
-  smartart: 'spreadsheet.drawing.smartart',
-  shape: 'spreadsheet.drawing.shape',
-  textbox: 'spreadsheet.drawing.textbox',
-  group: 'spreadsheet.drawing.group',
+/** 図の種類名（破線枠の文字）の文言のキー。画像の `image` は「表示できない画像」の枠に使う */
+const KIND_KEYS: Record<SheetDrawing['kind'], keyof XSheetMessages> = {
+  image: 'imageBroken',
+  chart: 'chart',
+  smartart: 'smartart',
+  shape: 'shape',
+  textbox: 'textbox',
+  group: 'group',
   // 線は `<svg>` で描き、枠にならない。型を満たすための値
-  line: 'spreadsheet.drawing.shape',
+  line: 'shape',
 };
 
 /**
  * 破線枠に入れる種類名。画像（`kind: 'image'`）は、描けない形式で形式名が分かれば「画像（EMF）」、それ以外は「画像（表示できない）」。
  *
  * @param entry 画像の読み込み失敗（画像以外・読み込み前は不要）
+ * @param messages 文言の表（既定は日本語）
  */
-export function frameLabel(drawing: SheetDrawing, entry?: ImageEntry): string {
+export function frameLabel(
+  drawing: SheetDrawing,
+  entry?: ImageEntry,
+  messages: Readonly<XSheetMessages> = MESSAGES_JA,
+): string {
   if (
     drawing.kind === 'image' &&
     entry &&
@@ -96,9 +101,9 @@ export function frameLabel(drawing: SheetDrawing, entry?: ImageEntry): string {
     entry.reason === 'unsupported' &&
     entry.label
   ) {
-    return t('spreadsheet.drawing.imageFormat', { format: entry.label });
+    return formatMessage(messages.imageFormat, { format: entry.label });
   }
-  return t(KIND_KEYS[drawing.kind]);
+  return messages[KIND_KEYS[drawing.kind]];
 }
 
 /** 図 1 つの要素（画像・破線枠・文字の枠は `div`、線は `<svg>`） */
@@ -608,8 +613,14 @@ function buildShape(shape: ShapeDrawn, rect: PxRect, drawing: SheetDrawing): HTM
  * @param deps テスト用に差し替える依存（blob URL の作成・解放）。通常は省略（`URL.createObjectURL`・`revokeObjectURL`）
  */
 export function createImageLayer(
-  deps: { createUrl?: (blob: Blob) => string; revokeUrl?: (url: string) => void } = {},
+  deps: {
+    createUrl?: (blob: Blob) => string;
+    revokeUrl?: (url: string) => void;
+    /** 破線枠の文言（既定は日本語） */
+    messages?: Readonly<XSheetMessages>;
+  } = {},
 ): ImageLayer {
+  const messages = deps.messages ?? MESSAGES_JA;
   const element = document.createElement('div');
   element.className = 'xs-layer';
 
@@ -636,11 +647,11 @@ export function createImageLayer(
       img.draggable = false;
       img.className = 'xs-img';
       // 壊れた画像（デコードできない）は破線枠へ差し替える。以後 onerror は呼ばれない
-      img.onerror = () => fillFrame(fig.el, t('spreadsheet.drawing.imageBroken'));
+      img.onerror = () => fillFrame(fig.el, messages.imageBroken);
       img.src = entry.url;
       fig.el.replaceChildren(img);
     } else {
-      fillFrame(fig.el, frameLabel(fig.drawing, entry));
+      fillFrame(fig.el, frameLabel(fig.drawing, entry, messages));
     }
   };
 
@@ -706,9 +717,9 @@ export function createImageLayer(
     el.style.width = `${box.rect.w}px`;
     el.style.height = `${box.rect.h}px`;
     if (drawing.kind !== 'image') {
-      fillFrame(el, frameLabel(drawing));
+      fillFrame(el, frameLabel(drawing, undefined, messages));
     } else if (drawing.mediaPath === null || !store) {
-      fillFrame(el, t('spreadsheet.drawing.imageBroken'));
+      fillFrame(el, messages.imageBroken);
     } else {
       const path = drawing.mediaPath;
       const known = store.peek(path);

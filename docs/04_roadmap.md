@@ -47,7 +47,7 @@ flowchart LR
 | Issue | 内容 | 完了の条件 |
 | --- | --- | --- |
 | M2-1 | 描画の部品を写す（`xlsx-grid`〜`xlsx-shapes`）。`ih-` → `xs-`（D6） | 部品のテスト（17 ファイル。perf の 1 は M2-3、CSS の 3 は M3-1）が通る。`ih-` が 0 件 |
-| M2-2 | 文言を `messages` に（22 キー・ja/en の既定値） | `t(` が 0 件 |
+| M2-2 | 文言を `messages` に（23 キー・ja/en の既定値。`data.noData` を足した） | `t(` が 0 件 |
 | M2-3 | `spreadsheet.ts` から `renderSheet` を切り出す。状態をインスタンスへ。geom を動的 import に | 描画のテスト（`spreadsheet.*.render` を書き直したもの）が通る。2 つの表示を同時に作って壊し、blob URL・リスナの漏れが 0 |
 | M2-4 | `renderWorkbook`（タブ・非表示シートの印・シートの切り替え・エラー表示） | テストが通る |
 

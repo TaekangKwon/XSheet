@@ -11,12 +11,13 @@ import {
   type DrawingTextParagraph,
   type DrawingTextRun,
 } from '../../src/core/types';
+import { MESSAGES_JA } from '../../src/render/messages';
 
 /**
  * 画像レイヤー（DOM）の振る舞いテスト（ISSUE-86・ADR-0026 §決定 8・9）。
  * jsdom は画像をデコードしない・レイアウトを持たないため、`<img>` の読み込み・実寸は目視（TV-38）で確認し、
  * ここでは DOM の構造（位置・出し入れ・破線枠・差し替え）と blob URL の revoke を検証する。
- * i18n カタログ未登録のため `t()` はキー文字列をそのまま返す（プレースホルダは無視）。
+ * 破線枠の文字は既定の文言（日本語の `MESSAGES_JA`。`{format}` は差し込む）。
  */
 
 const px = (n: number): number => n * EMU_PER_PX;
@@ -138,7 +139,7 @@ describe('TD-86-5 画像レイヤー：画像・破線枠・差し替え', () =>
     layer.update(ALL);
     await flush();
     const frames = [...layer.element.querySelectorAll('.xs-frame')];
-    expect(frames.map((f) => f.textContent)).toEqual(kinds.map((k) => `spreadsheet.drawing.${k}`));
+    expect(frames.map((f) => f.textContent)).toEqual(kinds.map((k) => MESSAGES_JA[k]));
     expect(layer.element.querySelector('img, b')).toBeNull();
     expect(read).not.toHaveBeenCalled();
   });
@@ -160,25 +161,23 @@ describe('TD-86-5 画像レイヤー：画像・破線枠・差し替え', () =>
     await flush();
     const texts = [...layer.element.querySelectorAll('.xs-frame')].map((f) => f.textContent);
     expect(texts).toEqual([
-      'spreadsheet.drawing.imageFormat',
-      'spreadsheet.drawing.imageBroken',
-      'spreadsheet.drawing.imageBroken',
-      'spreadsheet.drawing.imageBroken',
-      'spreadsheet.drawing.imageBroken',
-      'spreadsheet.drawing.imageBroken',
+      '画像（EMF）',
+      MESSAGES_JA.imageBroken,
+      MESSAGES_JA.imageBroken,
+      MESSAGES_JA.imageBroken,
+      MESSAGES_JA.imageBroken,
+      MESSAGES_JA.imageBroken,
     ]);
     expect(layer.element.querySelector('img')).toBeNull();
   });
 
   it('frameLabel：EMF などの形式名は {format} に入る（画像以外は種類名）', () => {
     const d = pic(0, 0);
-    expect(frameLabel(d, { ok: false, reason: 'unsupported', label: 'EMF' })).toBe(
-      'spreadsheet.drawing.imageFormat',
-    );
+    expect(frameLabel(d, { ok: false, reason: 'unsupported', label: 'EMF' })).toBe('画像（EMF）');
     expect(frameLabel(d, { ok: false, reason: 'unsupported', label: null })).toBe(
-      'spreadsheet.drawing.imageBroken',
+      MESSAGES_JA.imageBroken,
     );
-    expect(frameLabel(pic(0, 0, 1, 1, { kind: 'chart' }))).toBe('spreadsheet.drawing.chart');
+    expect(frameLabel(pic(0, 0, 1, 1, { kind: 'chart' }))).toBe(MESSAGES_JA.chart);
   });
 
   it('壊れた画像（img の onerror）は破線枠「表示できない」に差し替える', async () => {
@@ -189,9 +188,7 @@ describe('TD-86-5 画像レイヤー：画像・破線枠・差し替え', () =>
     const img = layer.element.querySelector('img')!;
     img.dispatchEvent(new Event('error'));
     expect(layer.element.querySelector('img')).toBeNull();
-    expect(layer.element.querySelector('.xs-frame')?.textContent).toBe(
-      'spreadsheet.drawing.imageBroken',
-    );
+    expect(layer.element.querySelector('.xs-frame')?.textContent).toBe(MESSAGES_JA.imageBroken);
   });
 
   it('重ね順は drawing の順（後のものが上＝DOM の後ろ）。出し入れしても保たれる', async () => {
@@ -471,9 +468,9 @@ describe('TD-88-12 画像レイヤー：文字のある図形の DOM', () => {
     layer.update(ALL);
     const frames = [...layer.element.querySelectorAll('.xs-frame')];
     expect(frames.map((f) => f.textContent)).toEqual([
-      'spreadsheet.drawing.textbox',
-      'spreadsheet.drawing.shape',
-      'spreadsheet.drawing.shape',
+      MESSAGES_JA.textbox,
+      MESSAGES_JA.shape,
+      MESSAGES_JA.shape,
     ]);
     expect(layer.element.querySelector('.xs-shape-text')).toBeNull();
   });

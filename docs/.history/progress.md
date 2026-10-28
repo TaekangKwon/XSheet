@@ -29,3 +29,9 @@
 - InterHub 943e4f0 の `xlsx-*.ts` 8 本を `src/render/`（名前から `xlsx-` を外す）、テスト 17 本を `tests/render/` へ写し、`ih-` を `xs-` 系に置き換えた（0 件）。
 - 文言の `t()` は仮置きの `src/render/i18n.ts`（キーを返す）から引く（M2-2 で消す）。perf の 1 本は M2-3、CSS の 3 本は M3-1 で写す。
 - テスト 1,497 件（55 ファイル）・typecheck・lint・format:check が通る。
+
+## 2026-10-28 M2-2（文言を messages に）
+- `src/render/messages.ts`：`XSheetMessages`（23 キー。InterHub の 22 キー＋空のシートの `data.noData`）・凍結した `MESSAGES_JA`（既定）・`MESSAGES_EN`・`resolveMessages`・`formatMessage`。
+- `image-layer.ts` の `t()` を、`createImageLayer({ messages })`・`frameLabel(…, messages)` に替え、仮置きの `i18n.ts` を消した（`t(` は 0 件）。
+- テストの期待値をキーの文字列から日本語の既定値へ直し、文言の表・差し込み・上書きのテストを足した。型の名前は `XlsxViewMessages` をやめて `XSheetMessages` にした。
+- テスト 1,510 件（55 ファイル）・typecheck・lint・format:check が通る。

@@ -16,13 +16,14 @@ import {
 } from '../../src/render/drawings';
 import { createImageLayer } from '../../src/render/image-layer';
 import { renderLine } from '../../src/render/shapes';
+import { MESSAGES_JA } from '../../src/render/messages';
 
 /**
  * グループの中の図の位置と描画（ISSUE-89・ADR-0027 §決定 5）。
  * - `groupChildRect`：グループの子の座標系（`chOff`・`chExt`）から、最も外側のグループのアンカー（px）への線形な写像。
  * - `layoutDrawings`：写した矩形で配置。回転した子は縦横を入れ替えない（トップレベルの図のアンカーにだけ掛ける）。
  * - 画像レイヤー（jsdom）：子が文字の枠・SVG の線・`<img>` として出て、グループの破線枠は出ない。
- * i18n カタログ未登録のため `t()` はキー文字列をそのまま返す。
+ * 破線枠の文字は既定の文言（日本語の `MESSAGES_JA`）。
  */
 
 const rect = (x: number, y: number, cx: number, cy: number): GroupRect => ({ x, y, cx, cy });
@@ -363,8 +364,8 @@ describe('TD-89-9 画像レイヤー：グループの子が文字の枠・SVG �
     // 線：SVG
     expect(figs[1]!.matches('svg.xs-line')).toBe(true);
     // 文字の無い図形：種類名の破線枠
-    expect(figs[2]!.querySelector('.xs-frame')?.textContent).toBe('spreadsheet.drawing.shape');
-    expect(layer.element.textContent).not.toContain('spreadsheet.drawing.group');
+    expect(figs[2]!.querySelector('.xs-frame')?.textContent).toBe(MESSAGES_JA.shape);
+    expect(layer.element.textContent).not.toContain(MESSAGES_JA.group);
   });
 
   it('回転した文字入りの子は、縦横を入れ替えず xfrm の矩形に置いて回す（rot=90°・幅 100・高さ 20）', () => {
@@ -438,7 +439,7 @@ describe('TD-89-9 画像レイヤー：グループの子が文字の枠・SVG �
   it('展開できなかったグループ（kind が group）は、親の座標系の位置に「グループ」の破線枠のまま出る', () => {
     const layer = mountAll([child({ kind: 'group', name: 'deep' }, rect(1280, 300, 640, 120))]);
     const fig = layer.element.querySelector<HTMLElement>('.xs-figure')!;
-    expect(fig.querySelector('.xs-frame')?.textContent).toBe('spreadsheet.drawing.group');
+    expect(fig.querySelector('.xs-frame')?.textContent).toBe(MESSAGES_JA.group);
     expect([fig.style.left, fig.style.top, fig.style.width, fig.style.height]).toEqual([
       '128px',
       '30px',

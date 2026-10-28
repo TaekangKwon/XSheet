@@ -4,6 +4,7 @@ import { createGeometry, type SheetDrawing } from '../../src/core/index';
 import { emptyLayout, type DrawingText } from '../../src/core/types';
 import { EMU_PER_PX, layoutDrawings, viewWindow } from '../../src/render/drawings';
 import { createImageLayer, type ImageLayer } from '../../src/render/image-layer';
+import { MESSAGES_JA } from '../../src/render/messages';
 
 /**
  * 画像レイヤー（DOM）：図形を形で描く（ISSUE-92・ADR-0028 §決定 4・5）。
@@ -340,7 +341,7 @@ describe('TD-92-9 代替（ADR-0027 の描き方）', () => {
     expect(figs[0]!.classList.contains('xs-shape-text')).toBe(true);
     expect(figs[0]!.classList.contains('has-outline')).toBe(true);
     expect(figs[0]!.textContent).toBe('<b>文字</b>');
-    expect(figs[1]!.querySelector('.xs-frame')?.textContent).toBe('spreadsheet.drawing.shape');
+    expect(figs[1]!.querySelector('.xs-frame')?.textContent).toBe(MESSAGES_JA.shape);
     // 図の svg は無い（下地の svg は図ではない）
     expect(layer.element.querySelector('svg:not(.xs-backdrop)')).toBeNull();
   });
@@ -368,7 +369,7 @@ describe('TD-92-9 代替（ADR-0027 の描き方）', () => {
 
   it('形を持たない図形（geom が無い。上限超え）も代替になる', () => {
     const { figs } = mount([shape({ geom: undefined })]);
-    expect(figs[0]!.querySelector('.xs-frame')?.textContent).toBe('spreadsheet.drawing.shape');
+    expect(figs[0]!.querySelector('.xs-frame')?.textContent).toBe(MESSAGES_JA.shape);
   });
 });
 

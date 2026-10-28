@@ -92,7 +92,7 @@ export { DEFAULT_LIMITS, colName, createGeometry, colWidthToPx, defaultColWidthT
 
 ```ts
 export interface RenderOptions {
-  messages?: Partial<XlsxViewMessages>; // 既定は ja。en も同梱
+  messages?: Partial<XSheetMessages>;   // 既定は ja（MESSAGES_JA）。en（MESSAGES_EN）も同梱
   drawings?: boolean;                   // 図の層（既定 true）
   nonce?: string;                       // 書式の <style> に付ける（CSP 用・M3）
 }
@@ -162,13 +162,19 @@ export function renderWorkbook(container: HTMLElement, data: ArrayBuffer, option
 - Excel の色（塗り・文字の色・図形の色）は変数ではなく、書式の CSS とインラインの値で入る。ダーク表示の描き分けの規則（塗りのあるセルは Excel の色のまま、白の塗りは「紙」など）は InterHub ADR-0030 のとおり。
 - クラス名は InterHub の `ih-xlsx-*`・`ih-xf-N`・`data-ih-xlsx-fmt` を `xs-*`・`xs-xf-N`・`data-xs-fmt` にする（D6）。表の根の `.ih-spreadsheet` は `.xs-sheet`。InterHub 共用のクラス（`ih-data-view`・`ih-data-banner`・`ih-dv-rownum`・`ih-sheet-tabs` など）は、render が要るものだけ `xs-` で作り直す。
 
-## 7. 文言（`XlsxViewMessages`・22 キー）
+## 7. 文言（`XSheetMessages`・23 キー）
 
-| 区分 | キー（InterHub の `spreadsheet.` を除いた名前） |
+| 区分 | キー（InterHub の `spreadsheet.`・`spreadsheet.drawing.` を除いた名前） |
 | --- | --- |
-| エラー | `libLoadFailed`・`parseFailed`（`{detail}`）・`noSheets`・`encrypted`・`tooLarge`・`unsupported` |
+| エラー | `libLoadFailed`・`parseFailed`（`{detail}`）・`noSheets`・`noData`（InterHub の `data.noData`）・`encrypted`・`tooLarge`・`unsupported` |
 | タブ | `hiddenSheet`・`tabsPrev`・`tabsNext`（`renderWorkbook` だけが使う） |
-| 図の枠 | `drawing.chart`・`drawing.smartart`・`drawing.shape`・`drawing.textbox`・`drawing.group`・`drawing.imageFormat`（`{format}`）・`drawing.imageBroken` |
-| 通知 | `drawing.noticeTooLarge`・`noticeBroken`・`noticeTooMany`・`noticeTextTruncated`・`noticeShapeSimplified`・`noticeOverBudget` |
+| 図の枠 | `chart`・`smartart`・`shape`・`textbox`・`group`・`imageFormat`（`{format}`）・`imageBroken` |
+| 通知 | `noticeTooLarge`・`noticeBroken`・`noticeTooMany`・`noticeTextTruncated`・`noticeShapeSimplified`・`noticeOverBudget` |
 
-- 文言の元は InterHub `src_V1/src/locales/ja.ts`（275〜302 行）と `en.ts`。ライブラリは平たいオブジェクト（`{ encrypted: '…' }`）で受け、`{detail}` などの差し込みは render が行う。
+- 文言の元は InterHub `src_V1/src/locales/ja.ts`（275〜302 行・248 行の `data.noData`）と `en.ts`。
+- 実装は `src/render/messages.ts`（M2-2）：
+  - `MESSAGES_JA`（既定）・`MESSAGES_EN` は凍結した平たいオブジェクト。`xsheet/render` から出す。
+  - `resolveMessages(partial, base)` が既定に渡された分だけを重ねる。文字列でない値・表に無いキーは無視する。
+  - 差し込み（`{detail}`・`{format}`）は `formatMessage` が行う。値の無い `{name}` は残す（InterHub の `t()` と同じ）。
+  - 型の名前は、旧仮称由来の `XlsxViewMessages` をやめて `XSheetMessages` にした（D6 と同じ理由）。
+  - 23 キー目の `noData` は、`spreadsheet.ts` が空のシートで使う InterHub 共用のキー（`data.noData`）。立ち上げ資料の 22 キーには入っていなかった。

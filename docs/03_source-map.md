@@ -97,7 +97,7 @@
 | `xlsx-shapes.ts` | 912 | 図形と線の SVG・矢じり・外接矩形 | そのまま |
 | `spreadsheet.ts`（1,076 行のうち .xlsx の部分） | — | 表と層の組み立て・スクロール・後始末 | `renderXlsxView`（551 行〜）・`showSheet`（813 行〜）・`draw`（707 行〜）・`buildGridTable`（409 行〜）・`dispose`（907 行〜）を `renderSheet` へ。`.xls`（SheetJS）の経路・`fitTableBodyToWindow`・InterHub のバナーとツールバーは写さない |
 | `styles/global.css` の `.ih-spreadsheet`・`.ih-xlsx-*` | 31〜1442 行に散在（74 か所） | 表・層・図・罫線・下地の規則と変数 | `src/style.css` へ。変数は [02](02_architecture.md) §6 |
-| `locales/ja.ts`・`en.ts` の `spreadsheet.*` | 22 キー（ja.ts 275〜302 行） | 文言 | `src/render/messages.ts` の既定値に |
+| `locales/ja.ts`・`en.ts` の `spreadsheet.*`・`data.noData` | 23 キー（ja.ts 275〜302 行・248 行） | 文言 | `src/render/messages.ts` の既定値に |
 
 ### M2-1 で写した結果（2026-10-28）
 
