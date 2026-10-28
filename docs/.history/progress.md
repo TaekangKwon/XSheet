@@ -17,3 +17,9 @@
 - `drawing-geom.ts` の `GUIDE_ARITY`・`limits.ts` の `MAX_GEOM_*` を `src/geom/defs.ts` から引く形にし、LINE_PRESETS の照合のテストを戻した。
 - jszip の型が `@types/node` を引き込み `tsconfig.core.json` で Node を止められないため、ESLint で core・geom の Node API を止めた（ADR-0001 追記）。
 - テスト 810 件（36 ファイル）・typecheck・lint・format:check が通る。
+
+## 2026-10-28 M1-3（公開の範囲）
+- 公開の入口に `types.ts` の公開の型を全部と `Rgba` を出し、半公開の `src/core/internal.ts`（`xsheet/internal`：`applyFillMode`・`emptyLayout`・`DEFAULT_MDW`）を作った。
+- `src/render/**` は core を index・internal からだけ引く（ESLint）。値・型の公開の範囲をテストで固定した。
+- core の入口を Vite で束ね、素の Node（コード生成の禁止付き）で Excel のファイルを開いて元のソースと同じ結果になることを確かめるテストを足した。
+- テスト 817 件（38 ファイル）・typecheck・lint・format:check が通る。

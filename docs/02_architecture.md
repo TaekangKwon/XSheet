@@ -31,7 +31,7 @@ flowchart LR
 
 | 層 | 入口（サブパス） | 依存 | 動く場所 |
 | --- | --- | --- | --- |
-| core | `xsheet` | jszip・ssf | ブラウザ・Worker・Node |
+| core | `xsheet`・`xsheet/internal`（半公開） | jszip・ssf | ブラウザ・Worker・Node |
 | geom | `xsheet/geom`（render が動的 import） | なし | どこでも |
 | render | `xsheet/render`・`xsheet/style.css` | core・geom・DOM | ブラウザ |
 
@@ -79,9 +79,13 @@ export class XlsxError extends Error { kind: 'not-zip' | 'encrypted' | 'broken' 
 export { DEFAULT_LIMITS, colName, createGeometry, colWidthToPx, defaultColWidthToPx, ptToPx, fontDefaultRowPx, lookupMdw, isPaperFill };
 ```
 
-- 今の InterHub の `lib/xlsx/index.ts` と同じ形。ライブラリ化で決めること：
-  - `Theme`・`Rgba`・`FormatTable`・`BorderTable` と描画側が直接 import している内部モジュール（`color`・`drawing-geom`・`geometry`・`limits`・`types`）のうち、どれを公開するか。
-  - 方針：render が使うものは `xsheet/internal` に出し、半公開（版の互換を約束しない）とする。
+- 今の InterHub の `lib/xlsx/index.ts` と同じ形。公開の範囲は M1-3 で次のように決めた（テストは `tests/core/public-api.test.ts`）：
+  - 値：上の 11 個（`openXlsx`・`XlsxError`・`DEFAULT_LIMITS`・`colName`・`createGeometry`・`colWidthToPx`・`defaultColWidthToPx`・`ptToPx`・`fontDefaultRowPx`・`lookupMdw`・`isPaperFill`）。
+  - 型：`types.ts` の公開の型を全部（図の型 `DrawingText`・`DrawingLine`・`ShapeGeom`・`DrawingGroup` なども `openDrawings` の戻り値から辿れるため）と、`Rgba`・`Geometry`・`XlsxLimits`・`OpenXlsxOptions`。`types.ts` に型を足したら入口にも足す（テストが落ちる）。
+  - 出さない：`Theme`・`FormatTable`・`BorderTable` と読み取りの内部の関数（ブックの中で閉じていて、使う側が触る場面が無い）。
+  - `xsheet/internal`（`src/core/internal.ts`・半公開で版の互換を約束しない）：render が使う `applyFillMode` と、描画の部品の試験で使う `emptyLayout`・`DEFAULT_MDW`。
+  - `src/render/**` は core を `../core/index` と `../core/internal` からだけ引く（ESLint の `no-restricted-imports`）。M4 で core と render を別のチャンクにしたときに部品が重ならないようにするため。
+  - DOM 非依存は、core の入口を Vite で束ねて素の Node（`--disallow-code-generation-from-strings`）で import し、Excel で作ったファイルを開いて元のソースと同じ結果になることで確かめる（`tests/core/node-import.test.ts`）。形の表（`preset-geom.json`）が core に入らないことも同じテストで見る。
 - M6 の候補：`cellValue(r, c)`（生の値と型）、`sheetToJson`・`sheetToCsv`（SheetJS の `sheet_to_json` に当たる）。
 
 ## 3. 公開 API — render

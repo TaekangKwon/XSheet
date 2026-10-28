@@ -48,6 +48,24 @@ export default tseslint.config(
     },
   },
   {
+    // render は core を公開の入口（index）と半公開の入口（internal）からだけ引く（02_architecture.md §2・M1-3）。
+    // core の中の作りに直接つながると、公開の範囲が見えなくなり、M4 で core と render を別のチャンクにしたときに部品が重なる
+    files: ['src/render/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../core/*', '!../core/index', '!../core/internal'],
+              message: 'render は core を ../core/index か ../core/internal から引く',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',

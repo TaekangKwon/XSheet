@@ -27,8 +27,11 @@ import {
 import { loadWorkbook } from './workbook';
 
 export { XlsxError } from './types';
+// 公開の型は、公開の関数・型から辿れるものを全部出す（図の型も openDrawings の戻り値から辿れる）
 export type {
   AnchorPoint,
+  ArrowSize,
+  ArrowType,
   BorderEdge,
   BorderStyle,
   CellBorder,
@@ -36,22 +39,43 @@ export type {
   CellKind,
   CellView,
   ColLayout,
+  CustGeomDef,
+  CustGeomPath,
   DrawingAnchor,
+  DrawingColor,
+  DrawingGroup,
   DrawingKind,
+  DrawingLine,
   DrawingNotice,
+  DrawingText,
+  DrawingTextParagraph,
+  DrawingTextRun,
+  GeomArg,
+  GeomPathFill,
+  GroupLevel,
+  GroupRect,
   ImageFailReason,
   ImageFormat,
   ImageResult,
+  LineDash,
+  LineEnd,
+  LineGeom,
   RowLayout,
+  ShapeGeom,
+  ShapeOutline,
   SheetDrawing,
   SheetDrawings,
   SheetInfo,
   SheetLayout,
   SheetRow,
+  TextAlign,
+  TextAnchor,
+  TextVert,
   XlsxBook,
   XlsxErrorKind,
   XlsxSheet,
 } from './types';
+export type { Rgba } from './color';
 export { createGeometry, colWidthToPx, defaultColWidthToPx, ptToPx } from './geometry';
 export { fontDefaultRowPx, lookupMdw } from './font-metrics';
 export type { Geometry } from './geometry';

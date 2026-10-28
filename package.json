@@ -13,6 +13,10 @@
       "types": "./dist/core/index.d.ts",
       "import": "./dist/core/index.js"
     },
+    "./internal": {
+      "types": "./dist/core/internal.d.ts",
+      "import": "./dist/core/internal.js"
+    },
     "./geom": {
       "types": "./dist/geom/index.d.ts",
       "import": "./dist/geom/index.js"
