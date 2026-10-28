@@ -1,0 +1,2 @@
+# 原本の XML は改変しない（改行コードも含め、バイト単位でそのまま保つ）
+presetShapeDefinitions.xml -text

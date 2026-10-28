@@ -34,7 +34,8 @@
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.core.json",
     "lint": "eslint .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "geom:build": "node tools/geom/build-preset-geom.mjs"
   },
   "dependencies": {
     "jszip": "3.10.2",
