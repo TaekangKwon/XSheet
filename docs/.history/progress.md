@@ -87,3 +87,8 @@
 - check:consumer はリポジトリへの junction をやめ、npm pack で入るファイルの写し＋Vite の alias にした（一時フォルダを消してもリポジトリに届かない）。照合のハーネスのサーバーは 127.0.0.1 だけで待ち受け、site の外を配らない。
 - examples：読み込みの依頼に番号を付け、遅れて終わった古い読み込み・エラーを捨てる。開発サーバーにも nonce（html.cspNonce）。size.mjs は副作用の import も辿り、辿り方の自己確認を足した。
 - csp.test.ts：実際に描いて style 属性を付けないことを確かめる（2 件）・toDataURL などを禁止に追加。テスト 1,656 件。
+
+## 2026-10-29 タグ v0.1.0
+- PR #4 をマージ（main a6d9990）。main で test 1,656 件・typecheck・lint・format:check・build・check:consumer・size が通ることを確かめた。
+- CHANGELOG に日付（45dff90）。release/v0.1.0 に `git add -f dist` だけのコミット（fe5a269）を作り、注釈付きのタグ v0.1.0 を打って push（タグだけ。release ブランチは push しない）。
+- タグの中身を git archive で取り出し、npm pack で exports の先・NOTICE・dist/NOTICE が入り src が入らないことを確かめた。日付のコミットは chore/changelog-v0.1.0 から main へ入れる。
