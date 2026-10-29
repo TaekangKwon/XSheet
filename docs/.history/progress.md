@@ -82,3 +82,8 @@
 - 利用者向けの `README.md`（入れ方・使い方 3 通り・指定・サブパス・CSS 変数とダークの例・CSP・上限・対応環境・開発）と `CHANGELOG.md`（0.1.0・未リリース）を書いた。`version` を 0.1.0 にした。
 - 02 §8 に版を出す手順（build・check:consumer・size → release ブランチに dist を足す → 注釈付きのタグ）。タグ `v0.1.0` を打つのはユーザーの指示があるとき。
 - テスト 1,654 件・typecheck・lint・format:check・build・check:consumer・size が通る。
+
+## 2026-10-29 レビューの指摘の直し（M3・M4）
+- check:consumer はリポジトリへの junction をやめ、npm pack で入るファイルの写し＋Vite の alias にした（一時フォルダを消してもリポジトリに届かない）。照合のハーネスのサーバーは 127.0.0.1 だけで待ち受け、site の外を配らない。
+- examples：読み込みの依頼に番号を付け、遅れて終わった古い読み込み・エラーを捨てる。開発サーバーにも nonce（html.cspNonce）。size.mjs は副作用の import も辿り、辿り方の自己確認を足した。
+- csp.test.ts：実際に描いて style 属性を付けないことを確かめる（2 件）・toDataURL などを禁止に追加。テスト 1,656 件。

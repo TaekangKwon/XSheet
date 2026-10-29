@@ -229,13 +229,16 @@ async function buildHarness() {
 }
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
-/** ハーネスのページと、比べる xlsx（/xlsx/<名前>）を配る簡単なサーバ */
+/** ハーネスのページと、比べる xlsx（/xlsx/<名前>）を配る簡単なサーバ（127.0.0.1 だけで待ち受け、site の外のファイルは配らない） */
 function serve(site, xlsx) {
   return http.createServer((req, res) => {
     const url = decodeURIComponent(req.url.split('?')[0]);
     let file = null;
     if (url.startsWith('/xlsx/')) file = xlsx[url.slice(6)] ?? null;
-    else file = path.join(site, url === '/' ? 'index.html' : url);
+    else {
+      file = path.resolve(site, '.' + (url === '/' ? '/index.html' : url));
+      if (!file.startsWith(path.resolve(site) + path.sep)) file = null; // ../ で site の外へ出ない
+    }
     if (!file) {
       res.writeHead(404);
       res.end();
@@ -387,7 +390,7 @@ if (anchorMode === 'one' && flipsCom) {
   );
 }
 const server = serve(site, xlsxFiles);
-await new Promise((r) => server.listen(0, r));
+await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const port = server.address().port;
 const exe = chromePath();
 const browser = await loadPlaywright().chromium.launch(

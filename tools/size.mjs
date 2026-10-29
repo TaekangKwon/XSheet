@@ -2,6 +2,7 @@
 // 先に `npm run build` で dist/ を作っておくこと。
 // - 入口ごとに、その入口から static に辿れるファイル（共有のチャンクを含む）の合計を測る。動的 import（形の表）は辿らない。
 // - 測るのは 3 通り：dist のまま（圧縮なし）・それを gzip・Vite で圧縮（minify）してから gzip。使う側のビルドは圧縮するので、上限は最後の値で決める。
+//   ライブラリモードの ES の出力は、圧縮しても空白とコメントの一部が残る（Vite の仕様）。使う側の圧縮より少し大きめに出る。
 // - 依存（jszip・ssf）は含めない（使う側の依存）。
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
@@ -23,14 +24,17 @@ const LIMITS = {
   'geom/index': 36_000,
 };
 
-/** その入口から static import で辿れるファイル（入口を含む） */
+/**
+ * その入口から static import で辿れるファイル（入口を含む）。
+ * `from "./x.js"` と副作用だけの `import "./x.js"` を拾い、動的 import（`import("./x.js")`）は拾わない。
+ */
 function closure(dir, entry) {
   const seen = new Set();
   const visit = (rel) => {
     if (seen.has(rel)) return;
     seen.add(rel);
     const text = readFileSync(path.join(dir, rel), 'utf8');
-    for (const m of text.matchAll(/^(?:import|export)\s[^;]*?from\s*"(\.{1,2}\/[^"]+)";/gms)) {
+    for (const m of text.matchAll(/\b(?:from|import)\s*["'](\.{1,2}\/[^"']+)["']/g)) {
       visit(path.posix.normalize(path.posix.join(path.posix.dirname(rel), m[1])));
     }
   };
@@ -66,6 +70,20 @@ try {
     ],
     { cwd: repo, stdio: 'inherit' },
   );
+  // 拾い方が壊れていないこと：render は core の部品（共有のチャンク）を全部含み、形の表（geom の入口）は含まない
+  for (const dir of [dist, min]) {
+    const core = closure(dir, 'core/index').filter((f) => f.startsWith('chunks/'));
+    const render = closure(dir, 'render/index');
+    if (
+      core.length === 0 ||
+      core.some((f) => !render.includes(f)) ||
+      render.includes('geom/index.js')
+    ) {
+      throw new Error(
+        `import の辿り方が合わない（core：${core.join(', ')}／render：${render.join(', ')}）`,
+      );
+    }
+  }
   const rows = [];
   for (const entry of Object.keys(LIMITS)) {
     const files = closure(dist, entry);

@@ -228,12 +228,12 @@ dist/
 ```
 
 - ESM だけ・圧縮しない・jszip と ssf は束ねない。使う側の TypeScript は `moduleResolution: "bundler"` が前提（ADR-0002）。
-- `npm run check:consumer`：一時フォルダに使う側のプロジェクトを作り、`node_modules/xsheet` をこのリポジトリへのリンクにして、`exports` を通して型検査（strict）と Vite のビルドをする。形の表が使う側のビルドでも別のチャンクになること、`xsheet/style.css` が CSS に入ることを見る。
+- `npm run check:consumer`：一時フォルダに使う側のプロジェクトを作り、`npm pack` で入るファイルだけを `node_modules/xsheet` に写して（リンクは作らない。jszip・ssf は使う側の Vite の alias でこのリポジトリの node_modules を指す）、`exports` を通して型検査（strict）と Vite のビルドをする。形の表が使う側のビルドでも別のチャンクになること、`xsheet/style.css` が CSS に入ることを見る。
 - 例のページ（`examples/`）は dist ではなく src を直接読む（ビルドの前でも動かすため）。
 
 ### 大きさ（N6・M4-2）
 
-`npm run size` が入口ごとに、static に辿れるファイル（共有のチャンクを含む・依存は含めない）の合計を測り、上限を超えたら失敗する。上限は「圧縮＋gzip」の列で、2026-10-29 の実測に約 1 割の余裕を足した値（`tools/size.mjs` の `LIMITS`）。
+`npm run size` が入口ごとに、static に辿れるファイル（共有のチャンクを含む・依存は含めない）の合計を測り、上限を超えたら失敗する。上限は「圧縮＋gzip」の列で、2026-10-29 の実測に約 1 割の余裕を足した値（`tools/size.mjs` の `LIMITS`）。ライブラリモードの ES の出力は圧縮しても空白とコメントの一部が残る（Vite の仕様）ため、この列は使う側の圧縮より少し大きめに出る。
 
 | 入口 | dist（B） | gzip | 圧縮＋gzip | 上限 |
 | --- | ---: | ---: | ---: | ---: |

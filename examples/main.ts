@@ -104,21 +104,45 @@ async function show(): Promise<void> {
   statusOut.value = `${current.name}（${Math.round(performance.now() - started)} ms）`;
 }
 
-/** ファイルの内容を読んで表示する */
-async function open(name: string, data: ArrayBuffer): Promise<void> {
-  current = { name, data };
-  await show();
-}
+/** 読み込みの依頼の番号（ファイルの選択・ドロップ・サンプル。遅れて読み終えた古い依頼を捨てる） */
+let request = 0;
 
 function report(e: unknown): void {
   statusOut.value = e instanceof Error ? `エラー：${e.message}` : 'エラー';
+}
+
+/** 内容を読んで表示する。読み終える前に次の依頼が来たら、この依頼の結果（エラーも）は捨てる */
+async function load(name: string, read: () => Promise<ArrayBuffer>): Promise<void> {
+  const myRequest = ++request;
+  try {
+    const data = await read();
+    if (myRequest !== request) {
+      return;
+    }
+    current = { name, data };
+    await show();
+  } catch (e) {
+    if (myRequest === request) {
+      report(e);
+    }
+  }
+}
+
+/** 今のファイルを表示し直す（文言・図の切り替え）。表示し直す前に次の表示が始まったら、エラーは出さない */
+function reshow(): void {
+  const mySeq = seq + 1;
+  show().catch((e: unknown) => {
+    if (mySeq === seq) {
+      report(e);
+    }
+  });
 }
 
 fileInput.addEventListener('change', () => {
   const file = fileInput.files?.[0];
   if (file !== undefined) {
     sampleSelect.value = '';
-    file.arrayBuffer().then((data) => open(file.name, data), report);
+    void load(file.name, () => file.arrayBuffer());
   }
 });
 
@@ -131,15 +155,13 @@ sampleSelect.addEventListener('change', () => {
     return;
   }
   fileInput.value = '';
-  fetch(`/fixtures/excel/${file}`)
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error(`${file} を読めない（${res.status}）`);
-      }
-      return res.arrayBuffer();
-    })
-    .then((data) => open(file, data))
-    .catch(report);
+  void load(file, async () => {
+    const res = await fetch(`/fixtures/excel/${file}`);
+    if (!res.ok) {
+      throw new Error(`${file} を読めない（${res.status}）`);
+    }
+    return res.arrayBuffer();
+  });
 });
 
 themeSelect.value = loadTheme();
@@ -150,8 +172,8 @@ themeSelect.addEventListener('change', () => {
   saveTheme(theme);
 });
 
-langSelect.addEventListener('change', () => void show().catch(report));
-drawingsCheck.addEventListener('change', () => void show().catch(report));
+langSelect.addEventListener('change', reshow);
+drawingsCheck.addEventListener('change', reshow);
 
 // ドロップで開く
 viewer.addEventListener('dragover', (e) => {
@@ -165,6 +187,6 @@ viewer.addEventListener('drop', (e) => {
   const file = e.dataTransfer?.files[0];
   if (file !== undefined) {
     sampleSelect.value = '';
-    file.arrayBuffer().then((data) => open(file.name, data), report);
+    void load(file.name, () => file.arrayBuffer());
   }
 });

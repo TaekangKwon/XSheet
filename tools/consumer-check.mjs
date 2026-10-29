@@ -1,22 +1,21 @@
 // 配る形（dist/）を、別のプロジェクトから import して型検査とビルドが通るか確かめる（M4-1・`npm run check:consumer`）。
 // 先に `npm run build` で dist/ を作っておくこと。
-// - 一時フォルダに使う側のプロジェクトを作り、node_modules/xsheet をこのリポジトリへのリンク（Windows は junction）にする。
-//   package.json の exports（サブパス・types）を通って解決されることを見る（src/ を直接は見ない）。
+// - 一時フォルダに使う側のプロジェクトを作り、npm pack で入る物だけを node_modules/xsheet に写す（リンクは作らない。
+//   一時フォルダを後で消しても、このリポジトリに届かない）。package.json の exports（サブパス・types）を通って解決されることを見る。
+// - jszip・ssf は、使う側の Vite の alias でこのリポジトリの node_modules を指す（一時フォルダに入れない・外へ通信しない）。
 // - 型検査は TypeScript（moduleResolution: bundler・strict・vite/client の型）、ビルドは Vite。どちらもこのリポジトリのものを使う。
 // - ビルドの結果で、形の表（geom）が別のチャンク（動的 import）のままであること・style.css が CSS に入ることを見る。
 // - 先に、npm pack で配る中身（exports の指す先・NOTICE）を見る（M4-2）。
 // 外へは通信しない（依存はこのリポジトリの node_modules から解決する）。
 import { execFileSync } from 'node:child_process';
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
-  rmdirSync,
   rmSync,
-  symlinkSync,
-  unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -43,6 +42,8 @@ for (const f of [
 
 // 配る中身（M4-2）：git 依存でも npm は pack して入れるため、package.json の files で入る物を npm pack --dry-run で見る。
 // exports の指す先・NOTICE（根と dist の両方）が入り、テスト用の src/testing・ソースが入らないこと
+/** npm pack で入るファイル（パッケージの根からの相対） */
+let packedFiles;
 {
   // npm の本体（npm-cli.js）を node で直接動かす（Windows の npm.cmd はシェルを通さないと動かないため）
   const npmCli =
@@ -54,7 +55,8 @@ for (const f of [
       encoding: 'utf8',
     }),
   )[0];
-  const packed = new Set(pack.files.map((f) => f.path));
+  packedFiles = pack.files.map((f) => f.path);
+  const packed = new Set(packedFiles);
   const exportsMap = JSON.parse(readFileSync(path.join(repo, 'package.json'), 'utf8')).exports;
   const targets = Object.values(exportsMap).flatMap((v) =>
     typeof v === 'string' ? [v] : Object.values(v),
@@ -161,8 +163,17 @@ export const checks: [unknown, number, GeomResult | null] = [applyFillMode, pres
 `,
 );
 mkdirSync(path.join(dir, 'node_modules'), { recursive: true });
-const link = path.join(dir, 'node_modules/xsheet');
-symlinkSync(repo, link, 'junction');
+for (const f of packedFiles) {
+  const to = path.join(dir, 'node_modules/xsheet', f);
+  mkdirSync(path.dirname(to), { recursive: true });
+  copyFileSync(path.join(repo, f), to);
+}
+const dep = (name) => path.join(repo, 'node_modules', name).split(path.sep).join('/');
+write(
+  'vite.config.mjs',
+  `export default { resolve: { alias: { jszip: '${dep('jszip')}', ssf: '${dep('ssf')}' } } };
+`,
+);
 
 const run = (bin, args) =>
   execFileSync(process.execPath, [path.join(repo, 'node_modules', bin), ...args], {
@@ -198,12 +209,6 @@ try {
   if (keep) {
     console.log(`残した：${dir}`);
   } else {
-    // リンクを先に外す（リンクの先＝このリポジトリを消さないため。消すのは一時フォルダの中だけ）
-    try {
-      unlinkSync(link);
-    } catch {
-      rmdirSync(link);
-    }
     rmSync(dir, { recursive: true, force: true });
   }
 }

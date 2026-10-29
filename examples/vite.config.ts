@@ -14,4 +14,6 @@ export default defineConfig({
     strictPort: true,
     open: false,
   },
+  // 開発サーバーが足す <style>（エラーの表示など）にも index.html の CSP と同じ nonce を付ける（M3-3）
+  html: { cspNonce: 'xsheet-example' },
 });

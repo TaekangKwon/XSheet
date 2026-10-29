@@ -36,7 +36,7 @@ accepted（2026-10-29。D5・D7 は 0001 の推奨のまま。タグを打つの
 | CSS・著作権表示 | `src/style.css` と `NOTICE` を `dist/` に写す（vite.config.ts の小さなプラグイン） | `xsheet/style.css` の実体。配布物に NOTICE を必ず含める（D3） |
 
 - 型の import は拡張子なし（`./types`）のため、使う側の TypeScript は `moduleResolution: "bundler"` を前提にする（`node16`・`nodenext` では型を辿れない）。必要になったら d.ts に `.js` を付ける後処理を足す。
-- 別のプロジェクトから使えることは `npm run check:consumer` で確かめる（一時フォルダに使う側を作り、このリポジトリへのリンクで `exports` を通して型検査と Vite のビルドをする。形の表が別のチャンクであること・CSS が入ることも見る）。
+- 別のプロジェクトから使えることは `npm run check:consumer` で確かめる（一時フォルダに使う側を作り、`npm pack` で入るファイルの写しで `exports` を通して型検査と Vite のビルドをする。形の表が別のチャンクであること・CSS が入ることも見る）。
 
 ### 2. 配り方（D5）
 
