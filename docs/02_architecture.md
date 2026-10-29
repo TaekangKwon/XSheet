@@ -174,7 +174,7 @@ export function renderWorkbook(container: HTMLElement, data: ArrayBuffer | Uint8
 | `--xs-border-ink` | 自動・黒の罫線（墨色） | `#000000` | `#d4d4d4` | `--ih-xlsx-border-ink` |
 | `--xs-backdrop`・`--xs-backdrop-display` | ダーク時の図の白い下地 | `transparent`・`none` | `#ffffff`・`block` | `--ih-xlsx-backdrop*` |
 
-- `style.css`（`src/style.css`・M3-1）は明るい既定値だけを持つ。既定値は詳細度 0 の `:where(:root, :host)` に置くため、使う側が `:root`・テーマの属性・`container` のどこで上書きしても勝つ（Shadow DOM の中に置いても効く）。ダーク表示は使う側が変数を上書きする（`prefers-color-scheme` か自前のテーマ属性）。例を `examples/` に置く（M3-2）。
+- `style.css`（`src/style.css`・M3-1）は明るい既定値だけを持つ。既定値は詳細度 0 の `:where(:root, :host)` に置くため、使う側が `:root`・テーマの属性・`container` のどこで上書きしても勝つ（Shadow DOM の中に置いても効く）。ダーク表示は使う側が変数を上書きする（`prefers-color-scheme` か自前のテーマ属性）。例は `examples/example.css`（M3-2。`npm run examples` で http://localhost:5173/examples/ を開く）。この表の「ダークの例」の列と同じ値で、`tests/render/examples.test.ts` が突き合わせる。
 - Excel の色（塗り・文字の色・図形の色）は変数ではなく、書式の CSS とインラインの値で入る。ダーク表示の描き分けの規則（塗りのあるセルは Excel の色のまま、白の塗りは「紙」など）は InterHub ADR-0030 のとおり。
 - 変数の表は M3-1 で、InterHub の実際の規則に合わせて直した：グリッド線は `--ih-border` ではなく `--ih-border-soft`（`.ih-data-view th, td` の線）だったため `--xs-grid` の値を替え、見出し行の下の線・タブの枠の `--ih-border` を `--xs-border` に分けた。タブ（`--ih-accent`）と通知の帯（`--ih-warn*`）の変数を足した。この表と `style.css` の既定値は `tests/render/style-css.test.ts` が突き合わせる。
 - クラス名は InterHub の `ih-xlsx-*`・`ih-xf-N`・`data-ih-xlsx-fmt` を `xs-*`・`xs-xf-N`・`data-xs-fmt` にする（D6）。表の根の `.ih-spreadsheet` は `.xs-sheet`。InterHub 共用のクラス（`ih-data-view`・`ih-data-banner`・`ih-dv-rownum`・`ih-sheet-tabs` など）は、render が要るものだけ `xs-` で作り直す。

@@ -53,3 +53,8 @@
 - 表示の根は `container` の高さいっぱいの縦の flex、`.xs-body` がスクロール枠。見出し・行番号は sticky（z 2・1・角 3）。
 - 02 §6 の変数の表を実際の規則に合わせて直した（グリッド線は `--ih-border-soft`。`--xs-border`・`--xs-accent`・`--xs-warn*` を足した）。
 - CSS の静的テスト 3 本を写し、クラス・変数・文書の突き合わせのテストを足した。テスト 1,632 件（69 ファイル）・typecheck・lint・format:check が通る。
+
+## 2026-10-29 M3-2（examples）
+- `examples/`（index.html・main.ts・example.css・vite.config.ts）を作った。`npm run examples` で http://localhost:5173/examples/ を開く。ファイルの選択・ドロップ・サンプル（fixtures/excel）・テーマ（OS・明るい・ダーク）・文言（ja/en）・図の有無を切り替えられる。
+- ダークは `example.css` が変数を上書きする（`prefers-color-scheme` とテーマの属性の 2 通り）。値は 02 §6 の「ダークの例」の列と同じ。CSP の meta は `script-src 'self'`・`img-src blob:`（style-src は M3-3 で nonce にする）。
+- `tests/render/examples.test.ts`（7 件）：ダークの値と文書・CSP・入口・サンプルの有無を突き合わせる。内蔵ブラウザで明るい・ダークの表示と CSP の違反が無いことを見た（実機の目視はユーザー）。テスト 1,639 件。

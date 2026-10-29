@@ -39,7 +39,8 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.core.json",
     "lint": "eslint .",
     "format:check": "prettier --check .",
-    "geom:build": "node tools/geom/build-preset-geom.mjs"
+    "geom:build": "node tools/geom/build-preset-geom.mjs",
+    "examples": "vite --config examples/vite.config.ts"
   },
   "dependencies": {
     "jszip": "3.10.2",

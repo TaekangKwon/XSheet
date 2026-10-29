@@ -9,6 +9,7 @@ dist/
 # Claude Code の個人設定・セッション引き継ぎ（progress.md はコミットする）
 CLAUDE.local.md
 docs/.history/handoff.md
+.claude/launch.json
 
 # エディタ・OS
 .vscode/
