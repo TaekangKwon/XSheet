@@ -2,7 +2,7 @@
 
 この形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に倣う。版は [Semantic Versioning](https://semver.org/lang/ja/) に従う（1.0.0 までは小さい版の上げでも互換を崩すことがある）。
 
-## [0.1.0] - 未リリース
+## [0.1.0] - 2026-10-29
 
 最初の版。InterHub（コミット `943e4f0`）の .xlsx の読み取りと表示を、どのプロジェクトからも使えるライブラリにした。
 
