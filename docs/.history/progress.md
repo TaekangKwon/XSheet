@@ -67,3 +67,8 @@
 ## 2026-10-29 M4 の前の整理（照合のハーネス・線形時間のテスト）
 - `fixtures/excel/compare-ref-geoms.mjs` を XSheet の `renderWorkbook` へ向け直した（esbuild → Vite の build()・クラス名は xs-・`npm run geom:compare`）。2 図形で撮影まで確かめた（Excel との距離の照合は Excel が要るので未実施）。
 - `linear-time.test.ts` を `linear-time.perf.test.ts` にして perf の project（ほかの後に 1 ファイルずつ）へ移し、上限を超えたときだけ 3 回まで測り直す。テスト 1,647 件。
+
+## 2026-10-29 M4-1（ビルド）
+- `vite.config.ts`（ライブラリモード・ESM・入口 4 つ・jszip/ssf は束ねない・圧縮しない・style.css と NOTICE を写す）と `tsconfig.build.json`（d.ts だけ）。`npm run build`。
+- `tools/consumer-check.mjs`（`npm run check:consumer`）：一時フォルダの使う側から exports を通して型検査と Vite のビルドが通る。形の表は使う側でも別のチャンク。
+- ADR-0002 で D5（タグに dist を含めて git 依存）・D7 を決定として記録。02 §8 にビルドと配布物を書いた。

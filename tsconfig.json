@@ -12,5 +12,5 @@
     "verbatimModuleSyntax": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src", "tests", "examples", "vitest.config.ts", "eslint.config.js"]
+  "include": ["src", "tests", "examples", "vite.config.ts", "vitest.config.ts", "eslint.config.js"]
 }

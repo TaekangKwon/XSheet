@@ -211,3 +211,22 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
   - 型の名前は、旧仮称由来の `XlsxViewMessages` をやめて `XSheetMessages` にした（D6 と同じ理由）。
   - `libLoadFailed` は、InterHub では xlsx の読み込み（動的 import）の失敗だったが、render は core を静的に引くため起きない。M2-3 で「形の表（geom の動的 import）を読めない」通知の文言に替えた。
   - 23 キー目の `noData` は、`spreadsheet.ts` が空のシートで使う InterHub 共用のキー（`data.noData`）。立ち上げ資料の 22 キーには入っていなかった。
+
+## 8. ビルドと配布物（M4・[ADR-0002](adr/0002-build-and-distribution.md)）
+
+`npm run build`（`vite build` → `tsc -p tsconfig.build.json`）が `dist/` に出すもの：
+
+```text
+dist/
+├─ core/index.js・core/internal.js     # xsheet・xsheet/internal（中身は chunks/ の共有の部品を引くだけ）
+├─ render/index.js                      # xsheet/render（core の部品は chunks/ から引く）
+├─ geom/index.js                        # xsheet/geom（形の表を含む。render は動的 import で読む）
+├─ chunks/*.js                          # 入口どうしが共有する部品（名前にハッシュが付く）
+├─ core/*.d.ts・render/*.d.ts・geom/*.d.ts  # 型（src と同じ並び。src/testing は出さない）
+├─ style.css                            # xsheet/style.css（src/style.css の写し）
+└─ NOTICE                               # Ecma の著作権表示
+```
+
+- ESM だけ・圧縮しない・jszip と ssf は束ねない。使う側の TypeScript は `moduleResolution: "bundler"` が前提（ADR-0002）。
+- `npm run check:consumer`：一時フォルダに使う側のプロジェクトを作り、`node_modules/xsheet` をこのリポジトリへのリンクにして、`exports` を通して型検査（strict）と Vite のビルドをする。形の表が使う側のビルドでも別のチャンクになること、`xsheet/style.css` が CSS に入ることを見る。
+- 例のページ（`examples/`）は dist ではなく src を直接読む（ビルドの前でも動かすため）。

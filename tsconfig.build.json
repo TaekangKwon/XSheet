@@ -1,0 +1,14 @@
+{
+  // 配る型（d.ts）だけを出す（M4-1・npm run build）。JS は Vite が出す。
+  // src/testing（テスト専用）は配らない。出力は dist/core/index.d.ts など（package.json の exports の types と同じ形）。
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "types": []
+  },
+  "include": ["src/core", "src/geom", "src/render"]
+}
