@@ -162,17 +162,21 @@ export function renderWorkbook(container: HTMLElement, data: ArrayBuffer | Uint8
 
 | ライブラリの変数 | 役割 | 明るい既定値 | ダークの例 | InterHub の元 |
 | --- | --- | --- | --- | --- |
-| `--xs-fg` | 文字の色（塗りの無いセル・自動の文字） | `#1a1a1a` | `#e6e6e6` | `--ih-fg` |
-| `--xs-bg` | 見出し・面の地 | `#ffffff` | `#1e1e1e` | `--ih-bg` |
-| `--xs-cell-bg` | セルの地（白の塗り＝「紙」もこれ） | `#f5f6f8` | `#0f1115` | `--ih-xlsx-cell-bg`（＝`--ih-canvas`） |
-| `--xs-head-bg` | 列記号・行番号の地 | `#eef0f4` | `#1f232c` | `--ih-bg-elev2` |
-| `--xs-grid` | グリッド線 | `#d0d0d0` | `#3a3a3a` | `--ih-border` |
-| `--xs-muted`・`--xs-faint` | 行番号・破線枠の文字 | `#6b7280`・`#8a92a2` | `#9ca3af`・`#6b7386` | `--ih-muted`・`--ih-faint` |
+| `--xs-fg` | 文字の色（塗りの無いセル・自動の文字・図形の色の省略） | `#1a1a1a` | `#e6e6e6` | `--ih-fg` |
+| `--xs-bg` | 面の地（タブ・ボタン。図形の「明るく」の膜） | `#ffffff` | `#1e1e1e` | `--ih-bg` |
+| `--xs-cell-bg` | セルの地（白の塗り＝「紙」・はみ出す文字の下・二重線の隙間もこれ） | `#f5f6f8` | `#0f1115` | `--ih-xlsx-cell-bg`（＝`--ih-canvas`） |
+| `--xs-head-bg` | 列記号・行番号の地（破線枠・図形の塗りの省略の色の元） | `#eef0f4` | `#1f232c` | `--ih-bg-elev2` |
+| `--xs-grid` | グリッド線（セルの右と下） | `#e5e8ee` | `#232733` | `--ih-border-soft`（`.ih-data-view td`） |
+| `--xs-border` | 見出し行の下の線・タブとボタンの枠 | `#d0d0d0` | `#3a3a3a` | `--ih-border` |
+| `--xs-muted`・`--xs-faint` | 破線枠の線・行番号と空の表示の文字 | `#6b7280`・`#8a92a2` | `#9ca3af`・`#6b7386` | `--ih-muted`・`--ih-faint` |
+| `--xs-accent` | 選ばれているタブ・ボタンの強調 | `#3b82f6` | `#60a5fa` | `--ih-accent` |
+| `--xs-warn`・`--xs-warn-bg` | 通知・エラーの帯（`xs-notice`・`xs-banner`）の文字と地 | `#b45309`・`#fef3c7` | `#fbbf24`・`rgba(251, 191, 36, 0.14)` | `--ih-warn`・`--ih-warn-bg` |
 | `--xs-border-ink` | 自動・黒の罫線（墨色） | `#000000` | `#d4d4d4` | `--ih-xlsx-border-ink` |
 | `--xs-backdrop`・`--xs-backdrop-display` | ダーク時の図の白い下地 | `transparent`・`none` | `#ffffff`・`block` | `--ih-xlsx-backdrop*` |
 
-- `style.css` は明るい既定値だけを持つ。ダーク表示は使う側が変数を上書きする（`prefers-color-scheme` か自前のテーマ属性）。例を `examples/` に置く。
+- `style.css`（`src/style.css`・M3-1）は明るい既定値だけを持つ。既定値は詳細度 0 の `:where(:root, :host)` に置くため、使う側が `:root`・テーマの属性・`container` のどこで上書きしても勝つ（Shadow DOM の中に置いても効く）。ダーク表示は使う側が変数を上書きする（`prefers-color-scheme` か自前のテーマ属性）。例を `examples/` に置く（M3-2）。
 - Excel の色（塗り・文字の色・図形の色）は変数ではなく、書式の CSS とインラインの値で入る。ダーク表示の描き分けの規則（塗りのあるセルは Excel の色のまま、白の塗りは「紙」など）は InterHub ADR-0030 のとおり。
+- 変数の表は M3-1 で、InterHub の実際の規則に合わせて直した：グリッド線は `--ih-border` ではなく `--ih-border-soft`（`.ih-data-view th, td` の線）だったため `--xs-grid` の値を替え、見出し行の下の線・タブの枠の `--ih-border` を `--xs-border` に分けた。タブ（`--ih-accent`）と通知の帯（`--ih-warn*`）の変数を足した。この表と `style.css` の既定値は `tests/render/style-css.test.ts` が突き合わせる。
 - クラス名は InterHub の `ih-xlsx-*`・`ih-xf-N`・`data-ih-xlsx-fmt` を `xs-*`・`xs-xf-N`・`data-xs-fmt` にする（D6）。表の根の `.ih-spreadsheet` は `.xs-sheet`。InterHub 共用のクラス（`ih-data-view`・`ih-data-banner`・`ih-dv-rownum`・`ih-sheet-tabs` など）は、render が要るものだけ `xs-` で作り直す。
 
 ## 7. 文言（`XSheetMessages`・23 キー）

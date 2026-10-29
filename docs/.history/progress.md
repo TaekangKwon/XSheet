@@ -47,3 +47,9 @@
 - `destroy` はタブのリスナ・ResizeObserver・rAF → 表示（blob URL）→ `book.close()` の順に放す。タブのクリックは `addEventListener` にした。
 - タブの関係のテスト（M2-3 で残したもの）を写し、切り替えて壊す後始末のテストを足した。perf のテストは別の project で 1 本ずつ最後に回す（全体の並列でまれに落ちたため）。
 - テスト 1,610 件（65 ファイル）・typecheck・lint・format:check が通る。
+
+## 2026-10-29 M3-1（style.css）
+- `src/style.css` を作った（InterHub `global.css` の .xlsx の部分と共用の表・帯・タブの規則を `xs-` で）。変数 14 個の明るい既定値を `:where(:root, :host)` に置き、ダークは使う側が上書きする。
+- 表示の根は `container` の高さいっぱいの縦の flex、`.xs-body` がスクロール枠。見出し・行番号は sticky（z 2・1・角 3）。
+- 02 §6 の変数の表を実際の規則に合わせて直した（グリッド線は `--ih-border-soft`。`--xs-border`・`--xs-accent`・`--xs-warn*` を足した）。
+- CSS の静的テスト 3 本を写し、クラス・変数・文書の突き合わせのテストを足した。テスト 1,632 件（69 ファイル）・typecheck・lint・format:check が通る。

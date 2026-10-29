@@ -184,6 +184,21 @@
   - 後始末の試験：タブを替えてから `destroy` すると、blob URL はすべて revoke、リスナ（`EventTarget` の add・remove を数える）・ResizeObserver（タブ列とスクロール枠の 2 つ）・予約中の rAF が 0、根が外れ、捕まえたブックの `openSheet` が例外になる（閉じた）。
 - 計測（`*.perf.test.ts`）：ほかのテストと同時に走ると時間がぶれて落ちることがあった（M2-3 の後の全体の実行で `borders.perf`）。vitest の project `perf` に分け、ほかが終わってから（`sequence.groupOrder: 1`）1 ファイルずつ（`fileParallelism: false`）走らせる。計測の中身・閾値は変えていない。
 
+### M3-1 で写した結果（2026-10-29）
+
+- 元は InterHub `src_V1/src/styles/global.css`（`943e4f0`）の 1138〜1470 行（.xlsx の表・層・図・罫線・下地・タブ）と、表示が使う共用の規則（`.ih-toolbar`・`.ih-toggle`（690〜711）、`.ih-data-body--table`・`.ih-data-banner`（998〜1036）、`.ih-dv-empty`・`.ih-data-view` の表・`.ih-dv-rownum`（1100〜1135））。先は `src/style.css`（`xsheet/style.css`）。
+- 変数は [02](02_architecture.md) §6 の 14 個（明るい既定値だけ）を `:where(:root, :host)` に置いた。InterHub の 4 つのテーマのブロック（`:root`・`prefers-color-scheme: dark`・`html[data-theme]` の 2 つ）は写さない。ダークの例は M3-2 の examples に置く。
+- セレクタ：InterHub は共用の `.ih-data-view` を前に付けていた（`.ih-data-view .ih-xlsx-grid td` など）。XSheet は `.xs-grid th`・`.xs-grid td` などにし、行番号は `.xs-grid .xs-rownum`、固定の見出しは `.xs-body thead th`（z 2）・`.xs-body tbody .xs-rownum`（z 1）・`.xs-body thead th.xs-rownum`（z 3）。書式の規則（`.xs-sheet[data-xs-fmt] td.xs-xf-N`）はこれらより詳細度が強いまま。
+- 写さない規則：`.ih-data-view` の偶数行の縞（`.xlsx` では打ち消していた）・`.ih-data-body--table` の `max-height`（`fitTableBodyToWindow` 用。高さは `container` が決める）・`.ih-toolbar` の他の画面と共用の部分。
+- 新しく足した規則：
+  - 表示の根 `.xs-sheet`・`.xs-workbook` は `container` の高さいっぱいの縦の flex（`height: 100%`）。`.xs-body` は残りを埋めてスクロールする（`flex: 1 1 auto; min-height: 0; overflow: auto`）。`.xs-workbook > .xs-sheet` はタブ列の残り（`flex: 1 1 0`）。
+  - 文字の既定：`.xs-sheet`・`.xs-workbook` に `color: var(--xs-fg)`・`font-family: system-ui, sans-serif`（InterHub は `body` の規則）。表は `font-size: 13px`（`.ih-data-view table`）。
+  - `.xs-notice[hidden] { display: none }`（帯に display を付けても hidden で消えるように）。
+  - タブは `.ih-toggle` と `.ih-spreadsheet .ih-sheet-tabs .ih-toggle` を 1 つの `.xs-sheet-tab` にまとめ、`font: inherit` を足した。
+- テスト（`tests/render/`）：
+  - `xlsx-backdrop-css.test.ts` → `backdrop-css.test.ts`（5 件）、`xlsx-borders-css.test.ts` → `borders-css.test.ts`（4 件）、`xlsx-format-css-static.test.ts` → `format-css-static.test.ts`（3 件）。テーマの 4 つのブロックの値を数えていた所は、既定値のブロックの 1 か所（明るい値）を確かめる形に書き直した。共通の部品は `style-css.helpers.ts`。
+  - 新しく足した `style-css.test.ts`（10 件）：render が付ける `xs-` のクラスにすべて規則がある・使う変数はすべて宣言し宣言した変数はすべて使う・既定値のブロックは 1 つで詳細度 0・`ih-` が無い・スクロール枠と固定の見出しの重ね順・見出し行の高さが `GRID_HEADER_HEIGHT`・hidden・タブ列・02 §6 の表と既定値が同じ。
+
 ## 4. 直す 6 点
 
 | # | 直すこと | 場所 | 方法 |
