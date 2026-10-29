@@ -63,3 +63,7 @@
 - examples の CSP を `style-src 'nonce-xsheet-example'` だけにした。`<link>` に nonce を付け、main.ts はその nonce プロパティを renderWorkbook に渡す。
 - 内蔵ブラウザで、nonce ありで書式の塗りが効き、nonce なしでは書式の `<style>` が止まる（sheet が null）ことを確かめた。画像（blob:）も出る。
 - 02 §3 に「CSP」の節（3 つの指定と理由）を足し、01 N7 の基準を更新した。`tests/render/csp.test.ts`（style 属性・HTML の文字列・<style> の数・data: を render のソースで見る・nonce の受け渡し）。テスト 1,647 件。
+
+## 2026-10-29 M4 の前の整理（照合のハーネス・線形時間のテスト）
+- `fixtures/excel/compare-ref-geoms.mjs` を XSheet の `renderWorkbook` へ向け直した（esbuild → Vite の build()・クラス名は xs-・`npm run geom:compare`）。2 図形で撮影まで確かめた（Excel との距離の照合は Excel が要るので未実施）。
+- `linear-time.test.ts` を `linear-time.perf.test.ts` にして perf の project（ほかの後に 1 ファイルずつ）へ移し、上限を超えたときだけ 3 回まで測り直す。テスト 1,647 件。

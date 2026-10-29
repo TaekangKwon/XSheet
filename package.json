@@ -40,6 +40,7 @@
     "lint": "eslint .",
     "format:check": "prettier --check .",
     "geom:build": "node tools/geom/build-preset-geom.mjs",
+    "geom:compare": "node fixtures/excel/compare-ref-geoms.mjs",
     "examples": "vite --config examples/vite.config.ts"
   },
   "dependencies": {

@@ -298,7 +298,7 @@ describe('TD-87-21 文字の上限：切る・捨てる。XlsxError にせず、
 });
 
 describe('TD-87-22 細工した XML でも時間が線形（文字・線）', () => {
-  /** 緩い固定の時間（linear-time.test.ts と同じ。線形なら数十 ms、二乗なら秒単位） */
+  /** 緩い固定の時間（linear-time.perf.test.ts と同じ。線形なら数十 ms、二乗なら秒単位） */
   const LIMIT_MS = 1500;
   const N = 40_000;
 

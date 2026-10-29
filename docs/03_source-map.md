@@ -56,7 +56,7 @@
 - テスト：`./x` → `../../src/core/x`、`./make-xlsx` → `../../src/testing/make-xlsx`、`../viewers/xlsx-geom` → `../../src/geom/evaluate`、`./__fixtures__/excel/` → `../../fixtures/excel/`。`vi.mock` のパスも同じく直した。
   - `tests/geom/preset-geom.test.ts` の `LINE_PRESETS` の照合を `it.todo` から戻した。
 - **Node 固有の API の止め方を足した**（[ADR-0001](adr/0001-library-decision.md) 追記）。jszip の型が `@types/node` を引き込み、`tsconfig.core.json` では `process`・`Buffer` が通ってしまう（DOM は止まる）。ESLint で `src/core/**`・`src/geom/**` の Node の大域変数と `node:*`・組み込みモジュールの import を止める。
-- `fixtures/excel/compare-ref-geoms.mjs` のハーネスは InterHub の描画を指したまま（M2 で向け直す。[05_quality.md](05_quality.md) §2）。
+- `fixtures/excel/compare-ref-geoms.mjs` のハーネスは、M4 の前の整理（2026-10-29）で XSheet の `renderWorkbook` へ向け直した（Vite で束ねる。[05_quality.md](05_quality.md) §2）。
 
 ## 2. geom（→ `src/geom/`・`tools/geom/`）
 
