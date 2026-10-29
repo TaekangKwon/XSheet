@@ -5,7 +5,7 @@
 
 ## TL;DR
 - InterHub（main `943e4f0`）の .xlsx の読み取りと描画を写し、どのプロジェクトからも `import` できるライブラリ XSheet（npm 名 `xsheet`）にする。
-- M0 で決める D1・D2・D3・D4・D8 を決めた。D5（M4）・D6（M2）・D7（M3）は推奨のまま、その時期に決める。
+- M0 で決める D1・D2・D3・D4・D8 を決めた。D5（M4）・D7（M3）は推奨のまま、その時期に決める。D6 は M2-1 の前に `xs-` に決めた。
 - 開発用の道具の版を決めた。TypeScript は typescript-eslint の対応範囲に合わせて 6.0.3 にした。
 
 ---
@@ -28,9 +28,9 @@ accepted（2026-10-28 起票・名前はユーザーが決定）
 | D1 | 名前 | `XSheet`。npm のパッケージ名は `xsheet`（2026-10-28 に npm で未使用を確認） | 決定 |
 | D2 | リポジトリ | `C:\GitHub\XSheet`・GitHub `TaekangKwon/XSheet`（非公開）・既定ブランチ `main` | 決定 |
 | D3 | ライセンス | 非公開の間は書かない（`package.json` は `private: true`・`license: UNLICENSED`）。公開を決めるときに MIT か Apache-2.0 を選ぶ。Ecma の著作権表示（`NOTICE`）は M1-1 で置き、配布物に必ず含める | 決定（公開時に再決定） |
-| D4 | パッケージの形 | npm パッケージ 1 つ＋サブパス（`xsheet`・`xsheet/render`・`xsheet/style.css`、render が動的 import する `xsheet/geom`）。monorepo にしない。`exports` は M0-1 で枠だけ置き、中身は M1〜M4 で埋める | 決定 |
+| D4 | パッケージの形 | npm パッケージ 1 つ＋サブパス（`xsheet`・`xsheet/render`・`xsheet/style.css`、render が動的 import する `xsheet/geom`、半公開の `xsheet/internal`（M1-3 で追加。版の互換を約束しない））。monorepo にしない。`exports` は M0-1 で枠だけ置き、中身は M1〜M4 で埋める | 決定 |
 | D5 | 配布 | 推奨のまま（非公開の間はタグに `dist/` を含めて git 依存） | M4 で決める |
-| D6 | 接頭辞 | 推奨は `xv-`・`--xv-*`。旧仮称 xlsx-view 由来なので、名前に合わせて `xs-` などに変えるかを M2-1（`ih-` の置き換え）の前に決める | M2 で決める |
+| D6 | 接頭辞 | `xs-`・`--xs-*`・`data-xs-*`。推奨の `xv-` は旧仮称 xlsx-view 由来なので、名前に合わせた（2026-10-28・ユーザーが決定。M2-1 で `ih-` を置き換えた） | 決定 |
 | D7 | 既定の文言 | 推奨のまま（ja・en を同梱し差し替え可） | M3 で決める |
 | D8 | 対応環境 | core：ES2022 のブラウザ・Web Worker・Node 20 以上。render：Chrome/Edge/Firefox/Safari の最新 2 版 | 決定 |
 
@@ -62,5 +62,5 @@ accepted（2026-10-28 起票・名前はユーザーが決定）
 
 ## 結果
 
-- 立ち上げ資料の `xlsx-view` は `XSheet`（文中）・`xsheet`（パッケージ名・サブパス）に置き換えた。接頭辞の `xv-` は D6 のとおり M2 まで残す。
+- 立ち上げ資料の `xlsx-view` は `XSheet`（文中）・`xsheet`（パッケージ名・サブパス）に置き換えた。接頭辞は D6 のとおり M2-1 で `xs-` に決め、文書の `xv-` も `xs-` に直した。
 - TypeScript を 7 系へ上げるのは、typescript-eslint が対応してから別の ADR で決める。

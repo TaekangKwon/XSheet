@@ -1,0 +1,145 @@
+// 正: docs/02_architecture.md §3
+/**
+ * 公開の入口 `renderWorkbook`（M2-4）：xlsx のバイト列を開き、シートタブ付きで `container` の中に表示する。
+ * InterHub `spreadsheet.ts` の `renderXlsxView` のうち、ブックを開く・タブ・最初のシートの選択・エラー表示の部分。
+ * - 表示は 1 冊につき 1 つのシートの表示（`createSheetView`）を使い回し、タブでシートを替える
+ *   （書式の `<style>` はブックで 1 回だけ作り、タブを替えても作り直さない）。
+ * - 開けない（暗号化・壊れている・大きすぎる・対応しない形式）ときは例外にせず、種類ごとの文言を `div.xs-banner` に出す。
+ * - `destroy()` でタブ列・シートの表示（blob URL・リスナ）を放し、ブックを閉じ、根を外す。
+ * シート名はユーザーのファイル内容（信頼できない入力）なので、`textContent` と `title` にだけ入れる。
+ */
+import { openXlsx, type XlsxBook, type XlsxLimits } from '../core/index';
+import { resolveMessages, type XSheetMessages } from './messages';
+import type { RenderOptions, SheetView } from './render-sheet';
+import { buildSheetTabStrip, makeSheetTab } from './sheet-tabs';
+import { createSheetView, xlsxErrorMessage } from './sheet-view';
+
+/** `renderWorkbook` の指定 */
+export interface WorkbookOptions extends RenderOptions {
+  /** 読み取りの上限を替える（`openXlsx` の `limits`。既定は `DEFAULT_LIMITS`） */
+  limits?: Partial<XlsxLimits>;
+}
+
+/** タブ付きのブックの表示 */
+export interface WorkbookView extends SheetView {
+  /**
+   * シートを替える（タブを押したのと同じ）。表示中のシートなら何もしない。
+   * @param index シートの番号（`SheetInfo.index`。1 始まり・非表示のシートも数える）
+   * @throws RangeError ブックに無い番号（開けなかったブック・シートの無いブックでは常に）
+   */
+  showSheet(index: number): Promise<void>;
+}
+
+/** メッセージだけの要素（`div.xs-banner`・`div.xs-empty`） */
+function messageElement(className: string, text: string): HTMLElement {
+  const el = document.createElement('div');
+  el.className = className;
+  el.textContent = text;
+  return el;
+}
+
+/** シートを持たない表示（開けない・シートが 0 枚）。destroy は根を外すだけ */
+function messageView(root: HTMLElement): WorkbookView {
+  return {
+    showSheet: () => Promise.reject(new RangeError('シートの番号が範囲外')),
+    destroy: () => {
+      root.replaceChildren();
+      root.remove();
+    },
+  };
+}
+
+/**
+ * xlsx を開き、シートタブ付きで `container` の中に表示する。
+ * 最初に出すシートは、最初の表示（非表示でない）シート。全部非表示なら先頭。
+ * `container` は高さが決まっていること（タブ列の下のスクロール枠 `.xs-body` が仮想化の窓になる）。
+ *
+ * @param container 表示を置く要素（子として `div.xs-workbook` を足す。`container` 自身には何も付けない）
+ * @param data xlsx のバイト列
+ */
+export async function renderWorkbook(
+  container: HTMLElement,
+  data: ArrayBuffer | Uint8Array,
+  options: WorkbookOptions = {},
+): Promise<WorkbookView> {
+  const messages: Readonly<XSheetMessages> = resolveMessages(options.messages);
+  const root = document.createElement('div');
+  root.className = 'xs-workbook';
+  container.append(root);
+
+  let book: XlsxBook;
+  try {
+    book = await openXlsx(data, { limits: options.limits });
+  } catch (e) {
+    root.append(messageElement('xs-banner', xlsxErrorMessage(e, messages)));
+    return messageView(root);
+  }
+  // 開いている間に destroy は呼べない（戻り値の約束がまだ解決していない）ため、ここでの離脱の判定は要らない
+
+  const sheets = book.sheets;
+  if (sheets.length === 0) {
+    book.close();
+    root.append(messageElement('xs-empty', messages.noSheets));
+    return messageView(root);
+  }
+
+  let closed = false;
+  const buttons = sheets.map((info) => makeSheetTab(info.name, info.hidden, messages));
+  const strip = buildSheetTabStrip(buttons, messages);
+  root.append(strip.element);
+  // シートの表示は 1 冊に 1 つ（タブ列の後ろに `div.xs-sheet` を足す）
+  const view = createSheetView(root, book, {
+    messages,
+    drawings: options.drawings !== false,
+    nonce: options.nonce,
+  });
+
+  /** 指定のシートを開いて表示する（タブ操作・初期表示）。 */
+  const showSheet = async (index: number): Promise<void> => {
+    if (closed) {
+      return;
+    }
+    const at = sheets.findIndex((s) => s.index === index);
+    if (at < 0) {
+      throw new RangeError('シートの番号が範囲外');
+    }
+    if (view.activeIndex === index) {
+      return; // 表示中（開けた）のシート。開けなかったシートは activeIndex が null なので開き直す
+    }
+    buttons.forEach((b, bi) => b.classList.toggle('is-active', bi === at));
+    // 選択中タブが見える位置までタブ列をスクロールする
+    strip.reveal(buttons[at]);
+    await view.showSheet(index);
+  };
+
+  const onClicks = buttons.map((btn, bi) => {
+    const onClick = (): void => {
+      void showSheet(sheets[bi]!.index);
+    };
+    btn.addEventListener('click', onClick);
+    return onClick;
+  });
+
+  const destroy = (): void => {
+    if (closed) {
+      return;
+    }
+    closed = true;
+    buttons.forEach((btn, bi) => btn.removeEventListener('click', onClicks[bi]!));
+    strip.dispose();
+    // シートの表示（blob URL の revoke・リスナ）を放してから、ブックを閉じる
+    view.destroy();
+    book.close();
+    root.replaceChildren();
+    root.remove();
+  };
+
+  try {
+    await showSheet((sheets.find((s) => !s.hidden) ?? sheets[0]!).index);
+  } catch (e) {
+    // 想定外の例外でも、リスナ・blob URL・ブックを残さない
+    destroy();
+    throw e;
+  }
+  return { showSheet, destroy };
+}

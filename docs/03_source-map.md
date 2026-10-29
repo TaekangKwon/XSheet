@@ -87,17 +87,102 @@
 
 | ファイル | 行数 | 役割 | 注意 |
 | --- | --- | --- | --- |
-| `xlsx-grid.ts` | 659 | 範囲・行と列の仮想化・はみ出し・`###`・余白の書式 | `ih-` → `xv-` |
+| `xlsx-grid.ts` | 659 | 範囲・行と列の仮想化・はみ出し・`###`・余白の書式 | `ih-` → `xs-` |
 | `xlsx-borders.ts` | 465 | 罫線の線分・辺の優先・path | そのまま |
-| `xlsx-border-layer.ts` | 128 | 罫線の SVG 層 | `ih-` → `xv-` |
-| `xlsx-format-css.ts` | 165 | 書式のクラスとブック単位の CSS | `ih-xf-`・`data-ih-xlsx-fmt`・`.ih-spreadsheet` → `xv-` 系。`nonce` を付けられるように（M3） |
+| `xlsx-border-layer.ts` | 128 | 罫線の SVG 層 | `ih-` → `xs-` |
+| `xlsx-format-css.ts` | 165 | 書式のクラスとブック単位の CSS | `ih-xf-`・`data-ih-xlsx-fmt`・`.ih-spreadsheet` → `xs-` 系。`nonce` を付けられるように（M3） |
 | `xlsx-drawings.ts` | 327 | アンカー → px・グループの写像・見えている図 | そのまま |
 | `xlsx-image-store.ts` | 147 | 画像の blob URL と後始末 | そのまま |
-| `xlsx-image-layer.ts` | 778 | 図の DOM 層・破線枠・下地 | `t()` → `messages`、`ih-` → `xv-` |
+| `xlsx-image-layer.ts` | 778 | 図の DOM 層・破線枠・下地 | `t()` → `messages`、`ih-` → `xs-` |
 | `xlsx-shapes.ts` | 912 | 図形と線の SVG・矢じり・外接矩形 | そのまま |
 | `spreadsheet.ts`（1,076 行のうち .xlsx の部分） | — | 表と層の組み立て・スクロール・後始末 | `renderXlsxView`（551 行〜）・`showSheet`（813 行〜）・`draw`（707 行〜）・`buildGridTable`（409 行〜）・`dispose`（907 行〜）を `renderSheet` へ。`.xls`（SheetJS）の経路・`fitTableBodyToWindow`・InterHub のバナーとツールバーは写さない |
 | `styles/global.css` の `.ih-spreadsheet`・`.ih-xlsx-*` | 31〜1442 行に散在（74 か所） | 表・層・図・罫線・下地の規則と変数 | `src/style.css` へ。変数は [02](02_architecture.md) §6 |
-| `locales/ja.ts`・`en.ts` の `spreadsheet.*` | 22 キー（ja.ts 275〜302 行） | 文言 | `src/render/messages.ts` の既定値に |
+| `locales/ja.ts`・`en.ts` の `spreadsheet.*`・`data.noData` | 23 キー（ja.ts 275〜302 行・248 行） | 文言 | `src/render/messages.ts` の既定値に |
+
+### M2-1 で写した結果（2026-10-28）
+
+- 元はすべて `git cat-file blob 943e4f0:<パス>` で取り出し、1 ファイルずつ Prettier で整えた。
+- ファイル名から `xlsx-` を外した（`src/render/` の中はすべて xlsx の描画のため）。テストも同じ（`xlsx-grid.test.ts` → `tests/render/grid.test.ts`）。
+- 接頭辞（D6）は次のとおり置き換えた。`ih-` は src・テストとも 0 件。
+
+  | InterHub | XSheet |
+  | --- | --- |
+  | `ih-xlsx-*`（`ih-xlsx-figure`・`ih-xlsx-frame` など 17 種） | `xs-*`（`xs-figure`・`xs-frame` など） |
+  | `ih-xf-N` | `xs-xf-N` |
+  | `data-ih-xlsx-fmt` | `data-xs-fmt` |
+  | `.ih-spreadsheet`（表の根） | `.xs-sheet` |
+  | `--ih-fg`・`--ih-xlsx-cell-bg`・`--ih-xlsx-border-ink`・`--ih-xlsx-backdrop` | `--xs-fg`・`--xs-cell-bg`・`--xs-border-ink`・`--xs-backdrop` |
+
+- import：core は `../core/index`（型を含む）と `../core/internal`（`applyFillMode`）から、geom は `../geom/index` から引く。同じ入口からの import は 1 文にまとめた。
+- `shapes.ts` の `Pt`・`PathSeg` は geom の `defs.ts` の型を引いて出し直す（定義は同じ。M1-1 の予定どおり）。
+- 文言：`image-layer.ts` の `t()` は、仮置きの `src/render/i18n.ts`（キーをそのまま返す。InterHub の試験と同じ状態）から引く。M2-2 で `messages` に替えて消す。
+- コメントの `global.css` は `style.css`（M3-1 で作る）に直した。
+- 整形した元に同じ置き換えをかけて比べ、差は上の import・`Pt`・`PathSeg`・`t()` だけであることを確かめた。
+- テスト：17 ファイル（681 件）を写した。vitest の render は node 環境にし、DOM が要るファイルは元どおり先頭の `// @vitest-environment jsdom` で jsdom にする（jsdom では fixtures を `new URL(…, import.meta.url)` で読めないため）。
+- まだ写さないテスト：
+  - `xlsx-format.perf.test.ts`：`spreadsheet.ts` の `buildGridTable` を使う。M2-3 で写す。
+  - `xlsx-format-css-static.test.ts`・`xlsx-backdrop-css.test.ts`・`xlsx-borders-css.test.ts`：`global.css` の文面を読む。M3-1（`style.css`）で写す。
+
+### M2-3 で写した結果（2026-10-28）
+
+- 元は `spreadsheet.ts`（`943e4f0`）の .xlsx の部分。`.xls`（SheetJS）の経路・`fitTableBodyToWindow`・タブ列・`renderSpreadsheet` の振り分けは写さない。
+
+  | 元（spreadsheet.ts の行） | 先 |
+  | --- | --- |
+  | `spacerRow`・`spillOut`・`inkSpill`・`cellBox`・`buildGridTable`（304〜543） | `src/render/grid-table.ts`（`buildGridTable` は計測テストのため export） |
+  | `xlsxErrorMessage`（286〜301）・`renderXlsxView` の中の `showSheet`・`draw`・`dispose` ほか（551〜948 のうちタブ以外） | `src/render/sheet-view.ts`（内部の `createSheetView`） |
+  | — | `src/render/render-sheet.ts`（公開の `renderSheet`・`RenderOptions`・`SheetView`。`index.ts` から出す） |
+
+- クラス名：`ih-xlsx-grid`→`xs-grid`、`ih-xlsx-collapsed`→`xs-collapsed`、`ih-dv-rownum`→`xs-rownum`、`ih-xlsx-spacer`→`xs-spacer`、`ih-xlsx-cell`→`xs-cell`、`ih-xlsx-text`→`xs-text`、`ih-xlsx-wrap`→`xs-wrap`、`ih-xlsx-body`（と共用の `ih-data-body ih-data-body--table`）→`xs-body`、`ih-xlsx-notice`（と共用の `ih-data-banner`）→`xs-notice`、`ih-data-banner`→`xs-banner`、`ih-dv-empty`→`xs-empty`、表示の根 `ih-data-view ih-spreadsheet`→`xs-sheet`。状態のクラス（`is-spill`・`is-over-fill`・`is-right`・`is-center`）はそのまま。
+- 決めたこと：
+  - 状態は表示のインスタンスに持つ（`renderGeneration`・`disposeXlsxView` は無い）。`formatSeq` だけモジュールの連番。新しい `showSheet`・`destroy` は `openSeq` を進め、読み込み中の結果を捨てる。
+  - 根は自前の `div.xs-sheet`（`container` の子）。子は `div.xs-notice`・`div.xs-body`・`<style>`（`nonce` を付けられる）。タブ列は持たない（M2-4）。
+  - 枠の大きさは `clientWidth`・`clientHeight` だけで測る（`getComputedStyle(...).maxHeight` と `refit` はやめた）。`window` の `resize` の代わりにスクロール枠の `ResizeObserver`（無い環境ではガード）。スクロールと大きさの変化は rAF 1 回にまとめる。取り付け後の rAF の描き直し（`initFrame`）は残した。
+  - `destroy`：層の `dispose`（blob URL の revoke）を最初に行い、rAF の取り消し・リスナと ResizeObserver の解除・DOM を空にして根を外す。何度呼んでもよい。ブックは閉じない（`renderWorkbook` が閉じる）。
+  - `renderSheet` はブックに無い番号を `RangeError` にする（DOM に何も足さない）。`openSheet` の例外は種類ごとの文言の `div.xs-banner` を枠の中に出して解決する。
+  - `drawings: false` は `openDrawings` を呼ばず、図の層は空のまま（要素は残す）。
+- 形の表の動的 import（M2-3）：`shapes.ts` は geom を型だけ引き、`loadGeom()`（約束を共有・失敗したら捨てて次に読み直す）で `import('../geom/index')` する。読む前・読めないときの `renderShape` は代替（評価できない形と同じ）。表示は形のある図形（`geom` を持つ図）があるシートを開く時だけ読み、読めなければ通知 `libLoadFailed` を出す（文言を「図形の形の表を読み込めなかったため…」に替えた）。ESLint で `src/render/**` の `../geom` を型だけに限った（`@typescript-eslint/no-restricted-imports` の `allowTypeImports`。動的 import は対象外）。render のテストは `tests/render/setup.ts`（vitest の `setupFiles`）で先に読む。
+- InterHub との振る舞いの違い：
+  - 別のファイルを開いても前の表示を後始末しない（表示ごとに独立。壊すのは使う側の `destroy`）。
+  - 通知の出入りで枠の高さを合わせ直さない（`refit` が無い。高さは CSS のレイアウトで決まる）。
+  - `libLoadFailed` は xlsx の読み込み失敗ではなく、形の表の読み込み失敗の通知。
+- テスト（`tests/render/`）：
+  - `spreadsheet.render.test.ts` → `render-sheet.test.ts`（23 件）、`spreadsheet.borders.render.test.ts` → `render-sheet.borders.test.ts`（5 件）、`spreadsheet.cols.render.test.ts` → `render-sheet.cols.test.ts`（6 件）、`spreadsheet.format.render.test.ts` → `render-sheet.format.test.ts`（11 件）、`spreadsheet.image.render.test.ts` → `render-sheet.image.test.ts`（25 件）、`xlsx-format.perf.test.ts` → `format.perf.test.ts`（2 件）。共通の部品は `render-sheet.helpers.ts`。
+  - 書き直し：`renderSpreadsheet(buffer, name)` → `renderSheet(container, book, index)`。キーの文字列の期待値は `MESSAGES_JA` の文言に。`cleanupSpreadsheetRendering` → `destroy`（「次のファイルを開くと前が消える」は明示の `destroy` に）。`vi.mock('../xlsx')` → 通知・画像を差し替えたブックを渡す。暗号化などの `openXlsx` の失敗は、文言の対応（`xlsxErrorMessage`）の試験にした（表示は M2-4）。
+  - 時間の待ち：並行して走るほかのテストで rAF・画像の読み込みが遅れても落ちないよう、`wait` は先に次のフレームを待ち、画像のテストは読み込み中の画像が無くなるまで待つ。
+  - 新しく足した：`render-sheet.lifecycle.test.ts`（2 つの表示を同時に作って壊し、blob URL・リスナ・ResizeObserver・rAF の漏れが 0・根が外れ・ブックが使えること。同じ表示でシートを替えても `<style>` が同じこと）、`render-sheet.geom.test.ts`（geom を読む前の代替・読めないときの通知）、ほか `RangeError`・根の構造・`nonce`・`drawings: false`・読み込み中の `destroy`。
+  - 写さないテスト：`.xls` の 4 件（TD-84-12・TD-82-6 の 2 件・TD-86-15）。
+  - M2-4（`renderWorkbook`）で写すテスト：
+    - `spreadsheet.render.test.ts`：「TD-82-2: シートタブを作り、非表示シートは ⌀ 付きで最初の表示シートを出す」・「シートタブ列は ◀ ▶ ボタンとスクロール領域を持ち…」・「シートタブは title にシート名全文を持つ…」・TD-82-2 の後半（シートが 0 枚なら `noSheets`）・TD-82-4（`openXlsx` の失敗をバナーにする表示）・TD-82-5 の 1 つ目（読み込み中の離脱で空の要素）・「シートタブ列の ResizeObserver 通知」の 2 件。
+    - `spreadsheet.borders.render.test.ts`：TD-98-11 の 2 つ目の後半（シートを切り替えると罫線を作り直す）。
+    - `spreadsheet.format.render.test.ts`：TD-100-14（シートを切り替えても `<style>` を作り直さない）。
+    - `spreadsheet.image.render.test.ts`：TD-86-11 の 2 つ目（タブ切替で revoke・戻ると読み直す）・TD-86-12 の 1 つ目（素早いタブ切替）・TD-86-13 の over-budget の後半（タブ切替で通知が消える）・TD-88-20 の 2 つ目の前半（別のシートで消え、戻ると再表示）。
+
+### M2-4 で写した結果（2026-10-28）
+
+- 元は `spreadsheet.ts`（`943e4f0`）の `makeToggleButton`・`SheetTabStrip`・`buildSheetTabStrip`（112〜254）と、`renderXlsxView` のうちブックを開く・シートが無い・タブの作成とクリック・選択中の印・最初のシート（555〜583・815〜817・889〜903・939）。
+
+  | 元 | 先 |
+  | --- | --- |
+  | `makeToggleButton`・`buildSheetTabStrip` | `src/render/sheet-tabs.ts`（`makeSheetTab`・`buildSheetTabStrip`） |
+  | `renderXlsxView` のブック・タブの部分 | `src/render/render-workbook.ts`（公開の `renderWorkbook`・`WorkbookOptions`・`WorkbookView`。`index.ts` から出す） |
+
+- クラス名：`ih-toolbar ih-sheet-strip`→`xs-sheet-strip`、`ih-sheet-tabs`→`xs-sheet-tabs`、`ih-sheet-nav`→`xs-sheet-nav`、`ih-toggle`（タブ）→`xs-sheet-tab`、表示の根→`xs-workbook`（中に `xs-sheet-strip` と M2-3 の `xs-sheet`）。`is-active`・`is-hidden-sheet` はそのまま。
+- 決めたこと：
+  - シートの表示は 1 冊に 1 つ。`createSheetView` に `div.xs-workbook` を親として渡し、タブ列の後ろに `div.xs-sheet` を足させる（`createSheetView` は変えていない）。
+  - 開けないファイルは例外にせず `div.xs-banner`（種類ごとの文言）、シートが 0 枚は `div.xs-empty`（`noSheets`）で解決する。どちらの `showSheet` も `RangeError`、`destroy` は根を外すだけ。
+  - `destroy` の順：タブのクリック・タブ列（◀▶ のクリック・scroll・wheel・ResizeObserver・rAF）→ シートの表示（blob URL の revoke）→ `book.close()` → 根を外す。`openXlsx` の途中の `destroy` は公開の API からは呼べない（約束が解決していない）ため判定しない。
+  - ◀▶・タブのクリックは `onclick` ではなく `addEventListener` にし、`destroy` で外す（リスナの漏れを数えて確かめるため）。
+- InterHub との違い：
+  - 表示中のシートの押し直しは、`activeIndex` が同じなら何もしない。InterHub は空のシート（`sheet` が null）なら開き直していた。開けなかったシートは `activeIndex` が null なので、今までどおり開き直す。
+  - `WorkbookView.showSheet(index)` を公開した（タブを押したのと同じ。無い番号は `RangeError`）。`WorkbookOptions.limits` は `openXlsx` に渡す。
+- M3-1 の `style.css` に要るもの（タブ列）：`.xs-sheet-strip { display: flex }`、`.xs-sheet-tabs { position: relative; display: flex; flex: 1 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none }`（`position: relative` は、タブの `offsetLeft` をスクロール領域の中の座標にするのに要る）、`.xs-sheet-tab { flex-shrink: 0; white-space: nowrap; max-width: 240px; overflow: hidden; text-overflow: ellipsis }`、`.xs-sheet-tab.is-hidden-sheet`（斜体・破線）、`.xs-sheet-nav[hidden] { display: none }`。`div.xs-workbook` は縦の flex にし、`div.xs-sheet` を残りの高さ（`flex: 1; min-height: 0`）にする。元は InterHub `global.css` の 690〜711・1417〜1470 行。
+- テスト（`tests/render/`）：
+  - `render-workbook.test.ts`（15 件）：タブ（⌀・`is-active`・最初の表示シート・全部非表示なら先頭）・根の構造・◀▶ とスクロール領域・文言の差し替え・title・シート名は textContent・`showSheet`（`RangeError`・押し直し）・`destroy` の後・シートが 0 枚・開けないファイルの文言（暗号化・zip でない・Strict・壊れた zip・`limits` の上限超え）・ArrayBuffer・タブ列の ResizeObserver の 2 件（シートの表示もスクロール枠を観察するため、`.xs-sheet-tabs` を観察するものだけを呼ぶ）。
+  - `render-workbook.switch.test.ts`（9 件）：TD-98-11・TD-100-14・TD-86-11・TD-86-12・TD-86-13・TD-88-20 のタブの部分、TD-82-5 の書き直し 2 件、後始末の試験 1 件。`openXlsx` を包んで開いたブックを捕まえ（`vi.mock('../../src/core/index')`）、図の通知・画像の結果を差し替える。
+  - TD-82-5（読み込み中の離脱で空の要素を返す）は、公開の API では約束の解決前に壊せないため、「画像の読み込み中に `destroy`」と「タブの切替の途中で `destroy`」に書き直した。
+  - 後始末の試験：タブを替えてから `destroy` すると、blob URL はすべて revoke、リスナ（`EventTarget` の add・remove を数える）・ResizeObserver（タブ列とスクロール枠の 2 つ）・予約中の rAF が 0、根が外れ、捕まえたブックの `openSheet` が例外になる（閉じた）。
+- 計測（`*.perf.test.ts`）：ほかのテストと同時に走ると時間がぶれて落ちることがあった（M2-3 の後の全体の実行で `borders.perf`）。vitest の project `perf` に分け、ほかが終わってから（`sequence.groupOrder: 1`）1 ファイルずつ（`fileParallelism: false`）走らせる。計測の中身・閾値は変えていない。
 
 ## 4. 直す 6 点
 
@@ -105,9 +190,9 @@
 | --- | --- | --- | --- |
 | 1 | 層の逆転 | `drawing-geom.ts`・`types.ts` が `viewers/xlsx-geom` を import（`943e4f0` で確かめると、本体ではなく評価器 `xlsx-geom.ts` が core の `drawing-geom.ts`・`limits.ts` と render の `xlsx-shapes.ts` を import していた。core から評価器を引くのはテストだけ） | geom を独立の層にする（§2。M1-1 で `defs.ts` を作った） |
 | 2 | InterHub の文言関数 | `spreadsheet.ts`・`xlsx-image-layer.ts` の `t()` | `RenderOptions.messages` を引数で回す |
-| 3 | 接頭辞 | `ih-xlsx-*`・`ih-xf-N`・`data-ih-xlsx-fmt`・`--ih-*` | `xv-` 系へ一括で置き換え、テストの期待値も合わせる |
+| 3 | 接頭辞 | `ih-xlsx-*`・`ih-xf-N`・`data-ih-xlsx-fmt`・`--ih-*` | `xs-` 系へ一括で置き換え、テストの期待値も合わせる |
 | 4 | モジュール変数の状態 | `spreadsheet.ts` の `disposeXlsxView`・`renderGeneration` | `SheetView` のインスタンスへ |
-| 5 | InterHub の共用部品 | `table-fit.ts`（`fitTableBodyToWindow`）・`ih-data-view`・`ih-data-banner`・`ih-dv-rownum`・`ih-sheet-tabs` | render に要るものだけ `xv-` で作り直す。枠の高さは使う側の仕事 |
+| 5 | InterHub の共用部品 | `table-fit.ts`（`fitTableBodyToWindow`）・`ih-data-view`・`ih-data-banner`・`ih-dv-rownum`・`ih-sheet-tabs` | render に要るものだけ `xs-` で作り直す。枠の高さは使う側の仕事 |
 | 6 | 型だけの import | 全体 | `verbatimModuleSyntax: true` にして `import type` へ直す（xrag-Viewer はこの設定） |
 
 ## 5. テスト（写す）
@@ -115,7 +200,7 @@
 | 元 | 件数 | 先 |
 | --- | --- | --- |
 | `lib/xlsx/*.test.ts` | 32 ファイル（当初の見積もりは 36） | `tests/core/` |
-| `lib/viewers/xlsx-*.test.ts`・`spreadsheet.*.render.test.ts` | 26＋5 ファイル | `tests/render/`（`spreadsheet.*` は `renderSheet` を呼ぶ形に書き直す） |
+| `lib/viewers/xlsx-*.test.ts`・`spreadsheet.*.render.test.ts` | 22（geom の 2 を含む。当初の見積もりは 26）＋5 ファイル | `tests/render/`（`spreadsheet.*` は `renderSheet` を呼ぶ形に書き直す） |
 | `lib/xlsx/__fixtures__/excel/` | 23 ファイル | `fixtures/excel/`（[05_quality.md](05_quality.md) §2） |
 
 - テストは vitest＋jsdom。`node:fs` で fixtures を読むテストがある（Node で走る前提）。

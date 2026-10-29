@@ -39,7 +39,7 @@ M0 で決める項目は [ADR-0001](adr/0001-library-decision.md) で決めた�
 | D3 | ライセンス | 非公開の間は書かない。公開するなら MIT か Apache-2.0。いずれでも preset 定義の Ecma の著作権表示（`NOTICE`）を同梱。依存の jszip は MIT/GPLv3 の二重ライセンス（MIT を選ぶ）、ssf は Apache-2.0 | M0（公開は M4 以降） |
 | D4 | パッケージの形 | npm パッケージ 1 つ＋サブパス（`xsheet`・`xsheet/render`・`xsheet/style.css`）。monorepo にはしない | M0 |
 | D5 | 配布 | 非公開の間は GitHub のタグに `dist/` を含めて git 依存で配る（使う側が `--ignore-scripts` でも動く）。npm 公開は D3 の後 | M4 |
-| D6 | クラス名・CSS 変数の接頭辞 | `xv-`・`--xv-*` に固定（旧仮称 xlsx-view 由来。名前が XSheet に決まったので M2 で見直す） | M2 |
+| D6 | クラス名・CSS 変数の接頭辞 | `xs-`・`--xs-*`（XSheet に合わせる。旧仮称 xlsx-view 由来の `xv-` はやめた。2026-10-28 にユーザーが決定） | M2 |
 | D7 | 既定の文言 | 日本語と英語を同梱し、使う側が差し替えられる | M3 |
 | D8 | 対応環境 | 核：ES2022 のブラウザ・Web Worker・Node 20 以上。描画：Chrome/Edge/Firefox/Safari の最新 2 版 | M0 |
 

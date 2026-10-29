@@ -9,7 +9,7 @@
 ## TL;DR
 - 3 層：**core**（.xlsx → データモデル・DOM 非依存）／**geom**（図形の形の表と式の評価・遅延読み込み）／**render**（DOM の表と重ねる層・CSS 1 枚）。
 - 公開の入口は `openXlsx`（core）と `renderSheet`・`renderWorkbook`（render）。表示は 1 回の呼び出しごとのインスタンスで、`destroy()` で全部放す。
-- 見た目は CSS 変数 `--xv-*` で、文言は `messages` で、使う側が差し替える。
+- 見た目は CSS 変数 `--xs-*` で、文言は `messages` で、使う側が差し替える。
 
 ---
 
@@ -26,12 +26,12 @@ flowchart LR
   S --> R[render<br/>renderSheet]
   D --> R
   R --> V[表 table＋罫線 SVG＋図の層]
-  CSS[style.css<br/>--xv-* 変数] --> V
+  CSS[style.css<br/>--xs-* 変数] --> V
 ```
 
 | 層 | 入口（サブパス） | 依存 | 動く場所 |
 | --- | --- | --- | --- |
-| core | `xsheet` | jszip・ssf | ブラウザ・Worker・Node |
+| core | `xsheet`・`xsheet/internal`（半公開） | jszip・ssf | ブラウザ・Worker・Node |
 | geom | `xsheet/geom`（render が動的 import） | なし | どこでも |
 | render | `xsheet/render`・`xsheet/style.css` | core・geom・DOM | ブラウザ |
 
@@ -79,16 +79,20 @@ export class XlsxError extends Error { kind: 'not-zip' | 'encrypted' | 'broken' 
 export { DEFAULT_LIMITS, colName, createGeometry, colWidthToPx, defaultColWidthToPx, ptToPx, fontDefaultRowPx, lookupMdw, isPaperFill };
 ```
 
-- 今の InterHub の `lib/xlsx/index.ts` と同じ形。ライブラリ化で決めること：
-  - `Theme`・`Rgba`・`FormatTable`・`BorderTable` と描画側が直接 import している内部モジュール（`color`・`drawing-geom`・`geometry`・`limits`・`types`）のうち、どれを公開するか。
-  - 方針：render が使うものは `xsheet/internal` に出し、半公開（版の互換を約束しない）とする。
+- 今の InterHub の `lib/xlsx/index.ts` と同じ形。公開の範囲は M1-3 で次のように決めた（テストは `tests/core/public-api.test.ts`）：
+  - 値：上の 11 個（`openXlsx`・`XlsxError`・`DEFAULT_LIMITS`・`colName`・`createGeometry`・`colWidthToPx`・`defaultColWidthToPx`・`ptToPx`・`fontDefaultRowPx`・`lookupMdw`・`isPaperFill`）。
+  - 型：`types.ts` の公開の型を全部（図の型 `DrawingText`・`DrawingLine`・`ShapeGeom`・`DrawingGroup` なども `openDrawings` の戻り値から辿れるため）と、`Rgba`・`Geometry`・`XlsxLimits`・`OpenXlsxOptions`。`types.ts` に型を足したら入口にも足す（テストが落ちる）。
+  - 出さない：`Theme`・`FormatTable`・`BorderTable` と読み取りの内部の関数（ブックの中で閉じていて、使う側が触る場面が無い）。
+  - `xsheet/internal`（`src/core/internal.ts`・半公開で版の互換を約束しない）：render が使う `applyFillMode` と、描画の部品の試験で使う `emptyLayout`・`DEFAULT_MDW`。
+  - `src/render/**` は core を `../core/index` と `../core/internal` からだけ引く（ESLint の `no-restricted-imports`）。M4 で core と render を別のチャンクにしたときに部品が重ならないようにするため。
+  - DOM 非依存は、core の入口を Vite で束ねて素の Node（`--disallow-code-generation-from-strings`）で import し、Excel で作ったファイルを開いて元のソースと同じ結果になることで確かめる（`tests/core/node-import.test.ts`）。形の表（`preset-geom.json`）が core に入らないことも同じテストで見る。
 - M6 の候補：`cellValue(r, c)`（生の値と型）、`sheetToJson`・`sheetToCsv`（SheetJS の `sheet_to_json` に当たる）。
 
 ## 3. 公開 API — render
 
 ```ts
 export interface RenderOptions {
-  messages?: Partial<XlsxViewMessages>; // 既定は ja。en も同梱
+  messages?: Partial<XSheetMessages>;   // 既定は ja（MESSAGES_JA）。en（MESSAGES_EN）も同梱
   drawings?: boolean;                   // 図の層（既定 true）
   nonce?: string;                       // 書式の <style> に付ける（CSP 用・M3）
 }
@@ -98,19 +102,32 @@ export interface SheetView {
 }
 export function renderSheet(container: HTMLElement, book: XlsxBook, sheetIndex: number, options?: RenderOptions): Promise<SheetView>;
 
-export interface WorkbookView extends SheetView { showSheet(index: number): Promise<void> }
-export function renderWorkbook(container: HTMLElement, data: ArrayBuffer, options?: RenderOptions): Promise<WorkbookView>; // タブ付き・book も閉じる
+export interface WorkbookOptions extends RenderOptions {
+  limits?: Partial<XlsxLimits>;         // openXlsx に渡す上限
+}
+export interface WorkbookView extends SheetView {
+  showSheet(index: number): Promise<void>; // SheetInfo.index。無い番号は RangeError。表示中なら何もしない
+}
+export function renderWorkbook(container: HTMLElement, data: ArrayBuffer | Uint8Array, options?: WorkbookOptions): Promise<WorkbookView>; // タブ付き・destroy で book も閉じる
 ```
 
-- `container` は高さが決まっていて、中でスクロールする前提（`overflow` は render が付ける）。
-- InterHub の `spreadsheet.ts` はモジュール変数（`disposeXlsxView`・`renderGeneration`・`formatSeq`）で表示を 1 つだけ持つ。render では状態を `SheetView` に持たせ、同じページに複数の表示を置けるようにする。書式の CSS の連番（`data-xv-fmt`）はモジュールで 1 つの連番のままでよい。
+- `container` は高さが決まっていて、中でスクロールする前提（スクロール枠 `.xs-body` の `overflow` などは `style.css`（M3-1）が付ける）。render は `container` の子に自前の根 `div.xs-sheet` を足すだけで、`container` 自身には属性もクラスも付けない。
+- DOM（M2-3）：`div.xs-sheet[data-xs-fmt]` ＞ [`div.xs-notice`（図の通知。無ければ hidden）・`div.xs-body`（スクロール枠＝仮想化の窓）・`<style>`（書式。`nonce` を付けられる）]。`div.xs-body` ＞ `div.xs-wrap` ＞ [`table.xs-grid`・`svg.xs-borders`・`div.xs-layer`]。空のシートは `div.xs-empty`、シートを開けないときは `div.xs-banner` を `div.xs-body` の中に出す。
+- `sheetIndex` は `SheetInfo.index`（1 始まり・非表示のシートも数える）。ブックに無い番号は `RangeError`（DOM に何も足さない）。シートを開けない（`openSheet` の例外）ときは例外にせず、枠の中にメッセージを出して解決する。
+- InterHub の `spreadsheet.ts` はモジュール変数（`disposeXlsxView`・`renderGeneration`・`formatSeq`）で表示を 1 つだけ持つ。render では状態を表示のインスタンス（`src/render/sheet-view.ts` の `createSheetView`）に持たせ、同じページに複数の表示を置けるようにする。書式の CSS の連番（`data-xs-fmt`）はモジュールで 1 つの連番のままでよい。
+- 大きさの変化は `window` の `resize` ではなく、スクロール枠の `ResizeObserver`（無い環境では使わない）で知る。スクロール・大きさの変化は rAF 1 回にまとめて描く。`window`・`document` にはリスナを付けない。
 - 描画の順（InterHub の `renderXlsxView` と同じ）：
-  1. `openSheet` → `openDrawings`。
-  2. 書式の CSS をブックで 1 回作る（`buildFormatCss`）。
+  1. `openSheet` → `openDrawings`（`drawings: false` なら読まない）→ 形のある図形があれば形の表を読む（`loadGeom`。読めなければ代替で描き、通知 `libLoadFailed`）。
+  2. 書式の CSS をブックで 1 回作る（`buildFormatCss`。シートを替えても作り直さない）。
   3. 図の配置（`layoutDrawings`）と図の層（`createImageLayer`）。
   4. 範囲と座標（`gridExtent`・`createGeometry`）。
   5. スクロールごとに `getRows` → 表（`buildGridTable`）→ 罫線（`buildBorderPaths`）。
-  6. `destroy` で層・罫線・シートを放す。
+  6. `destroy` で層（blob URL を revoke）・罫線・シートを放し、根を `container` から外す。ブックは閉じない。
+- `renderWorkbook`（M2-4）：
+  - DOM：`container` の子に `div.xs-workbook` ＞ [`div.xs-sheet-strip`（タブ列）・`div.xs-sheet`（上のシートの表示）]。タブ列は `button.xs-sheet-nav`（◀）・`div.xs-sheet-tabs`（横スクロール）＞ `button.xs-sheet-tab`…・`button.xs-sheet-nav`（▶）。タブは `is-active`・`is-hidden-sheet`（名前に ` ⌀`、title に名前と `hiddenSheet`）。
+  - シートの表示は 1 冊に 1 つ（`createSheetView`）で、タブは同じインスタンスの `showSheet` でシートを替える（書式の `<style>` はブックで 1 つのまま）。最初に出すのは最初の表示（非表示でない）シート、全部非表示なら先頭。
+  - 開けない（`openXlsx` の例外）ときは例外にせず `div.xs-workbook` ＞ `div.xs-banner`（種類ごとの文言）、シートが 0 枚なら `div.xs-empty`（`noSheets`。ブックは閉じる）で解決する。どちらも `showSheet` は `RangeError`。
+  - `destroy`：タブ列（リスナ・ResizeObserver・rAF）→ シートの表示 → `book.close()` → 根を外す。何度呼んでもよい。
 
 ## 4. データモデル（要点）
 
@@ -145,26 +162,33 @@ export function renderWorkbook(container: HTMLElement, data: ArrayBuffer, option
 
 | ライブラリの変数 | 役割 | 明るい既定値 | ダークの例 | InterHub の元 |
 | --- | --- | --- | --- | --- |
-| `--xv-fg` | 文字の色（塗りの無いセル・自動の文字） | `#1a1a1a` | `#e6e6e6` | `--ih-fg` |
-| `--xv-bg` | 見出し・面の地 | `#ffffff` | `#1e1e1e` | `--ih-bg` |
-| `--xv-cell-bg` | セルの地（白の塗り＝「紙」もこれ） | `#f5f6f8` | `#0f1115` | `--ih-xlsx-cell-bg`（＝`--ih-canvas`） |
-| `--xv-head-bg` | 列記号・行番号の地 | `#eef0f4` | `#1f232c` | `--ih-bg-elev2` |
-| `--xv-grid` | グリッド線 | `#d0d0d0` | `#3a3a3a` | `--ih-border` |
-| `--xv-muted`・`--xv-faint` | 行番号・破線枠の文字 | `#6b7280`・`#8a92a2` | `#9ca3af`・`#6b7386` | `--ih-muted`・`--ih-faint` |
-| `--xv-border-ink` | 自動・黒の罫線（墨色） | `#000000` | `#d4d4d4` | `--ih-xlsx-border-ink` |
-| `--xv-backdrop`・`--xv-backdrop-display` | ダーク時の図の白い下地 | `transparent`・`none` | `#ffffff`・`block` | `--ih-xlsx-backdrop*` |
+| `--xs-fg` | 文字の色（塗りの無いセル・自動の文字） | `#1a1a1a` | `#e6e6e6` | `--ih-fg` |
+| `--xs-bg` | 見出し・面の地 | `#ffffff` | `#1e1e1e` | `--ih-bg` |
+| `--xs-cell-bg` | セルの地（白の塗り＝「紙」もこれ） | `#f5f6f8` | `#0f1115` | `--ih-xlsx-cell-bg`（＝`--ih-canvas`） |
+| `--xs-head-bg` | 列記号・行番号の地 | `#eef0f4` | `#1f232c` | `--ih-bg-elev2` |
+| `--xs-grid` | グリッド線 | `#d0d0d0` | `#3a3a3a` | `--ih-border` |
+| `--xs-muted`・`--xs-faint` | 行番号・破線枠の文字 | `#6b7280`・`#8a92a2` | `#9ca3af`・`#6b7386` | `--ih-muted`・`--ih-faint` |
+| `--xs-border-ink` | 自動・黒の罫線（墨色） | `#000000` | `#d4d4d4` | `--ih-xlsx-border-ink` |
+| `--xs-backdrop`・`--xs-backdrop-display` | ダーク時の図の白い下地 | `transparent`・`none` | `#ffffff`・`block` | `--ih-xlsx-backdrop*` |
 
 - `style.css` は明るい既定値だけを持つ。ダーク表示は使う側が変数を上書きする（`prefers-color-scheme` か自前のテーマ属性）。例を `examples/` に置く。
 - Excel の色（塗り・文字の色・図形の色）は変数ではなく、書式の CSS とインラインの値で入る。ダーク表示の描き分けの規則（塗りのあるセルは Excel の色のまま、白の塗りは「紙」など）は InterHub ADR-0030 のとおり。
-- クラス名は InterHub の `ih-xlsx-*`・`ih-xf-N`・`data-ih-xlsx-fmt` を `xv-*`・`xv-xf-N`・`data-xv-fmt` にする。InterHub 共用のクラス（`ih-data-view`・`ih-data-banner`・`ih-dv-rownum`・`ih-sheet-tabs` など）は、render が要るものだけ `xv-` で作り直す。
+- クラス名は InterHub の `ih-xlsx-*`・`ih-xf-N`・`data-ih-xlsx-fmt` を `xs-*`・`xs-xf-N`・`data-xs-fmt` にする（D6）。表の根の `.ih-spreadsheet` は `.xs-sheet`。InterHub 共用のクラス（`ih-data-view`・`ih-data-banner`・`ih-dv-rownum`・`ih-sheet-tabs` など）は、render が要るものだけ `xs-` で作り直す。
 
-## 7. 文言（`XlsxViewMessages`・22 キー）
+## 7. 文言（`XSheetMessages`・23 キー）
 
-| 区分 | キー（InterHub の `spreadsheet.` を除いた名前） |
+| 区分 | キー（InterHub の `spreadsheet.`・`spreadsheet.drawing.` を除いた名前） |
 | --- | --- |
-| エラー | `libLoadFailed`・`parseFailed`（`{detail}`）・`noSheets`・`encrypted`・`tooLarge`・`unsupported` |
+| エラー | `parseFailed`（`{detail}`）・`noSheets`・`noData`（InterHub の `data.noData`）・`encrypted`・`tooLarge`・`unsupported` |
 | タブ | `hiddenSheet`・`tabsPrev`・`tabsNext`（`renderWorkbook` だけが使う） |
-| 図の枠 | `drawing.chart`・`drawing.smartart`・`drawing.shape`・`drawing.textbox`・`drawing.group`・`drawing.imageFormat`（`{format}`）・`drawing.imageBroken` |
-| 通知 | `drawing.noticeTooLarge`・`noticeBroken`・`noticeTooMany`・`noticeTextTruncated`・`noticeShapeSimplified`・`noticeOverBudget` |
+| 図の枠 | `chart`・`smartart`・`shape`・`textbox`・`group`・`imageFormat`（`{format}`）・`imageBroken` |
+| 通知 | `noticeTooLarge`・`noticeBroken`・`noticeTooMany`・`noticeTextTruncated`・`noticeShapeSimplified`・`noticeOverBudget`・`libLoadFailed`（形の表を読めない） |
 
-- 文言の元は InterHub `src_V1/src/locales/ja.ts`（275〜302 行）と `en.ts`。ライブラリは平たいオブジェクト（`{ encrypted: '…' }`）で受け、`{detail}` などの差し込みは render が行う。
+- 文言の元は InterHub `src_V1/src/locales/ja.ts`（275〜302 行・248 行の `data.noData`）と `en.ts`。
+- 実装は `src/render/messages.ts`（M2-2）：
+  - `MESSAGES_JA`（既定）・`MESSAGES_EN` は凍結した平たいオブジェクト。`xsheet/render` から出す。
+  - `resolveMessages(partial, base)` が既定に渡された分だけを重ねる。文字列でない値・表に無いキーは無視する。
+  - 差し込み（`{detail}`・`{format}`）は `formatMessage` が行う。値の無い `{name}` は残す（InterHub の `t()` と同じ）。
+  - 型の名前は、旧仮称由来の `XlsxViewMessages` をやめて `XSheetMessages` にした（D6 と同じ理由）。
+  - `libLoadFailed` は、InterHub では xlsx の読み込み（動的 import）の失敗だったが、render は core を静的に引くため起きない。M2-3 で「形の表（geom の動的 import）を読めない」通知の文言に替えた。
+  - 23 キー目の `noData` は、`spreadsheet.ts` が空のシートで使う InterHub 共用のキー（`data.noData`）。立ち上げ資料の 22 キーには入っていなかった。

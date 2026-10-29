@@ -48,6 +48,38 @@ export default tseslint.config(
     },
   },
   {
+    // render は core を公開の入口（index）と半公開の入口（internal）からだけ引く（02_architecture.md §2・M1-3）。
+    // core の中の作りに直接つながると、公開の範囲が見えなくなり、M4 で core と render を別のチャンクにしたときに部品が重なる
+    files: ['src/render/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../core/*', '!../core/index', '!../core/internal'],
+              message: 'render は core を ../core/index か ../core/internal から引く',
+            },
+          ],
+        },
+      ],
+      // render は geom を型だけ静的に引く（M2-3）。形の表（約 171 KB）は `shapes.ts` の `loadGeom` が動的 import で読む。
+      // 動的 import（`import('../geom/index')`）はこの規則の対象外
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../geom', '../geom/*'],
+              allowTypeImports: true,
+              message: 'render は geom を型だけ引く（実体は shapes.ts の loadGeom で動的 import）',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
