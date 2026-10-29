@@ -230,3 +230,40 @@ dist/
 - ESM だけ・圧縮しない・jszip と ssf は束ねない。使う側の TypeScript は `moduleResolution: "bundler"` が前提（ADR-0002）。
 - `npm run check:consumer`：一時フォルダに使う側のプロジェクトを作り、`node_modules/xsheet` をこのリポジトリへのリンクにして、`exports` を通して型検査（strict）と Vite のビルドをする。形の表が使う側のビルドでも別のチャンクになること、`xsheet/style.css` が CSS に入ることを見る。
 - 例のページ（`examples/`）は dist ではなく src を直接読む（ビルドの前でも動かすため）。
+
+### 大きさ（N6・M4-2）
+
+`npm run size` が入口ごとに、static に辿れるファイル（共有のチャンクを含む・依存は含めない）の合計を測り、上限を超えたら失敗する。上限は「圧縮＋gzip」の列で、2026-10-29 の実測に約 1 割の余裕を足した値（`tools/size.mjs` の `LIMITS`）。
+
+| 入口 | dist（B） | gzip | 圧縮＋gzip | 上限 |
+| --- | ---: | ---: | ---: | ---: |
+| `core/index`（`xsheet`） | 180,727 | 60,104 | 27,781 | 31,000 |
+| `render/index`（`xsheet/render`。core を含む） | 323,736 | 106,970 | 47,240 | 52,000 |
+| `geom/index`（`xsheet/geom`。形の表を含む） | 236,078 | 36,752 | 32,519 | 36,000 |
+
+- 使う側のビルド（`check:consumer` の Vite・圧縮あり）では、最初に読む JS が 235,602 B（gzip 78,051。jszip・ssf・core・render を含む）、図形を描くときに読む形の表のチャンクが 176,422 B（gzip 30,477）、CSS が 5,404 B（gzip 1,537）。
+- 参考（01 N6）：xrag の初版は読み取り＋表示で 40,760 B、jszip が 96,716 B。XSheet は図形・罫線・書式の描画を持つぶん大きい。形の表は図形のあるシートでだけ読む。
+
+### 依存のライセンス（M4-2）
+
+配る物が実行時に使う依存（`package-lock.json` の dev でない物。jszip と ssf とその依存）。使う側の依存として入り、XSheet の dist には束ねない。この表と lockfile は `tests/distribution.test.ts` が突き合わせる。
+
+| パッケージ | 版 | ライセンス | 経路 |
+| --- | --- | --- | --- |
+| `jszip` | 3.10.2 | (MIT OR GPL-3.0-or-later)（MIT を選ぶ） | 直接 |
+| `ssf` | 0.11.2 | Apache-2.0 | 直接 |
+| `frac` | 1.1.2 | Apache-2.0 | ssf |
+| `lie` | 3.3.0 | MIT | jszip |
+| `immediate` | 3.0.6 | MIT | jszip ＞ lie |
+| `pako` | 1.0.11 | (MIT AND Zlib) | jszip |
+| `readable-stream` | 2.3.8 | MIT | jszip |
+| `core-util-is` | 1.0.3 | MIT | jszip ＞ readable-stream |
+| `inherits` | 2.0.4 | ISC | jszip ＞ readable-stream |
+| `isarray` | 1.0.0 | MIT | jszip ＞ readable-stream |
+| `process-nextick-args` | 2.0.1 | MIT | jszip ＞ readable-stream |
+| `safe-buffer` | 5.1.2 | MIT | jszip ＞ readable-stream |
+| `string_decoder` | 1.1.1 | MIT | jszip ＞ readable-stream |
+| `util-deprecate` | 1.0.2 | MIT | jszip ＞ readable-stream |
+| `setimmediate` | 1.0.5 | MIT | jszip |
+
+- XSheet 自身の配布物には `NOTICE`（形の表の元の Ecma の著作権表示）を根と `dist/` の両方に入れる。`npm run check:consumer` が `npm pack --dry-run` の中身（`exports` の指す先・`NOTICE`・`dist/NOTICE` が入り、`src/` が入らない）と、`dist/NOTICE` が `NOTICE` と同じことを確かめる。

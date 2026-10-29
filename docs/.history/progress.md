@@ -72,3 +72,8 @@
 - `vite.config.ts`（ライブラリモード・ESM・入口 4 つ・jszip/ssf は束ねない・圧縮しない・style.css と NOTICE を写す）と `tsconfig.build.json`（d.ts だけ）。`npm run build`。
 - `tools/consumer-check.mjs`（`npm run check:consumer`）：一時フォルダの使う側から exports を通して型検査と Vite のビルドが通る。形の表は使う側でも別のチャンク。
 - ADR-0002 で D5（タグに dist を含めて git 依存）・D7 を決定として記録。02 §8 にビルドと配布物を書いた。
+
+## 2026-10-29 M4-2（大きさ・ライセンス・NOTICE）
+- `tools/size.mjs`（`npm run size`）：入口ごとの大きさ（dist・gzip・圧縮＋gzip）を測り、上限（実測＋約 1 割）を超えたら失敗。core 27,781・render 47,240・geom 32,519 B（圧縮＋gzip）。
+- `check:consumer` に `npm pack --dry-run` の中身（exports の先・NOTICE・dist/NOTICE、src を含まない）の確認を足した。
+- 02 §8 に大きさと依存のライセンス（15 パッケージ）の表。`tests/distribution.test.ts`（7 件）が lockfile・exports・vite.config・上限と突き合わせる。テスト 1,654 件。

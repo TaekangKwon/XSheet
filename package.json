@@ -41,6 +41,7 @@
     "format:check": "prettier --check .",
     "build": "vite build && tsc -p tsconfig.build.json",
     "check:consumer": "node tools/consumer-check.mjs",
+    "size": "node tools/size.mjs",
     "geom:build": "node tools/geom/build-preset-geom.mjs",
     "geom:compare": "node fixtures/excel/compare-ref-geoms.mjs",
     "examples": "vite --config examples/vite.config.ts"

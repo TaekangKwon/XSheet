@@ -4,6 +4,7 @@
 //   package.json の exports（サブパス・types）を通って解決されることを見る（src/ を直接は見ない）。
 // - 型検査は TypeScript（moduleResolution: bundler・strict・vite/client の型）、ビルドは Vite。どちらもこのリポジトリのものを使う。
 // - ビルドの結果で、形の表（geom）が別のチャンク（動的 import）のままであること・style.css が CSS に入ることを見る。
+// - 先に、npm pack で配る中身（exports の指す先・NOTICE）を見る（M4-2）。
 // 外へは通信しない（依存はこのリポジトリの node_modules から解決する）。
 import { execFileSync } from 'node:child_process';
 import {
@@ -38,6 +39,44 @@ for (const f of [
     console.error(`${f} が無い。先に npm run build を実行する`);
     process.exit(1);
   }
+}
+
+// 配る中身（M4-2）：git 依存でも npm は pack して入れるため、package.json の files で入る物を npm pack --dry-run で見る。
+// exports の指す先・NOTICE（根と dist の両方）が入り、テスト用の src/testing・ソースが入らないこと
+{
+  // npm の本体（npm-cli.js）を node で直接動かす（Windows の npm.cmd はシェルを通さないと動かないため）
+  const npmCli =
+    process.env.npm_execpath ??
+    path.join(path.dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js');
+  const pack = JSON.parse(
+    execFileSync(process.execPath, [npmCli, 'pack', '--dry-run', '--json'], {
+      cwd: repo,
+      encoding: 'utf8',
+    }),
+  )[0];
+  const packed = new Set(pack.files.map((f) => f.path));
+  const exportsMap = JSON.parse(readFileSync(path.join(repo, 'package.json'), 'utf8')).exports;
+  const targets = Object.values(exportsMap).flatMap((v) =>
+    typeof v === 'string' ? [v] : Object.values(v),
+  );
+  const missing = [...targets.map((t) => t.replace(/^\.\//, '')), 'NOTICE', 'dist/NOTICE'].filter(
+    (f) => !packed.has(f),
+  );
+  const extra = [...packed].filter((f) => f.startsWith('src/') || f.includes('testing'));
+  if (missing.length > 0 || extra.length > 0) {
+    console.error(`配る中身が違う（無い：${missing.join(', ')}／余分：${extra.join(', ')}）`);
+    process.exit(1);
+  }
+  if (
+    readFileSync(path.join(repo, 'dist/NOTICE'), 'utf8') !==
+    readFileSync(path.join(repo, 'NOTICE'), 'utf8')
+  ) {
+    console.error('dist/NOTICE が NOTICE と違う');
+    process.exit(1);
+  }
+  console.log(
+    `配る中身：OK（${pack.files.length} ファイル・${pack.unpackedSize.toLocaleString('en-US')} B）`,
+  );
 }
 
 const dir = mkdtempSync(path.join(tmpdir(), 'xsheet-consumer-'));
