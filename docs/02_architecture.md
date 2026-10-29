@@ -267,3 +267,11 @@ dist/
 | `setimmediate` | 1.0.5 | MIT | jszip |
 
 - XSheet 自身の配布物には `NOTICE`（形の表の元の Ecma の著作権表示）を根と `dist/` の両方に入れる。`npm run check:consumer` が `npm pack --dry-run` の中身（`exports` の指す先・`NOTICE`・`dist/NOTICE` が入り、`src/` が入らない）と、`dist/NOTICE` が `NOTICE` と同じことを確かめる。
+
+### 版を出す手順（M4-3・タグはユーザーの指示で）
+
+1. `main` で `npm run test`・`npm run typecheck`・`npm run lint`・`npm run format:check` が通る。`CHANGELOG.md` の版の日付を入れ、`package.json` の `version` と合わせる。
+2. `npm run build` → `npm run check:consumer` → `npm run size` が通る。
+3. `main` から作業用のブランチ（例 `release/v0.1.0`）を切り、`git add -f dist` だけのコミットを作る（`main` には入れない・ADR-0002）。
+4. そのコミットに注釈付きのタグ（`git tag -a v0.1.0`）を打ち、タグを push する。
+5. 使う側で `npm install github:TaekangKwon/XSheet#v0.1.0` を入れ、表示を確かめる（M5）。

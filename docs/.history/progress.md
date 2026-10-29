@@ -77,3 +77,8 @@
 - `tools/size.mjs`（`npm run size`）：入口ごとの大きさ（dist・gzip・圧縮＋gzip）を測り、上限（実測＋約 1 割）を超えたら失敗。core 27,781・render 47,240・geom 32,519 B（圧縮＋gzip）。
 - `check:consumer` に `npm pack --dry-run` の中身（exports の先・NOTICE・dist/NOTICE、src を含まない）の確認を足した。
 - 02 §8 に大きさと依存のライセンス（15 パッケージ）の表。`tests/distribution.test.ts`（7 件）が lockfile・exports・vite.config・上限と突き合わせる。テスト 1,654 件。
+
+## 2026-10-29 M4-3（README・CHANGELOG。タグは指示待ち）
+- 利用者向けの `README.md`（入れ方・使い方 3 通り・指定・サブパス・CSS 変数とダークの例・CSP・上限・対応環境・開発）と `CHANGELOG.md`（0.1.0・未リリース）を書いた。`version` を 0.1.0 にした。
+- 02 §8 に版を出す手順（build・check:consumer・size → release ブランチに dist を足す → 注釈付きのタグ）。タグ `v0.1.0` を打つのはユーザーの指示があるとき。
+- テスト 1,654 件・typecheck・lint・format:check・build・check:consumer・size が通る。

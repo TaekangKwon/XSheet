@@ -1,6 +1,6 @@
 {
   "name": "xsheet",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "license": "UNLICENSED",
   "description": ".xlsx を Excel どおりに表示する JavaScript ライブラリ（読み取り専用）",
