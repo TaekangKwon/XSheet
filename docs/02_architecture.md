@@ -94,7 +94,7 @@ export { DEFAULT_LIMITS, colName, createGeometry, colWidthToPx, defaultColWidthT
 export interface RenderOptions {
   messages?: Partial<XSheetMessages>;   // 既定は ja（MESSAGES_JA）。en（MESSAGES_EN）も同梱
   drawings?: boolean;                   // 図の層（既定 true）
-  nonce?: string;                       // 書式の <style> に付ける（CSP 用・M3）
+  nonce?: string;                       // 書式の <style> に付ける（CSP 用。§3「CSP」）
 }
 export interface SheetView {
   destroy(): void;                      // blob URL・リスナ・シートを放す（book は閉じない）
@@ -128,6 +128,21 @@ export function renderWorkbook(container: HTMLElement, data: ArrayBuffer | Uint8
   - シートの表示は 1 冊に 1 つ（`createSheetView`）で、タブは同じインスタンスの `showSheet` でシートを替える（書式の `<style>` はブックで 1 つのまま）。最初に出すのは最初の表示（非表示でない）シート、全部非表示なら先頭。
   - 開けない（`openXlsx` の例外）ときは例外にせず `div.xs-workbook` ＞ `div.xs-banner`（種類ごとの文言）、シートが 0 枚なら `div.xs-empty`（`noSheets`。ブックは閉じる）で解決する。どちらも `showSheet` は `RangeError`。
   - `destroy`：タブ列（リスナ・ResizeObserver・rAF）→ シートの表示 → `book.close()` → 根を外す。何度呼んでもよい。
+
+### CSP（N7・M3-3）
+
+render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta がこの形で動く）。
+
+| 指定 | 理由 |
+| --- | --- |
+| `script-src 'self'` | ライブラリと形の表（`geom` のチャンク。図形を描くときに動的 import）を同じ出所から読む。`eval`・`new Function` は使わない（N1）ので `'unsafe-eval'` は要らない |
+| `style-src 'nonce-<値>'`（または `'unsafe-inline'`） | 書式の `<style>` 要素（表示の根に 1 枚）。`nonce` を渡すとこの要素に付く。`style.css` を `<link>` で読むなら、その `<link>` にも同じ nonce を付けるか、`style-src` に出所（`'self'` など）を足す |
+| `img-src blob:` | 図の画像は blob URL で出す（`data:` の URL は作らない） |
+
+- render は `style` 属性を文字列で付けない（`setAttribute('style')` を使わない）。位置・大きさ・色は CSSOM（`el.style.left = …`）で入れ、これは CSP の `style-src` に止められない。HTML の文字列（`innerHTML` など）も使わない。`tests/render/csp.test.ts` が render のソースを見て確かめる。
+- nonce は応答ごとにサーバーが作る推測できない値にする（例のページは固定の値）。ページの nonce は `<link>`・`<script>` の `nonce` プロパティで読める（属性はブラウザが隠すことがあるため `getAttribute` では読まない）。
+- フォント・外への通信は使わないので、`font-src`・`connect-src` は要らない（例のページの `connect-src 'self'` はサンプルの読み込みと開発サーバーのため）。
+- M3-3 で、`style-src 'nonce-…'` だけの CSP で examples が動くこと（書式の塗りが効く・nonce を渡さないと書式の `<style>` が止まる）を内蔵ブラウザで確かめた。
 
 ## 4. データモデル（要点）
 

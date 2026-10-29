@@ -4,19 +4,20 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!--
-      XSheet の表示に要る CSP（docs/01_requirements.md N7）：
+      XSheet の表示に要る CSP（docs/02_architecture.md §3「CSP」）：
       - script-src 'self'：ライブラリと形の表（動的 import）を同じ出所から読む
-      - style-src：書式の <style> 要素に 'unsafe-inline' か nonce が要る
+      - style-src 'nonce-…'：style.css の <link> と、書式の <style> 要素（renderWorkbook の nonce で付く）だけを許す
       - img-src blob:：画像は blob URL で出す
       connect-src 'self' は、この例でサンプルの .xlsx を fetch するためと、Vite の開発サーバーの更新の通知のため。
+      nonce は本来、応答ごとにサーバーが作る推測できない値にする。この例は固定の値。
     -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src blob:; connect-src 'self'; base-uri 'none'; form-action 'none'"
+      content="default-src 'none'; script-src 'self'; style-src 'nonce-xsheet-example'; img-src blob:; connect-src 'self'; base-uri 'none'; form-action 'none'"
     />
     <title>XSheet の例</title>
-    <link rel="stylesheet" href="/src/style.css" />
-    <link rel="stylesheet" href="./example.css" />
+    <link rel="stylesheet" href="/src/style.css" nonce="xsheet-example" />
+    <link rel="stylesheet" href="./example.css" nonce="xsheet-example" />
     <script type="module" src="./main.ts"></script>
   </head>
   <body>

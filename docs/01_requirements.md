@@ -78,7 +78,7 @@
 | N4 性能 | 100 万セルのシートを 1 秒以内に開く。スクロールで 200ms を超えるフレームを出さない | 図形 1,000 個・全罫線 10,000 セルで確認済み（InterHub の実測） |
 | N5 性能 | 解析は線形時間（悪意のある入力で二乗にならない） | `linear-time` のテスト |
 | N6 容量 | 核・描画・形の表を別のチャンクにし、形の表（171 KB・gzip 約 28 KB）は図形を描くときだけ読む。各チャンクの上限は M4 で実測して決める | ビルドで計測（参考：xrag の初版は読み取り＋表示で 40,760 B、jszip 96,716 B。InterHub は図形の対応で dist が +177,565 B） |
-| N7 CSP | `script-src 'self'` で動く。書式の `<style>` 要素に `style-src 'unsafe-inline'` か nonce が要る。画像に `img-src blob:` が要る | 文書に明記し、nonce を渡せるようにする（M3） |
+| N7 CSP | `script-src 'self'` で動く。書式の `<style>` 要素に `style-src 'unsafe-inline'` か nonce が要る。画像に `img-src blob:` が要る | [02](02_architecture.md) §3「CSP」に明記。`nonce` を渡せる。`tests/render/csp.test.ts` と examples（nonce だけの `style-src`）で確認（M3-3） |
 | N8 移植性 | 核は DOM・Node 固有の API を使わない | DOM は型の設定（`lib` に DOM を入れない）、Node は ESLint（ADR-0001）で確認 |
 | N9 後始末 | `destroy()` で blob URL・リスナ・ブックを全部放す | 漏れ 0 のテスト |
 | N10 互換 | Excel 16 の表示と、寸法・図の位置は 1px 以内 | 照合の手順（[05_quality.md](05_quality.md)） |

@@ -37,6 +37,13 @@ const drawingsCheck = byId<HTMLInputElement>('drawings');
 const statusOut = byId<HTMLOutputElement>('status');
 const viewer = byId<HTMLElement>('viewer');
 
+/**
+ * ページの CSP の nonce（M3-3）。style.css の <link> に付いた値を、書式の <style> にも付けてもらう。
+ * nonce の属性値はブラウザが隠すことがあるため、getAttribute ではなく nonce プロパティで読む。
+ */
+const nonce =
+  document.querySelector<HTMLLinkElement>('link[rel="stylesheet"][nonce]')?.nonce || undefined;
+
 let view: WorkbookView | null = null;
 /** 表示中のファイル（文言・図の切り替えで開き直す） */
 let current: { name: string; data: ArrayBuffer } | null = null;
@@ -87,6 +94,7 @@ async function show(): Promise<void> {
   const next = await renderWorkbook(viewer, current.data, {
     messages: langSelect.value === 'en' ? MESSAGES_EN : MESSAGES_JA,
     drawings: drawingsCheck.checked,
+    nonce,
   });
   if (mySeq !== seq) {
     next.destroy(); // 開いている間に別のファイルが選ばれた

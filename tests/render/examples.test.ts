@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULTS, rule } from './style-css.helpers';
 
 /**
- * M3-2：例のページ（examples/）の文面の確認。見た目は実機で目視する。
+ * M3-2・M3-3：例のページ（examples/）の文面の確認。見た目は実機で目視する。
  * ダークの値が文書（docs/02_architecture.md §6）とずれないこと、CSP が N7 の要件どおりであることを確かめる。
  */
 
@@ -82,9 +82,19 @@ describe('examples/index.html', () => {
     }
   });
 
-  it('ライブラリの style.css と例の CSS を読む', () => {
-    expect(indexHtml).toContain('href="/src/style.css"');
-    expect(indexHtml).toContain('href="./example.css"');
+  it('style-src は nonce だけ（unsafe-inline・self を許さない。M3-3）', () => {
+    expect(directives.get('style-src')).toEqual(["'nonce-xsheet-example'"]);
+  });
+
+  it('ライブラリの style.css と例の CSS を、CSP と同じ nonce を付けた <link> で読む', () => {
+    const links = [...indexHtml.matchAll(/<link rel="stylesheet" ([^>]*)\/>/g)].map((m) => m[1]!);
+    expect(links.map((a) => /href="([^"]+)"/.exec(a)?.[1])).toEqual([
+      '/src/style.css',
+      './example.css',
+    ]);
+    for (const attrs of links) {
+      expect(attrs).toContain('nonce="xsheet-example"');
+    }
   });
 });
 
@@ -92,6 +102,11 @@ describe('examples/main.ts', () => {
   it('ライブラリは公開の入口（render の index）からだけ引く', () => {
     const imports = [...mainTs.matchAll(/from '([^']+)'/g)].map((m) => m[1]);
     expect(imports).toEqual(['../src/render/index']);
+  });
+
+  it('ページの nonce（<link> の nonce プロパティ）を renderWorkbook に渡す', () => {
+    expect(mainTs).toMatch(/link\[rel="stylesheet"\]\[nonce\]'\)\?\.nonce/);
+    expect(mainTs).toMatch(/renderWorkbook\([^)]*\bnonce,/);
   });
 
   it('サンプルは fixtures/excel にある自作のファイル', () => {
