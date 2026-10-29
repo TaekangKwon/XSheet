@@ -24,7 +24,7 @@ export interface Box {
 
 /** 輪郭の距離（95 パーセンタイル）の許容（100% 換算の px） */
 export const TOLERANCE_PX: number;
-/** Excel（画面 125%）と InterHub の写し（deviceScaleFactor 1.25）の、100% の 1px あたりの画素数 */
+/** Excel（画面 125%）と XSheet の写し（deviceScaleFactor 1.25）の、100% の 1px あたりの画素数 */
 export const SCALE_125: number;
 
 /** フィルタ済みの走査線から PNG を組み立てる（テスト・検査用） */
@@ -79,13 +79,14 @@ export interface ContourCompare {
   nB: number;
   dw: number;
   dh: number;
+  /** 空の側（'interhub'＝XSheet の側。名前は InterHub から写したまま） */
   empty: null | 'both' | 'excel' | 'interhub';
 }
-/** 輪郭の比較（a＝Excel・b＝InterHub。どちらもインクの外接矩形で切り出したマスク） */
+/** 輪郭の比較（a＝Excel・b＝XSheet。どちらもインクの外接矩形で切り出したマスク） */
 export function compareContours(a: Mask, b: Mask, scale?: number): ContourCompare;
 /** 細線化（Zhang-Suen。枠線を 1 画素幅の中心線にする） */
 export function thin(mask: Mask): Mask;
-/** 中心線どうしの比較（a＝Excel・b＝InterHub のインクのマスク。normalize なら b を a の寸法へ拡縮、searchPx > 0 なら ±searchPx 画素の位置合わせをして測る） */
+/** 中心線どうしの比較（a＝Excel・b＝XSheet のインクのマスク。normalize なら b を a の寸法へ拡縮、searchPx > 0 なら ±searchPx 画素の位置合わせをして測る） */
 export function compareSkeletons(
   a: Mask,
   b: Mask,
@@ -117,7 +118,7 @@ export interface TextCompare {
   nA?: number;
   nB?: number;
 }
-/** 反転した図形の文字の比較（e＝Excel・i＝InterHub。文字入りの図形と枠線だけの双子のマスク） */
+/** 反転した図形の文字の比較（e＝Excel・i＝XSheet。文字入りの図形と枠線だけの双子のマスク） */
 export function compareText(o: {
   eText: Mask;
   eOutline: Mask;

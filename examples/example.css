@@ -1,0 +1,126 @@
+/*
+ * XSheet の例のページの CSS。
+ * ライブラリの `style.css` は明るい既定値だけを持つ（docs/02_architecture.md §6）。
+ * ダーク表示は使う側が変数を上書きする。ここでは 2 つの方法を両方示す：
+ *   1. OS の設定（prefers-color-scheme）に合わせる。ただし明るいを選んだとき（data-theme="light"）は除く
+ *   2. 自前のテーマの属性（data-theme="dark"）
+ * 値は §6 の「ダークの例」の列と同じ（tests/render/examples.test.ts が突き合わせる）。
+ */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --xs-fg: #e6e6e6;
+    --xs-bg: #1e1e1e;
+    --xs-cell-bg: #0f1115;
+    --xs-head-bg: #1f232c;
+    --xs-grid: #232733;
+    --xs-border: #3a3a3a;
+    --xs-muted: #9ca3af;
+    --xs-faint: #6b7386;
+    --xs-accent: #60a5fa;
+    --xs-warn: #fbbf24;
+    --xs-warn-bg: rgba(251, 191, 36, 0.14);
+    --xs-border-ink: #d4d4d4;
+    --xs-backdrop: #ffffff;
+    --xs-backdrop-display: block;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --xs-fg: #e6e6e6;
+  --xs-bg: #1e1e1e;
+  --xs-cell-bg: #0f1115;
+  --xs-head-bg: #1f232c;
+  --xs-grid: #232733;
+  --xs-border: #3a3a3a;
+  --xs-muted: #9ca3af;
+  --xs-faint: #6b7386;
+  --xs-accent: #60a5fa;
+  --xs-warn: #fbbf24;
+  --xs-warn-bg: rgba(251, 191, 36, 0.14);
+  --xs-border-ink: #d4d4d4;
+  --xs-backdrop: #ffffff;
+  --xs-backdrop-display: block;
+}
+
+/* ページの枠（ライブラリの変数をそのまま使い、表示と同じ色にそろえる） */
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: var(--xs-bg);
+  color: var(--xs-fg);
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+}
+
+.ex-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--xs-border);
+}
+
+.ex-title {
+  margin: 0;
+  font-size: 16px;
+}
+
+.ex-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ex-field > span {
+  color: var(--xs-muted);
+}
+
+.ex-check > span {
+  color: inherit;
+}
+
+.ex-field select,
+.ex-field input[type='file'] {
+  font: inherit;
+  color: inherit;
+}
+
+.ex-field select {
+  padding: 2px 4px;
+  background: var(--xs-bg);
+  border: 1px solid var(--xs-border);
+  border-radius: 4px;
+}
+
+.ex-status {
+  margin-left: auto;
+  color: var(--xs-faint);
+}
+
+/* 表示の container：高さが決まっていること（中のスクロール枠が仮想化の窓になる） */
+.ex-viewer {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 12px 16px 16px;
+  box-sizing: border-box;
+}
+
+.ex-viewer.is-dragover {
+  outline: 2px dashed var(--xs-accent);
+  outline-offset: -6px;
+}
+
+.ex-hint {
+  margin: 24px 0;
+  color: var(--xs-faint);
+}

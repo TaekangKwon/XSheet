@@ -47,3 +47,43 @@
 - `destroy` はタブのリスナ・ResizeObserver・rAF → 表示（blob URL）→ `book.close()` の順に放す。タブのクリックは `addEventListener` にした。
 - タブの関係のテスト（M2-3 で残したもの）を写し、切り替えて壊す後始末のテストを足した。perf のテストは別の project で 1 本ずつ最後に回す（全体の並列でまれに落ちたため）。
 - テスト 1,610 件（65 ファイル）・typecheck・lint・format:check が通る。
+
+## 2026-10-29 M3-1（style.css）
+- `src/style.css` を作った（InterHub `global.css` の .xlsx の部分と共用の表・帯・タブの規則を `xs-` で）。変数 14 個の明るい既定値を `:where(:root, :host)` に置き、ダークは使う側が上書きする。
+- 表示の根は `container` の高さいっぱいの縦の flex、`.xs-body` がスクロール枠。見出し・行番号は sticky（z 2・1・角 3）。
+- 02 §6 の変数の表を実際の規則に合わせて直した（グリッド線は `--ih-border-soft`。`--xs-border`・`--xs-accent`・`--xs-warn*` を足した）。
+- CSS の静的テスト 3 本を写し、クラス・変数・文書の突き合わせのテストを足した。テスト 1,632 件（69 ファイル）・typecheck・lint・format:check が通る。
+
+## 2026-10-29 M3-2（examples）
+- `examples/`（index.html・main.ts・example.css・vite.config.ts）を作った。`npm run examples` で http://localhost:5173/examples/ を開く。ファイルの選択・ドロップ・サンプル（fixtures/excel）・テーマ（OS・明るい・ダーク）・文言（ja/en）・図の有無を切り替えられる。
+- ダークは `example.css` が変数を上書きする（`prefers-color-scheme` とテーマの属性の 2 通り）。値は 02 §6 の「ダークの例」の列と同じ。CSP の meta は `script-src 'self'`・`img-src blob:`（style-src は M3-3 で nonce にする）。
+- `tests/render/examples.test.ts`（7 件）：ダークの値と文書・CSP・入口・サンプルの有無を突き合わせる。内蔵ブラウザで明るい・ダークの表示と CSP の違反が無いことを見た（実機の目視はユーザー）。テスト 1,639 件。
+
+## 2026-10-29 M3-3（nonce・CSP）
+- examples の CSP を `style-src 'nonce-xsheet-example'` だけにした。`<link>` に nonce を付け、main.ts はその nonce プロパティを renderWorkbook に渡す。
+- 内蔵ブラウザで、nonce ありで書式の塗りが効き、nonce なしでは書式の `<style>` が止まる（sheet が null）ことを確かめた。画像（blob:）も出る。
+- 02 §3 に「CSP」の節（3 つの指定と理由）を足し、01 N7 の基準を更新した。`tests/render/csp.test.ts`（style 属性・HTML の文字列・<style> の数・data: を render のソースで見る・nonce の受け渡し）。テスト 1,647 件。
+
+## 2026-10-29 M4 の前の整理（照合のハーネス・線形時間のテスト）
+- `fixtures/excel/compare-ref-geoms.mjs` を XSheet の `renderWorkbook` へ向け直した（esbuild → Vite の build()・クラス名は xs-・`npm run geom:compare`）。2 図形で撮影まで確かめた（Excel との距離の照合は Excel が要るので未実施）。
+- `linear-time.test.ts` を `linear-time.perf.test.ts` にして perf の project（ほかの後に 1 ファイルずつ）へ移し、上限を超えたときだけ 3 回まで測り直す。テスト 1,647 件。
+
+## 2026-10-29 M4-1（ビルド）
+- `vite.config.ts`（ライブラリモード・ESM・入口 4 つ・jszip/ssf は束ねない・圧縮しない・style.css と NOTICE を写す）と `tsconfig.build.json`（d.ts だけ）。`npm run build`。
+- `tools/consumer-check.mjs`（`npm run check:consumer`）：一時フォルダの使う側から exports を通して型検査と Vite のビルドが通る。形の表は使う側でも別のチャンク。
+- ADR-0002 で D5（タグに dist を含めて git 依存）・D7 を決定として記録。02 §8 にビルドと配布物を書いた。
+
+## 2026-10-29 M4-2（大きさ・ライセンス・NOTICE）
+- `tools/size.mjs`（`npm run size`）：入口ごとの大きさ（dist・gzip・圧縮＋gzip）を測り、上限（実測＋約 1 割）を超えたら失敗。core 27,781・render 47,240・geom 32,519 B（圧縮＋gzip）。
+- `check:consumer` に `npm pack --dry-run` の中身（exports の先・NOTICE・dist/NOTICE、src を含まない）の確認を足した。
+- 02 §8 に大きさと依存のライセンス（15 パッケージ）の表。`tests/distribution.test.ts`（7 件）が lockfile・exports・vite.config・上限と突き合わせる。テスト 1,654 件。
+
+## 2026-10-29 M4-3（README・CHANGELOG。タグは指示待ち）
+- 利用者向けの `README.md`（入れ方・使い方 3 通り・指定・サブパス・CSS 変数とダークの例・CSP・上限・対応環境・開発）と `CHANGELOG.md`（0.1.0・未リリース）を書いた。`version` を 0.1.0 にした。
+- 02 §8 に版を出す手順（build・check:consumer・size → release ブランチに dist を足す → 注釈付きのタグ）。タグ `v0.1.0` を打つのはユーザーの指示があるとき。
+- テスト 1,654 件・typecheck・lint・format:check・build・check:consumer・size が通る。
+
+## 2026-10-29 レビューの指摘の直し（M3・M4）
+- check:consumer はリポジトリへの junction をやめ、npm pack で入るファイルの写し＋Vite の alias にした（一時フォルダを消してもリポジトリに届かない）。照合のハーネスのサーバーは 127.0.0.1 だけで待ち受け、site の外を配らない。
+- examples：読み込みの依頼に番号を付け、遅れて終わった古い読み込み・エラーを捨てる。開発サーバーにも nonce（html.cspNonce）。size.mjs は副作用の import も辿り、辿り方の自己確認を足した。
+- csp.test.ts：実際に描いて style 属性を付けないことを確かめる（2 件）・toDataURL などを禁止に追加。テスト 1,656 件。

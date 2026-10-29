@@ -1,15 +1,17 @@
-// ISSUE-93：Excel が描いた図形の画像（make-ref-geom-pngs.ps1 の出力）と、InterHub が描いた図形を Playwright で写した画像を、輪郭の距離で比べる。
+// ISSUE-93：Excel が描いた図形の画像（make-ref-geom-pngs.ps1 の出力）と、XSheet が描いた図形（renderWorkbook）を Playwright で写した画像を、輪郭の距離で比べる。
 //   U3＝preset の形（楕円の弧の形 cloud・pie・chord・arc・blockArc・moon・smileyFace など。arcTo の角度の換算）、U4＝反転した文字入りの図形の文字の位置・向き。
 // 比べ方：枠線だけの図形は中心線（細線化）を ±8 画素だけ位置合わせして測る（鋭角の張り出し・線の太さの描き方の差を除く）。塗りのある既定の図形は輪郭で測る。
-// 使い方：node compare-ref-geoms.mjs <dir> [--arc visual|param] [--only name1,name2] [--shots] [--chrome <chrome.exe>]
+// 使い方：npm run geom:compare -- <dir> [--arc visual|param] [--only name1,name2] [--shots] [--chrome <chrome.exe>]
+//        （＝ node fixtures/excel/compare-ref-geoms.mjs <dir> …。手で動かす照合で、vitest の常時実行には入れない）
 //   <dir>      make-ref-geom-pngs.ps1 の -Dir（geoms-png\ flips-png\ ref-flips.xlsx flips.com.json export.json が入っている）。結果もここに書く
-//   --arc      arcTo の角度の換算：visual＝視角→媒介変数（既定・実装どおり）、param＝角度を媒介変数のまま使う（U3 の切り替え先。esbuild の変換で差し替えるだけで src は変えない）
-//   --anchors  one（既定）＝twoCellAnchor を oneCellAnchor（from＋xfrm の ext）に直した写しを InterHub に読ませる。InterHub は行の高さを整数 px に丸め（14.4pt→20px）、twoCellAnchor の図が xfrm より最大 5px ほど大きくなるため、形の比較から配置の丸めを除く。keep＝原本のまま
+//   --arc      arcTo の角度の換算：visual＝視角→媒介変数（既定・実装どおり）、param＝角度を媒介変数のまま使う（U3 の切り替え先。Vite の変換で src/geom/evaluate.ts を差し替えるだけで src は変えない）
+//   --anchors  one（既定）＝twoCellAnchor を oneCellAnchor（from＋xfrm の ext）に直した写しを XSheet に読ませる。XSheet は行の高さを整数 px に丸め（14.4pt→19px）、twoCellAnchor の図が xfrm より数 px 大きくなりうるため、形の比較から配置の丸めを除く。keep＝原本のまま
 //   --only     指定した図形名だけ比べる（調査用）。--shots は合格した図形の重ね合わせ画像も書く（既定は許容超えのみ）
-// 出力（<dir>）：ref-geoms.compare.json・ref-flips.compare.json（--arc param は .arc-param.json）＝期待の要約。ih-png\（InterHub の写し）・diff\（重ね合わせ：Excel＝赤・InterHub＝青・両方＝黒）・harness\（バンドル）は置くだけで、リポジトリには入れない。
-// 実行後：ref-geoms.compare.json と ref-flips.compare.json を fixtures/excel へ写す（ref-geoms.compare.test.ts が読む）。
-// 必要なもの：リポジトリの node_modules の esbuild（vite に同梱）、Playwright（playwright-core。環境変数 PLAYWRIGHT_CORE に package.json のパス、無ければ D:\tools\node の @playwright/cli）、Chrome。
-// 写しは deviceScaleFactor 1.25（Excel の画面 125%＝1pt が 1.667 画素と同じ）・ライトテーマ・グリッドを隠して白地。距離は 100% 換算（画素 ÷ 1.25）。
+// 出力（<dir>）：ref-geoms.compare.json・ref-flips.compare.json（--arc param は .arc-param.json）＝期待の要約。xs-png\（XSheet の写し）・diff\（重ね合わせ：Excel＝赤・XSheet＝青・両方＝黒）・harness\（バンドル）は置くだけで、リポジトリには入れない。
+// 実行後：ref-geoms.compare.json と ref-flips.compare.json を fixtures/excel へ写す（tests/core/ref-geoms.compare.test.ts が読む）。
+// 必要なもの：リポジトリの node_modules の vite（ライブラリをまとめる）、Playwright（playwright-core。環境変数 PLAYWRIGHT_CORE に package.json のパス、無ければ D:\tools\node の @playwright/cli）、Chrome。
+// 写しは deviceScaleFactor 1.25（Excel の画面 125%＝1pt が 1.667 画素と同じ）・ライトテーマ・グリッドと罫線を隠して白地。距離は 100% 換算（画素 ÷ 1.25）。
+// ページは 127.0.0.1 の使い捨てのサーバで配る（geom は動的 import の別チャンクのため、file:// では読めない）。外部とは通信しない。
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
@@ -36,8 +38,8 @@ import {
 } from './geom-compare.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-// …/src_V1/src/lib/xlsx/fixtures/excel → リポジトリのルート
-const repo = path.resolve(here, '../../../../../..');
+// fixtures/excel → リポジトリのルート
+const repo = path.resolve(here, '../..');
 const rel = (n) => Math.round(n * 1000) / 1000;
 /** pt → CSS px（96dpi） */
 const PX_PER_PT = 4 / 3;
@@ -47,7 +49,7 @@ const MARGIN = 8;
 const TEXT_POS_TOL_PX = 5;
 /** 中心線の位置合わせの範囲（画素。100% 換算で 6.4px） */
 const SEARCH_PX = 8;
-/** Excel でも見えない図形（枠も塗りも文字も無い）。InterHub は要素を作らない（ref-geoms.xlsx の 225 図形のうち 2 つ） */
+/** Excel でも見えない図形（枠も塗りも文字も無い）。XSheet は要素を作らない（ref-geoms.xlsx の 225 図形のうち 2 つ） */
 const HIDDEN_GEOMS = new Set(['emptyDiamond', 'lineNone']);
 /** 楕円の弧を使う形（U3） */
 const U3_PRSTS = ['cloud', 'pie', 'chord', 'arc', 'blockArc', 'moon', 'smileyFace'];
@@ -66,7 +68,7 @@ for (let i = 0; i < args.length; i++) {
 }
 if (!dir) {
   console.error(
-    '使い方: node compare-ref-geoms.mjs <dir> [--arc visual|param] [--only a,b] [--shots] [--chrome <chrome.exe>]',
+    '使い方: node fixtures/excel/compare-ref-geoms.mjs <dir> [--arc visual|param] [--anchors one|keep] [--only a,b] [--shots] [--chrome <chrome.exe>]',
   );
   process.exit(2);
 }
@@ -112,21 +114,24 @@ function chromePath() {
   return cands.find((c) => c && fs.existsSync(c));
 }
 
-// ---------- InterHub 側のハーネス（src は変えず、renderSpreadsheet を esbuild でまとめる） ----------
+// ---------- XSheet 側のハーネス（src は変えず、renderWorkbook を Vite でまとめる） ----------
 
-/** --arc param 用：arcTo の角度の換算（視角→媒介変数）を、角度をそのまま使うように差し替える esbuild のプラグイン */
+/** --arc param の差し替えを当てたか（evaluate.ts がバンドルに入らなかったら誤り） */
+let arcParamApplied = false;
+
+/** --arc param 用：arcTo の角度の換算（視角→媒介変数）を、角度をそのまま使うように差し替える Vite のプラグイン */
 const arcParamPlugin = {
   name: 'arc-param',
-  setup(b) {
-    b.onLoad({ filter: /xlsx-geom\.ts$/ }, async (a) => {
-      const from = 'return Math.atan2(rx * Math.sin(a), ry * Math.cos(a)) + 2 * Math.PI * turns;';
-      const text = await fs.promises.readFile(a.path, 'utf8');
-      if (!text.includes(from))
-        throw new Error(
-          'xlsx-geom.ts の parametricAngle が変わっている（arc-param の差し替え先が見つからない）',
-        );
-      return { contents: text.replace(from, 'return a;'), loader: 'ts' };
-    });
+  enforce: 'pre',
+  transform(code, id) {
+    if (!/[\\/]src[\\/]geom[\\/]evaluate\.ts$/.test(id.split('?')[0])) return null;
+    const from = 'return Math.atan2(rx * Math.sin(a), ry * Math.cos(a)) + 2 * Math.PI * turns;';
+    if (!code.includes(from))
+      throw new Error(
+        'src/geom/evaluate.ts の parametricAngle が変わっている（arc-param の差し替え先が見つからない）',
+      );
+    arcParamApplied = true;
+    return { code: code.replace(from, 'return a;'), map: null };
   },
 };
 
@@ -165,57 +170,75 @@ async function withOneCellAnchors(file) {
 
 /** ハーネスのページ（<dir>/harness/site）を作る */
 async function buildHarness() {
-  const esbuild = createRequire(path.join(repo, 'package.json'))('esbuild');
+  const { build } = await import('vite');
   const hdir = path.join(outDir, 'harness');
   const site = path.join(hdir, 'site');
   fs.rmSync(site, { recursive: true, force: true });
   fs.mkdirSync(site, { recursive: true });
-  const R = repo.split(path.sep).join('/');
   const entry = path.join(hdir, 'entry.js');
+  // リポジトリの src は別名（@xsheet/）で読む（<dir> が別のドライブでも相対パスに頼らない）。
+  // style.css は文字列で取り込んで <style> に入れる（CSS のファイルを別に配らない）。
+  // renderWorkbook の container（#app）は index.html の CSS で窓いっぱいの高さにする（スクロール枠 .xs-body が仮想化の窓）
   fs.writeFileSync(
     entry,
     [
-      `import '${R}/src_V1/src/styles/global.css'`,
-      `import { renderSpreadsheet } from '${R}/src_V1/src/lib/viewers/spreadsheet'`,
-      `import { fitTableBodyToWindow } from '${R}/src_V1/src/lib/viewers/table-fit'`,
+      "import css from '@xsheet/style.css?inline'",
+      "import { renderWorkbook } from '@xsheet/render/index.ts'",
+      "const style = document.createElement('style')",
+      'style.textContent = css',
+      'document.head.append(style)',
       'window.__ready = false',
-      'window.__load = async (url, name) => {',
+      'window.__load = async (url) => {',
       '  const buf = await (await fetch(url)).arrayBuffer()',
-      '  const view = await renderSpreadsheet(buf, name)',
-      "  document.getElementById('app').replaceChildren(view)",
-      "  const body = view.querySelector('.ih-xlsx-body')",
-      '  if (body) fitTableBodyToWindow(body)',
+      "  const app = document.getElementById('app')",
+      '  app.replaceChildren()',
+      '  await renderWorkbook(app, buf)',
       '}',
       'window.__ready = true',
       '',
     ].join('\n'),
   );
-  await esbuild.build({
-    entryPoints: [entry],
-    bundle: true,
-    format: 'esm',
-    splitting: true,
-    outdir: path.join(site, 'js'),
-    loader: { '.css': 'css' },
-    nodePaths: [path.join(repo, 'node_modules')],
+  arcParamApplied = false;
+  await build({
+    configFile: false,
+    root: hdir,
+    publicDir: false,
+    logLevel: 'warn',
+    resolve: {
+      alias: [{ find: /^@xsheet\//, replacement: `${repo.split(path.sep).join('/')}/src/` }],
+    },
     plugins: arcMode === 'param' ? [arcParamPlugin] : [],
-    logLevel: 'warning',
+    build: {
+      outDir: path.join(site, 'js'),
+      emptyOutDir: true,
+      modulePreload: false,
+      minify: false,
+      rolldownOptions: {
+        input: entry,
+        output: { entryFileNames: 'entry.js' },
+      },
+    },
   });
+  if (arcMode === 'param' && !arcParamApplied)
+    throw new Error('--arc param：src/geom/evaluate.ts がバンドルに入らず、差し替えを当てられない');
   fs.writeFileSync(
     path.join(site, 'index.html'),
-    '<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="js/entry.css"></head><body><div id="app"></div><script type="module" src="js/entry.js"></script></body></html>',
+    '<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;height:100%}#app{height:100%}</style></head><body><div id="app"></div><script type="module" src="js/entry.js"></script></body></html>',
   );
   return site;
 }
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
-/** ハーネスのページと、比べる xlsx（/xlsx/<名前>）を配る簡単なサーバ */
+/** ハーネスのページと、比べる xlsx（/xlsx/<名前>）を配る簡単なサーバ（127.0.0.1 だけで待ち受け、site の外のファイルは配らない） */
 function serve(site, xlsx) {
   return http.createServer((req, res) => {
     const url = decodeURIComponent(req.url.split('?')[0]);
     let file = null;
     if (url.startsWith('/xlsx/')) file = xlsx[url.slice(6)] ?? null;
-    else file = path.join(site, url === '/' ? 'index.html' : url);
+    else {
+      file = path.resolve(site, '.' + (url === '/' ? '/index.html' : url));
+      if (!file.startsWith(path.resolve(site) + path.sep)) file = null; // ../ で site の外へ出ない
+    }
     if (!file) {
       res.writeHead(404);
       res.end();
@@ -235,14 +258,15 @@ function serve(site, xlsx) {
   });
 }
 
-/** 写しの前に当てる CSS：セルのグリッドを隠し、シートの面を白にする（図形の輪郭だけを取る） */
+/** 写しの前に当てる CSS：セルのグリッドと罫線の層を隠し、シートの面を白にする（図形の輪郭だけを取る）。通知の行・シートタブも隠す */
 const SHOT_CSS =
-  '.ih-xlsx-grid{visibility:hidden!important}.ih-xlsx-body,.ih-xlsx-wrap,.ih-xlsx-layer{background:#fff!important}.ih-xlsx-notice,.ih-sheet-tabs{display:none!important}';
+  '.xs-grid,.xs-borders{visibility:hidden!important}.xs-body,.xs-wrap,.xs-layer{background:#fff!important}.xs-notice,.xs-sheet-strip{display:none!important}';
 
 /**
- * xlsx（1 枚目のシート）を InterHub で描き、図形ごとに写す。
- * 図の要素（`.ih-xlsx-figure`）は図形の並び（xlsx の drawing の順）で DOM に並び、見えない図形（枠も塗りも文字も無い）には要素が無い。
- * InterHub の行の高さは整数 px に丸めるため、図の位置は Excel の COM の位置（pt）とずれる（行が下るほど増える）。位置では対応づけず、並びの順で対応づけて、
+ * xlsx（最初に表示されるシート）を XSheet（renderWorkbook）で描き、図形ごとに写す。
+ * 図の要素（`.xs-figure`）は図形の並び（xlsx の drawing の順）で DOM に並び、見えない図形（枠も塗りも文字も無い）には要素が無い。
+ * 図の層は見えている範囲の図だけを DOM に置くため、ページ（窓）は全部の図が入る大きさにする（足りなければ下の個数の検査で止まる）。
+ * XSheet の行の高さは整数 px に丸めるため、図の位置は Excel の COM の位置（pt）とずれる（行が下るほど増える）。位置では対応づけず、並びの順で対応づけて、
  * 大きさ（回転していない図形が COM の幅・高さより小さくならないか）で取り違えを検査する（`warn` に入れる）。
  * @param {{ name: string, hidden?: boolean, w: number, h: number, rot: number }[]} shapes xlsx の並びの図形（w・h は COM の pt）
  * @returns {Promise<{ shots: Map<string, { png: Buffer, fig: { w: number, h: number } }>, warn: string[] }>}
@@ -259,13 +283,11 @@ async function shoot(browser, port, xlsxName, shapes) {
   await page.waitForFunction(() => window.__ready === true);
   await page.addStyleTag({ content: SHOT_CSS });
   await page.evaluate(([u, n]) => window.__load(u, n), [`/xlsx/${xlsxName}`, xlsxName]);
-  await page.waitForSelector('.ih-xlsx-grid', { state: 'attached' });
-  await page.waitForFunction(
-    () => document.querySelectorAll('.ih-xlsx-layer .ih-xlsx-figure').length > 0,
-  );
+  await page.waitForSelector('.xs-grid', { state: 'attached' });
+  await page.waitForFunction(() => document.querySelectorAll('.xs-layer .xs-figure').length > 0);
   await page.waitForTimeout(800);
   const figs = await page.evaluate(() =>
-    [...document.querySelectorAll('.ih-xlsx-layer .ih-xlsx-figure')].map((el) => {
+    [...document.querySelectorAll('.xs-layer .xs-figure')].map((el) => {
       const r = el.getBoundingClientRect();
       return { x: r.x, y: r.y, w: r.width, h: r.height };
     }),
@@ -299,7 +321,7 @@ async function shoot(browser, port, xlsxName, shapes) {
     await page.evaluate(
       (k) =>
         document
-          .querySelectorAll('.ih-xlsx-layer .ih-xlsx-figure')
+          .querySelectorAll('.xs-layer .xs-figure')
           .forEach((el, j) => (el.style.visibility = j === k ? 'visible' : 'hidden')),
       i,
     );
@@ -347,7 +369,7 @@ const exportInfo = fs.existsSync(path.join(outDir, 'export.json'))
 const flipsCom = fs.existsSync(path.join(outDir, 'flips.com.json'))
   ? JSON.parse(fs.readFileSync(path.join(outDir, 'flips.com.json'), 'utf8'))
   : null;
-fs.mkdirSync(path.join(outDir, 'ih-png'), { recursive: true });
+fs.mkdirSync(path.join(outDir, 'xs-png'), { recursive: true });
 fs.mkdirSync(path.join(outDir, 'diff'), { recursive: true });
 
 const site = await buildHarness();
@@ -368,7 +390,7 @@ if (anchorMode === 'one' && flipsCom) {
   );
 }
 const server = serve(site, xlsxFiles);
-await new Promise((r) => server.listen(0, r));
+await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const port = server.address().port;
 const exe = chromePath();
 const browser = await loadPlaywright().chromium.launch(
@@ -393,7 +415,7 @@ try {
   const notes = warn.map((w) => `大きさの警告（要素の取り違えの疑い）: ${w}`);
   for (const s of refShapes.filter((x) => x.group !== 'skip' && (!only || only.has(x.name)))) {
     const shot = shots.get(s.name);
-    if (shot) fs.writeFileSync(path.join(outDir, 'ih-png', `${s.name}.png`), shot.png);
+    if (shot) fs.writeFileSync(path.join(outDir, 'xs-png', `${s.name}.png`), shot.png);
     const ex = excelMask(path.join(outDir, 'geoms-png', `${s.name}.png`));
     if (ex === null) {
       notes.push(`Excel の画像が無い・空: ${s.name}`);
@@ -519,8 +541,8 @@ try {
       const eO = excelMask(path.join(outDir, 'flips-png', `${twin}.png`));
       const iT = fshots.get(s.name);
       const iO = fshots.get(twin);
-      if (iT) fs.writeFileSync(path.join(outDir, 'ih-png', `${s.name}.png`), iT.png);
-      if (iO) fs.writeFileSync(path.join(outDir, 'ih-png', `${twin}.png`), iO.png);
+      if (iT) fs.writeFileSync(path.join(outDir, 'xs-png', `${s.name}.png`), iT.png);
+      if (iO) fs.writeFileSync(path.join(outDir, 'xs-png', `${twin}.png`), iO.png);
       if (!eT || !eO || !iT || !iO) {
         flipNotes.push(`画像が足りない: ${s.name}`);
         continue;
@@ -549,6 +571,7 @@ try {
           p95Rot180: text.p95Rot180 === undefined ? null : rel(text.p95Rot180),
           dCentroid: text.dCentroid ? { x: rel(text.dCentroid.x), y: rel(text.dCentroid.y) } : null,
           excel: text.excel ? { cx: rel(text.excel.cx), cy: rel(text.excel.cy) } : null,
+          // XSheet の写しの文字の重心（キー名は geom-compare.mjs の compareText の戻り値・既存の JSON のまま）
           interhub: text.interhub ? { cx: rel(text.interhub.cx), cy: rel(text.interhub.cy) } : null,
           ...(text.reason ? { reason: text.reason } : {}),
         },

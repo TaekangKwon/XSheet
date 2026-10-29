@@ -1,5 +1,5 @@
-// ISSUE-93：Excel の図形の画像と InterHub の描画の画像を、輪郭の距離で比べる純ロジック（依存は Node 標準の zlib だけ・DOM 非依存）。
-// 使い手は compare-ref-geoms.mjs（Playwright で InterHub の描画を写して比べる）と、同じ階層の geom-compare.test.ts（合成画像での単体テスト）。
+// ISSUE-93：Excel の図形の画像と XSheet の描画の画像を、輪郭の距離で比べる純ロジック（依存は Node 標準の zlib だけ・DOM 非依存）。
+// 使い手は compare-ref-geoms.mjs（Playwright で XSheet の描画を写して比べる）と、tests/core/geom-compare.test.ts（合成画像での単体テスト）。
 // 比べ方（ADR-0028 §決定 10 単位 d・U3）：
 //   1. 画像から「インク」（白い背景との差が大きい画素）のマスクを取る。色によらないよう、画像の最大の濃さの半分を閾値にする（薄い色の枠も取れる）。
 //   2. 両方のマスクをインクの外接矩形の左上でそろえる（Excel の画像は枠線の縁の扱いで 1px ほど位置がずれうるため）。
@@ -10,7 +10,7 @@ import { Buffer } from 'node:buffer';
 
 /** 輪郭の距離（95 パーセンタイル）の許容（100% 換算の px。ISSUE-93・ADR-0028 U3） */
 export const TOLERANCE_PX = 1.5;
-/** Excel（画面 125%）と InterHub の写し（deviceScaleFactor 1.25）の、100% の 1px あたりの画素数 */
+/** Excel（画面 125%）と XSheet の写し（deviceScaleFactor 1.25）の、100% の 1px あたりの画素数 */
 export const SCALE_125 = 1.25;
 
 // ---------- PNG ----------
@@ -275,7 +275,7 @@ export function cropToInk(mask) {
 }
 
 /**
- * マスクを最近傍で w×h に拡縮する（InterHub は行の高さを整数 px に丸めるため、twoCellAnchor の図が Excel の xfrm より数 px 大きくなる。
+ * マスクを最近傍で w×h に拡縮する（XSheet は行の高さを整数 px に丸めるため、twoCellAnchor の図が Excel の xfrm より数 px 大きくなる。
  * 形の誤りと配置の丸めを切り分けるため、比較の前に寸法をそろえる版を使う。寸法の差は別に報告する）
  */
 export function resizeMask(mask, w, h) {
@@ -402,9 +402,9 @@ export function pointDistances(w, h, ptsA, ptsB) {
 }
 
 /**
- * 輪郭の比較（a＝Excel・b＝InterHub。どちらもインクの外接矩形で切り出して左上をそろえたマスク）。
- * 距離・寸法の差は 100% 換算の px（画素 ÷ scale）。`dw`・`dh` は b − a（InterHub の方が大きければ正）。
- * どちらかが空なら p95 を 999 にして `empty` に空の側（'excel'・'interhub'・'both'）を入れる。両方空なら p95 は 0（どちらも描かない）。
+ * 輪郭の比較（a＝Excel・b＝XSheet。どちらもインクの外接矩形で切り出して左上をそろえたマスク）。
+ * 距離・寸法の差は 100% 換算の px（画素 ÷ scale）。`dw`・`dh` は b − a（XSheet の方が大きければ正）。
+ * どちらかが空なら p95 を 999 にして `empty` に空の側（'excel'・'interhub'＝XSheet の側（名前は InterHub から写したまま）・'both'）を入れる。両方空なら p95 は 0（どちらも描かない）。
  */
 export function compareContours(a, b, scale = SCALE_125) {
   const empty =
@@ -441,7 +441,7 @@ export function compareContours(a, b, scale = SCALE_125) {
 
 /**
  * Zhang-Suen の細線化（8 近傍・輪郭の線を 1 画素幅の中心線にする）。枠線だけの図形の比較用：
- * 枠線の太さの描き方の違い（Excel は細く、InterHub のアンチエイリアスは 2 画素ほど）が、外接矩形・輪郭の位置の差に化けるのを避ける。
+ * 枠線の太さの描き方の違い（Excel は細く、XSheet のアンチエイリアスは 2 画素ほど）が、外接矩形・輪郭の位置の差に化けるのを避ける。
  */
 export function thin(mask) {
   const w = mask.w;
@@ -488,11 +488,11 @@ export function thin(mask) {
 }
 
 /**
- * 中心線（細線化）どうしの比較。a＝Excel・b＝InterHub のインクのマスク（切り出し前でよい）。
+ * 中心線（細線化）どうしの比較。a＝Excel・b＝XSheet のインクのマスク（切り出し前でよい）。
  * それぞれ細線化して中心線の外接矩形で切り出す。\`normalize\` なら b の点を a の外接矩形の大きさへ線形に拡縮してから測る（寸法の差を除いた「形だけ」の比較）。
  * \`searchPx\`（画素）> 0 なら、b を ±searchPx の整数の平行移動で動かし、双方向の平均距離が最小になる位置で測る（位置合わせ）。
  * 鋭角の頂点（矢じり・星・太陽の光線）は、角の描き方（miter の張り出し）の差で外接矩形が数画素ずれ、左上そろえでは全体が動いて見えるため。
- * \`searchPx\` が 0 なら外接矩形の左上でそろえるだけ。戻り値は compareContours と同じ＋ \`shift\`（InterHub を動かした量。100% 換算の px）。
+ * \`searchPx\` が 0 なら外接矩形の左上でそろえるだけ。戻り値は compareContours と同じ＋ \`shift\`（XSheet を動かした量。100% 換算の px）。
  * dw・dh は中心線の外接矩形の寸法の差（b − a。100% 換算の px。拡縮前の値）。
  */
 export function compareSkeletons(a, b, scale = SCALE_125, normalize = true, searchPx = 0) {
@@ -644,11 +644,11 @@ function textContour(info) {
 }
 
 /**
- * 反転した図形の文字の比較（U4）。枠線だけの双子（outline）と文字入り（text）の組を、Excel（e）と InterHub（i）で渡す
+ * 反転した図形の文字の比較（U4）。枠線だけの双子（outline）と文字入り（text）の組を、Excel（e）と XSheet（i）で渡す
  * （どちらも各画像の座標のマスク。文字入りと双子は同じ範囲を切ったもの）。
  * 枠線の外接矩形の左上を原点にして、文字のインク（枠線を `sepPx` 画素だけ膨らませた範囲の外）の重心・外接矩形・輪郭の距離を比べる。
- * `p95Upright`＝文字のインクの輪郭を各自の重心にそろえて重ねたときの距離、`p95Rot180`＝InterHub の文字を重心まわりに 180° 回してから重ねたときの距離（向きの判定。位置は `dCentroid`）。
- * `orientation`＝小さい方（'upright'＝InterHub と同じ向き、'rot180'＝Excel は 180° 回している、'unknown'＝文字が取れない）。
+ * `p95Upright`＝文字のインクの輪郭を各自の重心にそろえて重ねたときの距離、`p95Rot180`＝XSheet の文字を重心まわりに 180° 回してから重ねたときの距離（向きの判定。位置は `dCentroid`）。
+ * `orientation`＝小さい方（'upright'＝XSheet と同じ向き、'rot180'＝Excel は 180° 回している、'unknown'＝文字が取れない）。
  * @param {{ eText: object, eOutline: object, iText: object, iOutline: object, scale?: number, sepPx?: number }} o
  */
 export function compareText(o) {

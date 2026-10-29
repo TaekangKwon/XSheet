@@ -9,16 +9,24 @@ import { findElement, parseAttrs } from '../../src/core/xml';
  * 細工したファイル（`>` の無い開きタグ・閉じの無い要素の大量の繰り返し）で、読み取りの時間が大きさに比例することの確認。
  * `[^>]*>` は後ろに `>` が無いと候補ごとに末尾まで読んで二乗時間になる（371KiB で 5.9 秒だった）ので、`[^<>]*>` で打ち切る。
  * 線形なら本件の大きさ（約 400KB〜1MB）は数十 ms。二乗なら秒単位になるので、緩い固定の時間（1.5 秒）で判定する。
+ * 時間を測るため、perf の project（ほかのテストの後に 1 ファイルずつ）で走らせる（*.perf.test.ts）。
  */
 const LIMIT_MS = 1500;
 /** 繰り返しの数（二乗なら 1 秒を大きく超える大きさ） */
 const N = 40_000;
 
-/** fn を実行して、かかった時間（ms）を返す */
+/**
+ * fn を実行して、かかった時間（ms）を返す。上限を超えたときだけ 3 回まで測り直し、いちばん短い時間を返す。
+ * ほかの処理と重なった 1 回の遅れで落ちないため。二乗なら毎回秒単位になるので、測り直しても上限を超える。
+ */
 async function elapsed(fn: () => unknown): Promise<number> {
-  const t0 = performance.now();
-  await fn();
-  return performance.now() - t0;
+  let best = Infinity;
+  for (let i = 0; i < 3 && best >= LIMIT_MS; i++) {
+    const t0 = performance.now();
+    await fn();
+    best = Math.min(best, performance.now() - t0);
+  }
+  return best;
 }
 
 const MAIN = 'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"';

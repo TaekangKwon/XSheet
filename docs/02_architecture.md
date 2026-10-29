@@ -94,7 +94,7 @@ export { DEFAULT_LIMITS, colName, createGeometry, colWidthToPx, defaultColWidthT
 export interface RenderOptions {
   messages?: Partial<XSheetMessages>;   // 既定は ja（MESSAGES_JA）。en（MESSAGES_EN）も同梱
   drawings?: boolean;                   // 図の層（既定 true）
-  nonce?: string;                       // 書式の <style> に付ける（CSP 用・M3）
+  nonce?: string;                       // 書式の <style> に付ける（CSP 用。§3「CSP」）
 }
 export interface SheetView {
   destroy(): void;                      // blob URL・リスナ・シートを放す（book は閉じない）
@@ -129,6 +129,21 @@ export function renderWorkbook(container: HTMLElement, data: ArrayBuffer | Uint8
   - 開けない（`openXlsx` の例外）ときは例外にせず `div.xs-workbook` ＞ `div.xs-banner`（種類ごとの文言）、シートが 0 枚なら `div.xs-empty`（`noSheets`。ブックは閉じる）で解決する。どちらも `showSheet` は `RangeError`。
   - `destroy`：タブ列（リスナ・ResizeObserver・rAF）→ シートの表示 → `book.close()` → 根を外す。何度呼んでもよい。
 
+### CSP（N7・M3-3）
+
+render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta がこの形で動く）。
+
+| 指定 | 理由 |
+| --- | --- |
+| `script-src 'self'` | ライブラリと形の表（`geom` のチャンク。図形を描くときに動的 import）を同じ出所から読む。`eval`・`new Function` は使わない（N1）ので `'unsafe-eval'` は要らない |
+| `style-src 'nonce-<値>'`（または `'unsafe-inline'`） | 書式の `<style>` 要素（表示の根に 1 枚）。`nonce` を渡すとこの要素に付く。`style.css` を `<link>` で読むなら、その `<link>` にも同じ nonce を付けるか、`style-src` に出所（`'self'` など）を足す |
+| `img-src blob:` | 図の画像は blob URL で出す（`data:` の URL は作らない） |
+
+- render は `style` 属性を文字列で付けない（`setAttribute('style')` を使わない）。位置・大きさ・色は CSSOM（`el.style.left = …`）で入れ、これは CSP の `style-src` に止められない。HTML の文字列（`innerHTML` など）も使わない。`tests/render/csp.test.ts` が render のソースを見て確かめる。
+- nonce は応答ごとにサーバーが作る推測できない値にする（例のページは固定の値）。ページの nonce は `<link>`・`<script>` の `nonce` プロパティで読める（属性はブラウザが隠すことがあるため `getAttribute` では読まない）。
+- フォント・外への通信は使わないので、`font-src`・`connect-src` は要らない（例のページの `connect-src 'self'` はサンプルの読み込みと開発サーバーのため）。
+- M3-3 で、`style-src 'nonce-…'` だけの CSP で examples が動くこと（書式の塗りが効く・nonce を渡さないと書式の `<style>` が止まる）を内蔵ブラウザで確かめた。
+
 ## 4. データモデル（要点）
 
 | 型 | 主なフィールド |
@@ -162,17 +177,21 @@ export function renderWorkbook(container: HTMLElement, data: ArrayBuffer | Uint8
 
 | ライブラリの変数 | 役割 | 明るい既定値 | ダークの例 | InterHub の元 |
 | --- | --- | --- | --- | --- |
-| `--xs-fg` | 文字の色（塗りの無いセル・自動の文字） | `#1a1a1a` | `#e6e6e6` | `--ih-fg` |
-| `--xs-bg` | 見出し・面の地 | `#ffffff` | `#1e1e1e` | `--ih-bg` |
-| `--xs-cell-bg` | セルの地（白の塗り＝「紙」もこれ） | `#f5f6f8` | `#0f1115` | `--ih-xlsx-cell-bg`（＝`--ih-canvas`） |
-| `--xs-head-bg` | 列記号・行番号の地 | `#eef0f4` | `#1f232c` | `--ih-bg-elev2` |
-| `--xs-grid` | グリッド線 | `#d0d0d0` | `#3a3a3a` | `--ih-border` |
-| `--xs-muted`・`--xs-faint` | 行番号・破線枠の文字 | `#6b7280`・`#8a92a2` | `#9ca3af`・`#6b7386` | `--ih-muted`・`--ih-faint` |
+| `--xs-fg` | 文字の色（塗りの無いセル・自動の文字・図形の色の省略） | `#1a1a1a` | `#e6e6e6` | `--ih-fg` |
+| `--xs-bg` | 面の地（タブ・ボタン。図形の「明るく」の膜） | `#ffffff` | `#1e1e1e` | `--ih-bg` |
+| `--xs-cell-bg` | セルの地（白の塗り＝「紙」・はみ出す文字の下・二重線の隙間もこれ） | `#f5f6f8` | `#0f1115` | `--ih-xlsx-cell-bg`（＝`--ih-canvas`） |
+| `--xs-head-bg` | 列記号・行番号の地（破線枠・図形の塗りの省略の色の元） | `#eef0f4` | `#1f232c` | `--ih-bg-elev2` |
+| `--xs-grid` | グリッド線（セルの右と下） | `#e5e8ee` | `#232733` | `--ih-border-soft`（`.ih-data-view td`） |
+| `--xs-border` | 見出し行の下の線・タブとボタンの枠 | `#d0d0d0` | `#3a3a3a` | `--ih-border` |
+| `--xs-muted`・`--xs-faint` | 破線枠の線・行番号と空の表示の文字 | `#6b7280`・`#8a92a2` | `#9ca3af`・`#6b7386` | `--ih-muted`・`--ih-faint` |
+| `--xs-accent` | 選ばれているタブ・ボタンの強調 | `#3b82f6` | `#60a5fa` | `--ih-accent` |
+| `--xs-warn`・`--xs-warn-bg` | 通知・エラーの帯（`xs-notice`・`xs-banner`）の文字と地 | `#b45309`・`#fef3c7` | `#fbbf24`・`rgba(251, 191, 36, 0.14)` | `--ih-warn`・`--ih-warn-bg` |
 | `--xs-border-ink` | 自動・黒の罫線（墨色） | `#000000` | `#d4d4d4` | `--ih-xlsx-border-ink` |
 | `--xs-backdrop`・`--xs-backdrop-display` | ダーク時の図の白い下地 | `transparent`・`none` | `#ffffff`・`block` | `--ih-xlsx-backdrop*` |
 
-- `style.css` は明るい既定値だけを持つ。ダーク表示は使う側が変数を上書きする（`prefers-color-scheme` か自前のテーマ属性）。例を `examples/` に置く。
+- `style.css`（`src/style.css`・M3-1）は明るい既定値だけを持つ。既定値は詳細度 0 の `:where(:root, :host)` に置くため、使う側が `:root`・テーマの属性・`container` のどこで上書きしても勝つ（Shadow DOM の中に置いても効く）。ダーク表示は使う側が変数を上書きする（`prefers-color-scheme` か自前のテーマ属性）。例は `examples/example.css`（M3-2。`npm run examples` で http://localhost:5173/examples/ を開く）。この表の「ダークの例」の列と同じ値で、`tests/render/examples.test.ts` が突き合わせる。
 - Excel の色（塗り・文字の色・図形の色）は変数ではなく、書式の CSS とインラインの値で入る。ダーク表示の描き分けの規則（塗りのあるセルは Excel の色のまま、白の塗りは「紙」など）は InterHub ADR-0030 のとおり。
+- 変数の表は M3-1 で、InterHub の実際の規則に合わせて直した：グリッド線は `--ih-border` ではなく `--ih-border-soft`（`.ih-data-view th, td` の線）だったため `--xs-grid` の値を替え、見出し行の下の線・タブの枠の `--ih-border` を `--xs-border` に分けた。タブ（`--ih-accent`）と通知の帯（`--ih-warn*`）の変数を足した。この表と `style.css` の既定値は `tests/render/style-css.test.ts` が突き合わせる。
 - クラス名は InterHub の `ih-xlsx-*`・`ih-xf-N`・`data-ih-xlsx-fmt` を `xs-*`・`xs-xf-N`・`data-xs-fmt` にする（D6）。表の根の `.ih-spreadsheet` は `.xs-sheet`。InterHub 共用のクラス（`ih-data-view`・`ih-data-banner`・`ih-dv-rownum`・`ih-sheet-tabs` など）は、render が要るものだけ `xs-` で作り直す。
 
 ## 7. 文言（`XSheetMessages`・23 キー）
@@ -192,3 +211,67 @@ export function renderWorkbook(container: HTMLElement, data: ArrayBuffer | Uint8
   - 型の名前は、旧仮称由来の `XlsxViewMessages` をやめて `XSheetMessages` にした（D6 と同じ理由）。
   - `libLoadFailed` は、InterHub では xlsx の読み込み（動的 import）の失敗だったが、render は core を静的に引くため起きない。M2-3 で「形の表（geom の動的 import）を読めない」通知の文言に替えた。
   - 23 キー目の `noData` は、`spreadsheet.ts` が空のシートで使う InterHub 共用のキー（`data.noData`）。立ち上げ資料の 22 キーには入っていなかった。
+
+## 8. ビルドと配布物（M4・[ADR-0002](adr/0002-build-and-distribution.md)）
+
+`npm run build`（`vite build` → `tsc -p tsconfig.build.json`）が `dist/` に出すもの：
+
+```text
+dist/
+├─ core/index.js・core/internal.js     # xsheet・xsheet/internal（中身は chunks/ の共有の部品を引くだけ）
+├─ render/index.js                      # xsheet/render（core の部品は chunks/ から引く）
+├─ geom/index.js                        # xsheet/geom（形の表を含む。render は動的 import で読む）
+├─ chunks/*.js                          # 入口どうしが共有する部品（名前にハッシュが付く）
+├─ core/*.d.ts・render/*.d.ts・geom/*.d.ts  # 型（src と同じ並び。src/testing は出さない）
+├─ style.css                            # xsheet/style.css（src/style.css の写し）
+└─ NOTICE                               # Ecma の著作権表示
+```
+
+- ESM だけ・圧縮しない・jszip と ssf は束ねない。使う側の TypeScript は `moduleResolution: "bundler"` が前提（ADR-0002）。
+- `npm run check:consumer`：一時フォルダに使う側のプロジェクトを作り、`npm pack` で入るファイルだけを `node_modules/xsheet` に写して（リンクは作らない。jszip・ssf は使う側の Vite の alias でこのリポジトリの node_modules を指す）、`exports` を通して型検査（strict）と Vite のビルドをする。形の表が使う側のビルドでも別のチャンクになること、`xsheet/style.css` が CSS に入ることを見る。
+- 例のページ（`examples/`）は dist ではなく src を直接読む（ビルドの前でも動かすため）。
+
+### 大きさ（N6・M4-2）
+
+`npm run size` が入口ごとに、static に辿れるファイル（共有のチャンクを含む・依存は含めない）の合計を測り、上限を超えたら失敗する。上限は「圧縮＋gzip」の列で、2026-10-29 の実測に約 1 割の余裕を足した値（`tools/size.mjs` の `LIMITS`）。ライブラリモードの ES の出力は圧縮しても空白とコメントの一部が残る（Vite の仕様）ため、この列は使う側の圧縮より少し大きめに出る。
+
+| 入口 | dist（B） | gzip | 圧縮＋gzip | 上限 |
+| --- | ---: | ---: | ---: | ---: |
+| `core/index`（`xsheet`） | 180,727 | 60,104 | 27,781 | 31,000 |
+| `render/index`（`xsheet/render`。core を含む） | 323,736 | 106,970 | 47,240 | 52,000 |
+| `geom/index`（`xsheet/geom`。形の表を含む） | 236,078 | 36,752 | 32,519 | 36,000 |
+
+- 使う側のビルド（`check:consumer` の Vite・圧縮あり）では、最初に読む JS が 235,602 B（gzip 78,051。jszip・ssf・core・render を含む）、図形を描くときに読む形の表のチャンクが 176,422 B（gzip 30,477）、CSS が 5,404 B（gzip 1,537）。
+- 参考（01 N6）：xrag の初版は読み取り＋表示で 40,760 B、jszip が 96,716 B。XSheet は図形・罫線・書式の描画を持つぶん大きい。形の表は図形のあるシートでだけ読む。
+
+### 依存のライセンス（M4-2）
+
+配る物が実行時に使う依存（`package-lock.json` の dev でない物。jszip と ssf とその依存）。使う側の依存として入り、XSheet の dist には束ねない。この表と lockfile は `tests/distribution.test.ts` が突き合わせる。
+
+| パッケージ | 版 | ライセンス | 経路 |
+| --- | --- | --- | --- |
+| `jszip` | 3.10.2 | (MIT OR GPL-3.0-or-later)（MIT を選ぶ） | 直接 |
+| `ssf` | 0.11.2 | Apache-2.0 | 直接 |
+| `frac` | 1.1.2 | Apache-2.0 | ssf |
+| `lie` | 3.3.0 | MIT | jszip |
+| `immediate` | 3.0.6 | MIT | jszip ＞ lie |
+| `pako` | 1.0.11 | (MIT AND Zlib) | jszip |
+| `readable-stream` | 2.3.8 | MIT | jszip |
+| `core-util-is` | 1.0.3 | MIT | jszip ＞ readable-stream |
+| `inherits` | 2.0.4 | ISC | jszip ＞ readable-stream |
+| `isarray` | 1.0.0 | MIT | jszip ＞ readable-stream |
+| `process-nextick-args` | 2.0.1 | MIT | jszip ＞ readable-stream |
+| `safe-buffer` | 5.1.2 | MIT | jszip ＞ readable-stream |
+| `string_decoder` | 1.1.1 | MIT | jszip ＞ readable-stream |
+| `util-deprecate` | 1.0.2 | MIT | jszip ＞ readable-stream |
+| `setimmediate` | 1.0.5 | MIT | jszip |
+
+- XSheet 自身の配布物には `NOTICE`（形の表の元の Ecma の著作権表示）を根と `dist/` の両方に入れる。`npm run check:consumer` が `npm pack --dry-run` の中身（`exports` の指す先・`NOTICE`・`dist/NOTICE` が入り、`src/` が入らない）と、`dist/NOTICE` が `NOTICE` と同じことを確かめる。
+
+### 版を出す手順（M4-3・タグはユーザーの指示で）
+
+1. `main` で `npm run test`・`npm run typecheck`・`npm run lint`・`npm run format:check` が通る。`CHANGELOG.md` の版の日付を入れ、`package.json` の `version` と合わせる。
+2. `npm run build` → `npm run check:consumer` → `npm run size` が通る。
+3. `main` から作業用のブランチ（例 `release/v0.1.0`）を切り、`git add -f dist` だけのコミットを作る（`main` には入れない・ADR-0002）。
+4. そのコミットに注釈付きのタグ（`git tag -a v0.1.0`）を打ち、タグを push する。
+5. 使う側で `npm install github:TaekangKwon/XSheet#v0.1.0` を入れ、表示を確かめる（M5）。

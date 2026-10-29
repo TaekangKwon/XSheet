@@ -1,6 +1,6 @@
 {
   "name": "xsheet",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "license": "UNLICENSED",
   "description": ".xlsx を Excel どおりに表示する JavaScript ライブラリ（読み取り専用）",
@@ -39,7 +39,12 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.core.json",
     "lint": "eslint .",
     "format:check": "prettier --check .",
-    "geom:build": "node tools/geom/build-preset-geom.mjs"
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "check:consumer": "node tools/consumer-check.mjs",
+    "size": "node tools/size.mjs",
+    "geom:build": "node tools/geom/build-preset-geom.mjs",
+    "geom:compare": "node fixtures/excel/compare-ref-geoms.mjs",
+    "examples": "vite --config examples/vite.config.ts"
   },
   "dependencies": {
     "jszip": "3.10.2",

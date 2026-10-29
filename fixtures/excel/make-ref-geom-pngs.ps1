@@ -11,7 +11,7 @@
 #   powershell -ExecutionPolicy Bypass -File make-ref-geom-pngs.ps1 -Dir <abs out dir> [-Geoms <ref-geoms.xlsx>] [-Only name1,name2] [-Isolate]
 # -Isolate: while a shape is exported, the other shapes within 80 pt of it are hidden (in memory only). Use it (with -Only) if an overlay shows a neighbour's ink in the Excel image
 #   (CopyPicture of a shape should draw that shape only; arcs and callouts have frames larger than their pictures, so this is a precaution).
-# After the run: node compare-ref-geoms.mjs <out dir>   (renders ref-geoms.xlsx / ref-flips.xlsx in InterHub, compares, writes ref-geoms.compare.json + ref-flips.compare.json).
+# After the run: npm run geom:compare -- <out dir>   (= node fixtures/excel/compare-ref-geoms.mjs; renders ref-geoms.xlsx / ref-flips.xlsx with XSheet renderWorkbook, compares, writes ref-geoms.compare.json + ref-flips.compare.json).
 param([string]$Dir, [string]$Geoms = '', [string[]]$Only = @(), [switch]$Isolate)
 $ErrorActionPreference = 'Stop'
 # relative -Dir is resolved against the PowerShell location (not the process cwd), then made absolute
