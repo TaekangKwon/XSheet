@@ -4,7 +4,7 @@ import { defineConfig, type Plugin } from 'vite';
 
 /**
  * ライブラリのビルド（M4-1・`npm run build`）。ESM だけを `dist/` に出す。
- * - 入口ごとに別のファイル（package.json の exports と同じ形）：`core/index`・`core/internal`・`geom/index`・`render/index`。
+ * - 入口ごとに別のファイル（package.json の exports と同じ形）：`index`（全部・M6-2）・`core/index`・`core/internal`・`geom/index`・`render/index`。
  *   render は core を入口のファイルから引き（部品を重ねて持たない）、形の表（geom）は動的 import のまま別のチャンクで読む（N6）。
  * - 依存（jszip・ssf）は束ねない（使う側の依存として入る）。
  * - 圧縮しない（使う側のビルドが圧縮する）。大きさは `npm run size` で測る（M4-2）。
@@ -41,6 +41,7 @@ export default defineConfig({
     copyPublicDir: false,
     lib: {
       entry: {
+        index: src('index.ts'),
         'core/index': src('core/index.ts'),
         'core/internal': src('core/internal.ts'),
         'geom/index': src('geom/index.ts'),

@@ -10,5 +10,5 @@
     "outDir": "dist",
     "types": []
   },
-  "include": ["src/core", "src/geom", "src/render"]
+  "include": ["src/core", "src/geom", "src/render", "src/facade", "src/index.ts"]
 }

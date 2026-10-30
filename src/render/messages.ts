@@ -1,7 +1,7 @@
 // 正: docs/02_architecture.md §7
 /**
  * render の文言（`RenderOptions.messages`）。InterHub の `t('spreadsheet.…')` の代わり。
- * 既定は日本語。英語も同梱し、使う側は一部のキーだけを渡して差し替えられる。
+ * 既定は日本語。英語・韓国語も同梱し、使う側は一部のキーだけを渡して差し替えられる。
  * 差し込み（`{detail}`・`{format}`）は render が行う。文言は `textContent`・`title` にだけ入れる。
  */
 
@@ -96,6 +96,33 @@ export const MESSAGES_EN: Readonly<XSheetMessages> = Object.freeze({
   noticeShapeSimplified:
     'Some shapes are too complex to draw exactly, so they are shown in a simplified form.',
   noticeOverBudget: 'The images are too large in total, so some images are shown as frames only.',
+});
+
+/** 韓国語（M6-2・ADR-0003 Q4） */
+export const MESSAGES_KO: Readonly<XSheetMessages> = Object.freeze({
+  libLoadFailed: '도형 정의를 불러오지 못해 도형을 간략하게 표시합니다.',
+  parseFailed: 'Excel 파일을 해석하지 못했습니다: {detail}',
+  noSheets: '(시트가 없습니다)',
+  noData: '(데이터가 없습니다)',
+  encrypted: '암호화된 파일이거나 이전 형식(.xls)일 수 있어 표시할 수 없습니다.',
+  tooLarge: 'Excel 파일이 너무 커서 표시할 수 없습니다(내부 상한을 넘었습니다).',
+  unsupported: '이 형식의 Excel 파일(Strict Open XML·.xlsb 등)은 지원하지 않습니다.',
+  hiddenSheet: '숨겨진 시트',
+  tabsPrev: '이전 시트',
+  tabsNext: '다음 시트',
+  chart: '차트',
+  smartart: 'SmartArt',
+  shape: '도형',
+  textbox: '텍스트 상자',
+  group: '그룹',
+  imageFormat: '이미지({format})',
+  imageBroken: '이미지(표시할 수 없음)',
+  noticeTooLarge: '그림 데이터가 너무 커서 그림은 표시하지 않았습니다(표는 표시했습니다).',
+  noticeBroken: '그림을 읽지 못해 그림은 표시하지 않았습니다(표는 표시했습니다).',
+  noticeTooMany: '그림이 많아 처음 1,000개만 표시합니다.',
+  noticeTextTruncated: '도형의 글자가 많아 일부를 생략하고 표시합니다.',
+  noticeShapeSimplified: '정확히 그릴 수 없는 도형이 있어 일부 도형은 간략하게 표시합니다.',
+  noticeOverBudget: '이미지의 합계가 커서 일부 이미지는 틀만 표시합니다.',
 });
 
 /**

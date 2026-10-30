@@ -3,7 +3,7 @@
 | 項目 | 値 |
 | --- | --- |
 | 文書 | XSheet 立ち上げ資料 01 |
-| 更新日 | 2026-10-28 |
+| 更新日 | 2026-10-30 |
 | 関連 | [README.md](README.md)・[02_architecture.md](02_architecture.md) |
 
 ## TL;DR
@@ -27,8 +27,8 @@
 | 利用者 | 使い方 |
 | --- | --- |
 | ローカルの文書ビューア（InterHub・xrag-Viewer） | ファイルの `ArrayBuffer` を渡し、指定の要素の中にシートを表示する。タブ・枠・文言は自前 |
-| Web アプリの開発者 | 添付の .xlsx のプレビュー。`renderWorkbook` でタブ付きの表示を丸ごと使う |
-| 変換・検査のツール（Node・Worker） | 核だけを使い、セルの表示文字列・書式・罫線・図の一覧を取り出す |
+| Web アプリの開発者 | 添付の .xlsx のプレビュー。`view`（M6）か `renderWorkbook` でタブ付きの表示を丸ごと使う。ビルドの道具が無ければ単独版の `<script>` 1 つで使う |
+| 変換・検査のツール（Node・Worker） | 核（`xsheet/core`）だけを使い、セルの表示文字列・書式・罫線・図の一覧を取り出す |
 
 ## 3. 範囲
 
@@ -77,7 +77,7 @@
 | N3 安全 | 例外のメッセージにセル値・シート名を含めない | テスト |
 | N4 性能 | 100 万セルのシートを 1 秒以内に開く。スクロールで 200ms を超えるフレームを出さない | 図形 1,000 個・全罫線 10,000 セルで確認済み（InterHub の実測） |
 | N5 性能 | 解析は線形時間（悪意のある入力で二乗にならない） | `linear-time` のテスト（perf の project） |
-| N6 容量 | 核・描画・形の表を別のチャンクにし、形の表（171 KB・gzip 約 28 KB）は図形を描くときだけ読む。各チャンクの上限は M4 で実測して決める（M4-2 で決めた。[02](02_architecture.md) §8「大きさ」・`npm run size`） | ビルドで計測（参考：xrag の初版は読み取り＋表示で 40,760 B、jszip 96,716 B。InterHub は図形の対応で dist が +177,565 B） |
+| N6 容量 | 核・描画・形の表を別のチャンクにし、形の表（171 KB・gzip 約 28 KB）は図形を描くときだけ読む。各チャンクの上限は M4 で実測して決める（M4-2 で決めた。[02](02_architecture.md) §8「大きさ」・`npm run size`）。単独版の `xsheet.min.js` は `<script>` 1 つで済むことを優先して形の表も中に持ち、`xsheet.mjs` は形の表を別のファイルにする（M6-3・02 §8「単独版の大きさ」） | ビルドで計測（参考：xrag の初版は読み取り＋表示で 40,760 B、jszip 96,716 B。InterHub は図形の対応で dist が +177,565 B） |
 | N7 CSP | `script-src 'self'` で動く。書式の `<style>` 要素に `style-src 'unsafe-inline'` か nonce が要る。画像に `img-src blob:` が要る | [02](02_architecture.md) §3「CSP」に明記。`nonce` を渡せる。`tests/render/csp.test.ts` と examples（nonce だけの `style-src`）で確認（M3-3） |
 | N8 移植性 | 核は DOM・Node 固有の API を使わない | DOM は型の設定（`lib` に DOM を入れない）、Node は ESLint（ADR-0001）で確認 |
 | N9 後始末 | `destroy()` で blob URL・リスナ・ブックを全部放す | 漏れ 0 のテスト |

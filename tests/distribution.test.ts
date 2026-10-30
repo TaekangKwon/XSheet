@@ -88,9 +88,11 @@ describe('配る物の形', () => {
     }
   });
 
-  it('ビルドの入口（vite.config.ts）は exports の JS と同じ 4 つで、NOTICE と style.css を dist へ写す', () => {
+  it('ビルドの入口（vite.config.ts）は exports の JS と同じで、NOTICE と style.css を dist へ写す', () => {
     const config = read('vite.config.ts');
-    const entries = [...config.matchAll(/'([a-z]+\/[a-z]+)': src\(/g)].map((m) => m[1]);
+    const entries = [...config.matchAll(/'?([a-z]+(?:\/[a-z]+)?)'?: src\('[a-z/]+\.ts'\)/g)].map(
+      (m) => m[1],
+    );
     const fromExports = Object.values(pkg.exports)
       .filter((t): t is Record<string, string> => typeof t !== 'string')
       .map((t) => t.import!.replace(/^\.\/dist\/|\.js$/g, ''));

@@ -8,7 +8,7 @@
  * - `destroy()` でタブ列・シートの表示（blob URL・リスナ）を放し、ブックを閉じ、根を外す。
  * シート名はユーザーのファイル内容（信頼できない入力）なので、`textContent` と `title` にだけ入れる。
  */
-import { openXlsx, type XlsxBook, type XlsxLimits } from '../core/index';
+import { openXlsx, type SheetInfo, type XlsxBook, type XlsxLimits } from '../core/index';
 import { resolveMessages, type XSheetMessages } from './messages';
 import type { RenderOptions, SheetView } from './render-sheet';
 import { buildSheetTabStrip, makeSheetTab } from './sheet-tabs';
@@ -22,6 +22,11 @@ export interface WorkbookOptions extends RenderOptions {
 
 /** タブ付きのブックの表示 */
 export interface WorkbookView extends SheetView {
+  /**
+   * ブックのシートの一覧（タブの並び。開けなかったブックでは空）。
+   * XSheet: `view` の `Viewer.sheets`・名前でのシートの切り替えのために足した（M6-2）
+   */
+  readonly sheets: readonly SheetInfo[];
   /**
    * シートを替える（タブを押したのと同じ）。表示中のシートなら何もしない。
    * @param index シートの番号（`SheetInfo.index`。1 始まり・非表示のシートも数える）
@@ -41,6 +46,7 @@ function messageElement(className: string, text: string): HTMLElement {
 /** シートを持たない表示（開けない・シートが 0 枚）。destroy は根を外すだけ */
 function messageView(root: HTMLElement): WorkbookView {
   return {
+    sheets: [],
     showSheet: () => Promise.reject(new RangeError('シートの番号が範囲外')),
     destroy: () => {
       root.replaceChildren();
@@ -141,5 +147,5 @@ export async function renderWorkbook(
     destroy();
     throw e;
   }
-  return { showSheet, destroy };
+  return { sheets, showSheet, destroy };
 }

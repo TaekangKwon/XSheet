@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      XSheet の単独版（xsheet.min.js）だけで動くビューア（M6-4・ADR-0003 §5）。ビルドの道具は要らない。
+      - ダブルクリック（file://）でも開ける。.xlsx を選ぶか、ページへドロップする。ファイルは外へ送らない（XSheet は通信しない）。
+      - このリポジトリでは先に `npm run build` で dist/ を作る。配布の zip では viewer.html の名前で xsheet.min.js と同じフォルダに置く
+        （zip を作る道具が、下の src の `../dist/` を外す）。
+      CSP（docs/02_architecture.md §3「CSP」）：スクリプトは同じ出所のファイル（file:// で開いたときは file:）とこのページの nonce 付きのもの、
+      スタイルは nonce 付きのもの（このページの <style> と、XSheet が自動で入れる <style>）、画像は blob: だけ。通信は許さない。
+      nonce は本来、応答ごとにサーバーが作る推測できない値にする。このページはファイルで配るので固定の値。
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' file: 'nonce-xsheet-viewer'; style-src 'nonce-xsheet-viewer'; img-src blob:; base-uri 'none'; form-action 'none'"
+    />
+    <title>XSheet ビューア</title>
+    <style nonce="xsheet-viewer">
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        font-family: system-ui, sans-serif;
+        background: var(--page-bg, #ffffff);
+        color: var(--page-fg, #1a1a1a);
+      }
+      body.is-dark {
+        --page-bg: #16181d;
+        --page-fg: #e6e6e6;
+      }
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        align-items: center;
+        padding: 8px 12px;
+        border-bottom: 1px solid #8884;
+      }
+      .bar h1 {
+        margin: 0;
+        font-size: 16px;
+      }
+      .bar label {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        font-size: 13px;
+      }
+      .status {
+        font-size: 13px;
+        opacity: 0.75;
+      }
+      #viewer {
+        flex: 1 1 0;
+        min-height: 0;
+        padding: 8px;
+      }
+      #viewer.is-drop {
+        outline: 2px dashed #3b82f6;
+        outline-offset: -6px;
+      }
+      .hint {
+        margin: 24px;
+        opacity: 0.7;
+      }
+    </style>
+    <script src="../dist/xsheet.min.js"></script>
+  </head>
+  <body>
+    <header class="bar">
+      <h1>XSheet</h1>
+      <label>
+        <span>ファイル</span>
+        <input
+          id="file"
+          type="file"
+          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        />
+      </label>
+      <label>
+        <span>テーマ</span>
+        <select id="theme">
+          <option value="auto">OS に合わせる</option>
+          <option value="light">明るい</option>
+          <option value="dark">ダーク</option>
+        </select>
+      </label>
+      <label>
+        <span>言語</span>
+        <select id="lang">
+          <option value="auto">ブラウザに合わせる</option>
+          <option value="ja">日本語</option>
+          <option value="en">English</option>
+          <option value="ko">한국어</option>
+        </select>
+      </label>
+      <output id="status" class="status" aria-live="polite"></output>
+    </header>
+    <main id="viewer">
+      <p class="hint">.xlsx を選ぶか、ここへドロップしてください。</p>
+    </main>
+    <script nonce="xsheet-viewer">
+      // XSheet.view(要素, ファイル, 指定) の 1 行で表示する。ほかはファイルの選択・ドロップと、指定を替えたときの出し直し。
+      // 同じ要素に view を呼び直すと、XSheet が前の表示を外す（読み込み中の前の呼び出しは捨てられる）
+      const el = (id) => document.getElementById(id);
+      const viewerEl = el('viewer');
+      let current = null;
+      let seq = 0;
+
+      async function show(file) {
+        current = file;
+        const mine = ++seq;
+        viewerEl.querySelector('.hint')?.remove();
+        const theme = el('theme').value;
+        const dark =
+          theme === 'dark' ||
+          (theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.body.classList.toggle('is-dark', dark);
+        el('status').value = '読み込み中…';
+        try {
+          const v = await XSheet.view(viewerEl, file, {
+            theme,
+            lang: el('lang').value,
+            nonce: 'xsheet-viewer',
+          });
+          // 読み込み中に次の show が来たら、状態の表示は新しいほうに任せる
+          if (mine === seq) el('status').value = `${file.name}（${v.sheets.length} シート）`;
+        } catch (e) {
+          if (mine === seq) el('status').value = e instanceof Error ? e.message : String(e);
+        }
+      }
+
+      el('file').addEventListener('change', () => {
+        const file = el('file').files?.[0];
+        if (file) void show(file);
+      });
+      for (const id of ['theme', 'lang']) {
+        el(id).addEventListener('change', () => current && void show(current));
+      }
+      viewerEl.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        viewerEl.classList.add('is-drop');
+      });
+      viewerEl.addEventListener('dragleave', () => viewerEl.classList.remove('is-drop'));
+      viewerEl.addEventListener('drop', (e) => {
+        e.preventDefault();
+        viewerEl.classList.remove('is-drop');
+        const file = e.dataTransfer?.files?.[0];
+        if (file) void show(file);
+      });
+    </script>
+  </body>
+</html>
