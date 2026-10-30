@@ -11,6 +11,8 @@ const SAMPLES: readonly { file: string; label: string }[] = [
   { file: 'ref-shapes.xlsx', label: '図形の種類' },
   { file: 'ref-geoms.xlsx', label: '図形の形' },
   { file: 'ref-colors.xlsx', label: '色・塗り' },
+  { file: 'ref-charts.xlsx', label: 'グラフ' },
+  { file: 'ref-charts2.xlsx', label: 'グラフ（2）' },
   { file: 'ref-calibri.xlsx', label: '列幅（Calibri）' },
   { file: 'ref-yugothic.xlsx', label: '列幅（游ゴシック）' },
   { file: 'ref-malgun.xlsx', label: '列幅（Malgun Gothic）' },

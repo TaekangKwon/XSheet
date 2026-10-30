@@ -17,7 +17,7 @@
 
 | 指定 | 何のため |
 | --- | --- |
-| `script-src 'self'` | ライブラリ（`xsheet.min.js`・`xsheet.mjs`・バンドラの出力）と、図形を描くときに読む形の表（`xsheet-geom.mjs`・geom のチャンク）。別の出所に置くならその出所。`eval`・`new Function` は使わないので `'unsafe-eval'` は要らない |
+| `script-src 'self'` | ライブラリ（`xsheet.min.js`・`xsheet.mjs`・バンドラの出力）と、図形を描くときに読む形の表（`xsheet-geom.mjs`・geom のチャンク）・グラフを描くときに読むグラフの描画（`xsheet-chart.mjs`・chart-draw のチャンク）。別の出所に置くならその出所。`eval`・`new Function` は使わないので `'unsafe-eval'` は要らない |
 | `style-src 'nonce-<値>'`（または `'unsafe-inline'`） | ① 書式の `<style>`（表示の根に 1 枚。ブックの塗り・文字の装飾）② `view` が自動で入れる表示の CSS の `<style data-xsheet-style>`（`css: 'auto'` のとき、文書か ShadowRoot に 1 回だけ） |
 | `img-src blob:` | 図の画像は blob URL で出す（`data:` の URL は作らない） |
 

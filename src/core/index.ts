@@ -7,6 +7,7 @@
  */
 import { parseBorders, type BorderTable } from './borders';
 import { parseCellFormats, stylesUseTheme, type FormatTable } from './cell-format';
+import { parseChart } from './chart';
 import { findDrawingRelId, loadSheetDrawings } from './drawing';
 import { createFormatter, type CellFormatter } from './format';
 import { createImageBudget, readImageFrom, type ImageBudget } from './image';
@@ -18,6 +19,7 @@ import { parseStyles } from './styles';
 import { DEFAULT_THEME, loadTheme, type Theme } from './theme';
 import {
   XlsxError,
+  type ChartResult,
   type ImageResult,
   type SheetDrawings,
   type SheetInfo,
@@ -38,6 +40,20 @@ export type {
   CellFormat,
   CellKind,
   CellView,
+  ChartAxis,
+  ChartBox,
+  ChartFailReason,
+  ChartLegend,
+  ChartLine,
+  ChartMarker,
+  ChartMarkerSymbol,
+  ChartModel,
+  ChartPaint,
+  ChartResult,
+  ChartSeries,
+  ChartTextStyle,
+  ChartTickMark,
+  ChartTitle,
   ColLayout,
   CustGeomDef,
   CustGeomPath,
@@ -60,6 +76,7 @@ export type {
   LineDash,
   LineEnd,
   LineGeom,
+  ManualLayout,
   RowLayout,
   ShapeGeom,
   ShapeOutline,
@@ -92,6 +109,19 @@ interface StyleInfo {
   borderTable: BorderTable;
   formatTable: FormatTable;
 }
+
+/** 1 シートのグラフの点の合計の数え方（readChart の呼び出しをまたいで持つ） */
+interface ChartBudget {
+  /** これまでに読めたグラフの点の合計 */
+  used: number;
+  /** 合計の上限を一度でも超えた（以後、新しいグラフはすべて too-large） */
+  exhausted: boolean;
+  /** すでに数えたグラフのパス（同じグラフを何度読んでも 1 回だけ数える） */
+  counted: Set<string>;
+}
+
+/** 空の ChartBudget */
+const createChartBudget = (): ChartBudget => ({ used: 0, exhausted: false, counted: new Set() });
 
 /** openXlsx の追加の指定 */
 export interface OpenXlsxOptions {
@@ -131,6 +161,10 @@ export async function openXlsx(
   const imageBudgets = new Map<number, ImageBudget>();
   /** readImage を 1 つずつ順に走らせる（合計の上限を、呼んだ順に確実に数えるため） */
   let imageChain: Promise<unknown> = Promise.resolve();
+  // グラフ：シートごとに、読んだグラフの点の合計を数える（上限は maxSheetChartPoints。画像の合計と同じく呼んだ順に数え、超えたら以後の新しいグラフは too-large）
+  const chartBudgets = new Map<number, ChartBudget>();
+  /** readChart を 1 つずつ順に走らせる（合計の上限を、呼んだ順に確実に数えるため） */
+  let chartChain: Promise<unknown> = Promise.resolve();
 
   const loadStrings = (p: XlsxPackage): Promise<SharedStrings> => {
     stringsPromise ??= (async () => {
@@ -166,6 +200,44 @@ export async function openXlsx(
       };
     })();
     return formatterPromise;
+  };
+
+  /**
+   * グラフの部品を読んで `ChartModel` にする（失敗は例外にせず理由つき）。部品は `maxSmallPartBytes` で抑え、テーマ（ブックで 1 回）と `date1904` を渡す。
+   * シートの点の合計（系列数 × 項目の数）は、まだ数えていないグラフだけ数える（同じグラフの再読み込みは数え直さない）。
+   * 合計を使い切ったら以後そのシートの新しいグラフは読まずに `too-large`（一度超えたら戻らない）。
+   */
+  const readChartFrom = async (path: string, budget: ChartBudget): Promise<ChartResult> => {
+    if (!pkg.has(path)) return { ok: false, reason: 'broken' };
+    const charged = !budget.counted.has(path);
+    if (charged && budget.exhausted) return { ok: false, reason: 'too-large' };
+    let xml: string | null;
+    try {
+      xml = await pkg.readText(path, limits.maxSmallPartBytes);
+    } catch (e) {
+      if (closed) throw new XlsxError('broken', 'closed');
+      return {
+        ok: false,
+        reason: e instanceof XlsxError && e.kind === 'too-large' ? 'too-large' : 'broken',
+      };
+    }
+    if (xml === null) return { ok: false, reason: 'broken' };
+    const theme = await loadThemeOnce(pkg);
+    const parsed = parseChart(xml, theme, limits, workbook.date1904);
+    if (!parsed.ok) return parsed;
+    // 描画側が既定の系列色（テーマの accent）を当てられるよう、テーマも返す（ISSUE-103）
+    const r: ChartResult = { ...parsed, theme };
+    if (!charged) return r;
+    // await をまたいで同じパスが数え済みになっていたら数え直さない（破棄された表示の読み込みと新しい表示の読み込みが同じパスを重ねて数えない）
+    if (budget.counted.has(path)) return r;
+    const points = parsed.chart.series.length * parsed.chart.categories.length;
+    if (budget.used + points > limits.maxSheetChartPoints) {
+      budget.exhausted = true;
+      return { ok: false, reason: 'too-large' };
+    }
+    budget.used += points;
+    budget.counted.add(path);
+    return r;
   };
 
   const sheets: readonly SheetInfo[] = workbook.sheets.map((s) => ({
@@ -246,6 +318,20 @@ export async function openXlsx(
       imageChain = run.catch(() => undefined);
       return run;
     },
+    readChart(index: number, path: string): Promise<ChartResult> {
+      if (closed) return Promise.reject(new XlsxError('broken', 'closed'));
+      if (!Number.isInteger(index) || workbook.sheets[index - 1] === undefined)
+        return Promise.reject(new RangeError('シートの番号が範囲外'));
+      const budget = chartBudgets.get(index) ?? createChartBudget();
+      chartBudgets.set(index, budget);
+      const run = chartChain.then(async () => {
+        const r = await readChartFrom(path, budget);
+        if (closed) throw new XlsxError('broken', 'closed');
+        return r;
+      });
+      chartChain = run.catch(() => undefined);
+      return run;
+    },
     close() {
       closed = true;
       for (const ref of opened) ref.deref()?.release();
@@ -255,6 +341,7 @@ export async function openXlsx(
       themePromise = null;
       drawingRelIds.clear();
       imageBudgets.clear();
+      chartBudgets.clear();
       pkg.dispose();
     },
   };

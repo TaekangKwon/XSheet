@@ -1,6 +1,7 @@
 // 正: InterHub docs/plan/adr/0025-xlsx-own-reader.md
 /** xlsx の読み取り部品の公開の型（画面に依存しない） */
 import type { Rgba } from './color';
+import type { Theme } from './theme';
 
 /** 読めない理由の種類 */
 export type XlsxErrorKind = 'not-zip' | 'encrypted' | 'broken' | 'too-large' | 'unsupported';
@@ -484,6 +485,11 @@ export interface SheetDrawing {
    * SVG 併記（`asvg:svgBlip`）は SVG を使わず、PNG の予備（`a:blip r:embed`）のパスを持つ。image 以外は null
    */
   mediaPath: string | null;
+  /**
+   * kind が chart のとき、グラフの部品（`xl/charts/chartN.xml`）の zip 内のパス（`readChart` に渡す。ISSUE-101・ADR-0031 §決定 2）。
+   * `graphicData` の `c:chart r:id` を drawing の rels で解いたもの。外部リンク・zip に無いもの・chartex・`r:id` の無いものは持たない（表示側は破線枠のまま）
+   */
+  chartPath?: string;
   /** 文字のある図形（kind が shape・textbox で、ランの文字が 1 つ以上ある）の文字。無い図形・それ以外の kind は持たない */
   text?: DrawingText;
   /** 回転（`a:xfrm rot`。1/60000 度・0〜21,599,999 に正規化）。図形（`xdr:sp`。文字の有無を問わない）と線が持つ */
@@ -570,6 +576,225 @@ export type ImageResult =
     }
   | { ok: false; reason: ImageFailReason; label: string | null };
 
+/**
+ * グラフを出せなかった理由（`readChart`・`parseChart` が返す。表示側はどの理由でも破線枠。ADR-0031 §決定 1・9）。
+ * - unsupported：G1 に無い種類・構造（面・散布図・3D・組み合わせ・第 2 軸・対数軸など）
+ * - too-large：系列数・点の合計・文字の合計・シートの点の合計の上限超え、または部品が展開後の上限超え
+ * - broken：XML が壊れている（`c:chartSpace`・`c:chart`・`c:plotArea` が読めない）・部品が zip に無い・展開に失敗した
+ * - no-data：描ける系列が 0（保存値の無い系列を除いた結果）
+ */
+export type ChartFailReason = 'unsupported' | 'too-large' | 'broken' | 'no-data';
+
+/** `readChart`・`parseChart` の結果。失敗しても例外にしない */
+export type ChartResult =
+  | {
+      ok: true;
+      chart: ChartModel;
+      /** ブックのテーマの 12 色（`readChart` が付ける。既定の系列色を描画側で当てるため。`parseChart` 単体は付けない。ISSUE-103） */
+      theme?: Theme;
+    }
+  | { ok: false; reason: ChartFailReason };
+
+/** グラフの塗り：`none` は `a:noFill`（描かない）、`solid` は色（グラデーション・模様は代表色）。明示が無い所は持たない＝既定の色は描画側 */
+export type ChartPaint = { kind: 'none' } | { kind: 'solid'; color: Rgba };
+
+/** グラフの線（`a:ln`）。持つのは明示のあった項目だけ */
+export interface ChartLine {
+  /** 線の塗り（`a:noFill` なら `none`） */
+  paint?: ChartPaint;
+  /** 太さ（EMU。`a:ln w`。0〜20,116,800 に丸める） */
+  widthEmu?: number;
+  /** 線種（`a:prstDash`。未知の値は `solid`） */
+  dash?: LineDash;
+}
+
+/** 面（`c:spPr`）の塗りと枠線 */
+export interface ChartBox {
+  fill?: ChartPaint;
+  line?: ChartLine;
+}
+
+/** 文字の見た目（`a:defRPr`・`a:rPr`・`a:bodyPr`）。明示のあった項目だけ持つ */
+export interface ChartTextStyle {
+  /** 文字の大きさ（pt。`sz` ÷ 100 を 1〜400 に丸めた値） */
+  sizePt?: number;
+  bold?: boolean;
+  /** 文字の色（`a:noFill` は不透明度 0） */
+  color?: Rgba;
+  /** 文字の回転（度。`a:bodyPr rot` ÷ 60000。±90 を超える値＝Excel の「自動」を表す特別値は持たない） */
+  rotDeg?: number;
+}
+
+/** `c:manualLayout`（明示の値だけ持つ。モードの既定は `factor`・対象の既定は `outer`＝描画側が決める） */
+export interface ManualLayout {
+  target?: 'inner' | 'outer';
+  xMode?: 'edge' | 'factor';
+  yMode?: 'edge' | 'factor';
+  wMode?: 'edge' | 'factor';
+  hMode?: 'edge' | 'factor';
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+}
+
+/**
+ * タイトル（グラフ・軸）。文字（`lines`）は `c:rich` の段落（`a:br` でも分ける）か `c:strRef` の保存値。
+ * 文字の無いタイトル（`lines` が空）は Excel の自動のタイトルで、文字は描画側が決める
+ */
+export interface ChartTitle {
+  lines: readonly string[];
+  text: ChartTextStyle;
+  /** プロットと重ねる（`c:overlay`） */
+  overlay: boolean;
+  layout?: ManualLayout;
+}
+
+/** 凡例 */
+export interface ChartLegend {
+  /** 位置（`c:legendPos`。無ければ `r`） */
+  pos: 'r' | 'l' | 't' | 'b' | 'tr';
+  overlay: boolean;
+  /** 出さない項目の位置（`c:legendEntry` の `c:delete` が真のものの `c:idx`） */
+  deleted: readonly number[];
+  text: ChartTextStyle;
+  layout?: ManualLayout;
+}
+
+/** 目盛の印の語（`c:majorTickMark`・`c:minorTickMark`） */
+export type ChartTickMark = 'none' | 'in' | 'out' | 'cross';
+
+/** 軸（項目軸 `c:catAx`・`c:dateAx`、数値軸 `c:valAx`）。持つのは明示のあった項目だけ */
+export interface ChartAxis {
+  kind: 'cat' | 'date' | 'val';
+  /** 軸を消す（`c:delete`） */
+  deleted: boolean;
+  pos?: 'b' | 'l' | 'r' | 't';
+  /** 範囲の明示（`c:scaling` の `c:min`・`c:max`） */
+  min?: number;
+  max?: number;
+  /** 向き（`c:orientation`。`maxMin` は反転。無ければ `minMax`） */
+  orientation: 'minMax' | 'maxMin';
+  majorUnit?: number;
+  minorUnit?: number;
+  crosses?: 'autoZero' | 'min' | 'max';
+  crossesAt?: number;
+  crossBetween?: 'between' | 'midCat';
+  /** 主・補助の目盛線（持つ＝線がある。`c:spPr` の線の明示だけ中に持つ） */
+  majorGridlines?: ChartLine;
+  minorGridlines?: ChartLine;
+  majorTickMark?: ChartTickMark;
+  minorTickMark?: ChartTickMark;
+  tickLblPos?: 'nextTo' | 'low' | 'high' | 'none';
+  /** 項目の文字を何個おきに出すか（`c:tickLblSkip`。1 以上） */
+  tickLblSkip?: number;
+  /** 目盛の文字の表示形式（`c:numFmt`。書式コードは長すぎれば General） */
+  numFmt?: { code: string; sourceLinked: boolean };
+  title?: ChartTitle;
+  /** 軸の線（`c:spPr` の `a:ln`） */
+  line?: ChartLine;
+  /** 目盛の文字（`c:txPr`） */
+  text: ChartTextStyle;
+}
+
+/** 折れ線のマーカーの形（`c:symbol`。未知の値は持たない） */
+export type ChartMarkerSymbol =
+  | 'auto'
+  | 'circle'
+  | 'dash'
+  | 'diamond'
+  | 'dot'
+  | 'none'
+  | 'picture'
+  | 'plus'
+  | 'square'
+  | 'star'
+  | 'triangle'
+  | 'x';
+
+/** 系列のマーカー（`c:marker`）。持つのは明示のあった項目だけ */
+export interface ChartMarker {
+  symbol?: ChartMarkerSymbol;
+  /** 大きさ（pt。`c:size` を 2〜72 に丸めた値） */
+  size?: number;
+  fill?: ChartPaint;
+  line?: ChartLine;
+}
+
+/** グラフの系列 1 つ */
+export interface ChartSeries {
+  /**
+   * `c:idx`（無い・負・整数でなければ出現の位置）。`c:order` で並べた後・保存値の無い系列を除いた後も保たれる。
+   * 既定の色は配列の位置でなくこの `idx` で決まる前提（ISSUE-102）。凡例の `c:legendEntry` の `c:idx`（`ChartLegend.deleted`）との対応は要確認（ISSUE-104）
+   */
+  idx: number;
+  /** 系列名（`c:tx` の保存値。無ければ空。凡例の「Series n」は描画側） */
+  name: string;
+  /** 値（長さは `ChartModel.categories` と同じ。数値にならない値・無い点は null） */
+  values: readonly (number | null)[];
+  /** 系列の塗り・線（`c:spPr`） */
+  fill?: ChartPaint;
+  line?: ChartLine;
+  marker?: ChartMarker;
+  smooth?: boolean;
+  /** 点ごとの塗りの上書き（`c:dPt`。点の位置 → 塗り） */
+  points?: ReadonlyMap<number, ChartPaint>;
+  /** `c:numCache` の書式コード（軸の `sourceLinked` で使う。長すぎれば General） */
+  formatCode?: string;
+}
+
+/**
+ * 読み取ったグラフ（G1：縦棒・横棒・折れ線・円・ドーナツ。ADR-0031 §決定 2）。
+ * 値は `c:numCache`／`c:strCache` の保存値だけ（数式は計算しない）。明示が無い所は持たず、既定の色・範囲・配置は描画側が決める。
+ */
+export interface ChartModel {
+  type: 'bar' | 'line' | 'pie' | 'doughnut';
+  /** 棒の向き（`c:barDir`。棒だけ持つ。縦棒 `col`・横棒 `bar`） */
+  barDir?: 'col' | 'bar';
+  /** 並べ方。棒は `clustered`・`stacked`・`percentStacked`、折れ線は `standard`・`stacked`・`percentStacked`、円・ドーナツは `standard` */
+  grouping: 'clustered' | 'stacked' | 'percentStacked' | 'standard';
+  /** `c:varyColors`（要素が無ければ true。Excel 16 の COM で確認・ADR-0031 C3。円・ドーナツで「常に点ごと」にするかは描画側） */
+  varyColors: boolean;
+  /** 項目の文字（数値・日付は書式を当てた後。項目の無いグラフは `1, 2, 3…`） */
+  categories: readonly string[];
+  /** 系列（`c:order` の順。保存値の無い系列は除く） */
+  series: readonly ChartSeries[];
+  /** 項目軸（`c:catAx`・`c:dateAx`）と数値軸（`c:valAx`）。円・ドーナツは持たない */
+  catAxis?: ChartAxis;
+  valAxis?: ChartAxis;
+  title?: ChartTitle;
+  /** `c:autoTitleDeleted`（自動のタイトルを出さない） */
+  autoTitleDeleted: boolean;
+  legend?: ChartLegend;
+  /** プロットの `c:layout` の `c:manualLayout` */
+  plotLayout?: ManualLayout;
+  /** グラフの面（`c:chartSpace` の `c:spPr`）・プロットの面（`c:plotArea` の `c:spPr`） */
+  chartArea: ChartBox;
+  plotArea: ChartBox;
+  /** `c:chartSpace` の `c:txPr`（既定の文字） */
+  text: ChartTextStyle;
+  /** `c:style`（`mc:AlternateContent` の `mc:Fallback` の中も見る。1〜48） */
+  style?: number;
+  /**
+   * `c14:style`（`mc:AlternateContent` の `mc:Choice` の中の `c14:style` の `val`。整数）。要素が無い・読めなければ持たない。
+   * 描画は値でなく「持つか」だけを見る（持つ＝Excel が COM の旧 API などで作った `c:spPr` 無しのグラフ。目盛線・軸線 #898989・タイトル 18pt。ISSUE-109・ADR-0031 §決定 4）。
+   * `style` とは別の項目で、`style` の読み方（`mc:Fallback`）は変えない
+   */
+  c14Style?: number;
+  /** `c:roundedCorners` の `val`（`val` が無ければ真・未知の値も真）。要素が無ければ持たない（描画側の既定は角丸＝真。ISSUE-109・ADR-0031 §決定 3） */
+  roundedCorners?: boolean;
+  /** 棒：``c:gapWidth`（0〜500）・`c:overlap`（-100〜100） */
+  gapWidth?: number;
+  overlap?: number;
+  /** 円・ドーナツ：`c:firstSliceAng`（度。0〜360）・`c:holeSize`（%。ドーナツだけ） */
+  firstSliceAng?: number;
+  holeSize?: number;
+  /** 折れ線のグループの `c:marker`（真ならマーカーあり。系列の `marker.symbol` が優先）。折れ線だけ持つ */
+  lineMarkers?: boolean;
+  /** 空の点の扱い（`c:dispBlanksAs`。要素が無ければ `gap`） */
+  dispBlanksAs: 'gap' | 'zero' | 'span';
+}
+
 /** 開いた xlsx */
 export interface XlsxBook {
   readonly sheets: readonly SheetInfo[];
@@ -588,6 +813,13 @@ export interface XlsxBook {
    * @throws RangeError index が範囲外／ XlsxError(broken) 閉じた後
    */
   readImage(index: number, path: string): Promise<ImageResult>;
+  /**
+   * グラフ（`openDrawings(index)` が返した chartPath）を読み、G1 のグラフのモデルを返す（ADR-0031 §決定 2）。
+   * 描けないとき（G1 外・壊れている・上限超え・描ける系列が無い）は例外にせず `ok: false`（理由つき）。
+   * 1 シートのグラフの点の合計の上限は、指定した `index` のシートの分で呼んだ順に数える（`readImage` と同じ）。
+   * @throws RangeError index が範囲外／ XlsxError(broken) 閉じた後
+   */
+  readChart(index: number, path: string): Promise<ChartResult>;
   /** 展開済みのデータを放す。以後 openSheet は例外、開いたシートの getRows は空 */
   close(): void;
 }

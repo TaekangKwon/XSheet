@@ -5,6 +5,8 @@ import { MESSAGES_JA } from '../../src/render/messages';
 import { createSheetView } from '../../src/render/sheet-view';
 import { makePng } from '../../src/testing/make-image';
 import {
+  buildThemeXml,
+  chartXml,
   custGeomXml,
   cxnSpXml,
   graphicFrameXml,
@@ -69,6 +71,12 @@ function wrapBook(book: XlsxBook): XlsxBook {
     readImage: (i, p) => {
       inflight++;
       return (readImage ?? ((j: number, q: string) => book.readImage(j, q)))(i, p).finally(() => {
+        inflight--;
+      });
+    },
+    readChart: (i, p) => {
+      inflight++;
+      return book.readChart(i, p).finally(() => {
         inflight--;
       });
     },
@@ -678,5 +686,79 @@ describe('renderSheet（.xlsx・図形の形／ISSUE-92）', () => {
     const box = figs[2]!.querySelector<HTMLElement>('.xs-shape-box')!;
     expect(box.style.transform).toBe('rotate(45deg)');
     expect(box.querySelector('.xs-shape-text')!.textContent).toBe('回転');
+  });
+});
+
+describe('renderSheet（.xlsx・グラフ／ISSUE-103）', () => {
+  const CHART_URI = 'http://schemas.openxmlformats.org/drawingml/2006/chart';
+  const sales = { name: '売上', values: [10, 20, 30] };
+
+  /** グラフ（chart1.xml…）を持つ 1 シートのブックを描く */
+  async function renderCharts(charts: string[], theme?: string): Promise<HTMLElement> {
+    const anchors = charts.map((_, i) =>
+      twoCellAnchor(
+        { col: 0, row: i * 12 },
+        { col: 6, row: i * 12 + 10 },
+        graphicFrameXml(`c${i}`, CHART_URI, 5 + i, [0, 0, 0, 0], `rId${i + 1}`),
+      ),
+    );
+    const files: Record<string, string> = {};
+    charts.forEach((c, i) => (files[`chart${i + 1}.xml`] = c));
+    const book = await openBook({
+      font: { name: 'Calibri', size: 11 },
+      sheets: [
+        {
+          name: 'S',
+          rows: [['a']],
+          drawing: {
+            xml: wsDr(anchors),
+            rels: charts.map((_, i) => ({
+              id: `rId${i + 1}`,
+              target: `../charts/chart${i + 1}.xml`,
+              type: 'chart',
+            })),
+          },
+        },
+      ],
+      charts: files,
+      ...(theme === undefined ? {} : { theme: { xml: theme } }),
+    });
+    return (await mount(wrapBook(book))).root;
+  }
+
+  /** グラフの描画（遅れて読む部品）と読み込みが落ち着くまで待つ */
+  async function settleCharts(root: HTMLElement, count: number): Promise<void> {
+    await settle();
+    await vi.waitFor(() => expect(root.querySelectorAll('svg.xs-chart')).toHaveLength(count));
+  }
+
+  it('TD-103-40: 読めるグラフは <svg> で出る（破線枠ではない）。G1 の外のグラフは今の破線枠のまま。テーマの色が既定の系列色になる', async () => {
+    const root = await renderCharts(
+      [
+        chartXml({ series: [sales] }),
+        chartXml({ groupName: 'areaChart', series: [sales] }), // 面グラフ＝G1 の外
+      ],
+      buildThemeXml({ accent1: '<a:srgbClr val="112233"/>' }),
+    );
+    await settleCharts(root, 1);
+    const figs = figures(root);
+    expect(figs).toHaveLength(2);
+    // F1〜: 6 列×10 行の矩形（既定の列幅 64px・行高 20px）
+    expect(rectOf(figs[0]!)).toEqual(['0px', '0px', `${6 * 64}px`, `${10 * 20}px`]);
+    const svg = figs[0]!.querySelector('svg.xs-chart')!;
+    expect(svg).not.toBeNull();
+    expect(figs[0]!.querySelector('.xs-frame')).toBeNull();
+    expect([...svg.querySelectorAll('path')].map((p) => p.getAttribute('fill'))).toContain(
+      '#112233',
+    );
+    expect(figs[1]!.querySelector('svg')).toBeNull();
+    expect(figs[1]!.querySelector('.xs-frame')?.textContent).toBe(MESSAGES_JA.chart);
+  });
+
+  it('TD-103-41: 表示を破棄（cleanupViews）すると svg が DOM に残らない', async () => {
+    const root = await renderCharts([chartXml({ series: [sales] })]);
+    await settleCharts(root, 1);
+    cleanupViews();
+    expect(root.querySelectorAll('svg.xs-chart')).toHaveLength(0);
   });
 });

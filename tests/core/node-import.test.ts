@@ -83,7 +83,14 @@ describe('core を素の Node で import する', () => {
     expect(child.env).toEqual({
       document: 'undefined',
       window: 'undefined',
-      internal: ['DEFAULT_MDW', 'applyFillMode', 'emptyLayout'],
+      internal: [
+        'DEFAULT_MDW',
+        'DEFAULT_THEME',
+        'applyFillMode',
+        'applyTransforms',
+        'emptyLayout',
+        'formatNumberByCode',
+      ],
     });
     const expected = await summarize(await openXlsx(readFileSync(fixture)));
     expect(expected.length).toBeGreaterThan(0);

@@ -151,6 +151,7 @@ describe('renderSheet（.xlsx）', () => {
       openSheet: () => Promise.reject(new XlsxError('too-large')),
       openDrawings: (i) => book.openDrawings(i),
       readImage: (i, p) => book.readImage(i, p),
+      readChart: (i, p) => book.readChart(i, p),
       close: () => book.close(),
     };
     const { root } = await mount(failing);

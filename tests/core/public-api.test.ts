@@ -3,6 +3,8 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import * as core from '../../src/core/index';
 import * as internal from '../../src/core/internal';
 import type {
+  ChartModel,
+  ChartResult,
   DrawingColor,
   DrawingGroup,
   DrawingLine,
@@ -67,6 +69,8 @@ describe('公開の入口（xsheet）', () => {
     expectTypeOf<XlsxBook['openSheet']>().returns.resolves.toEqualTypeOf<XlsxSheet>();
     expectTypeOf<XlsxBook['openDrawings']>().returns.resolves.toEqualTypeOf<SheetDrawings>();
     expectTypeOf<XlsxBook['readImage']>().returns.resolves.toEqualTypeOf<ImageResult>();
+    expectTypeOf<XlsxBook['readChart']>().returns.resolves.toEqualTypeOf<ChartResult>();
+    expectTypeOf<Extract<ChartResult, { ok: true }>['chart']>().toEqualTypeOf<ChartModel>();
     expectTypeOf<XlsxSheet['getRows']>().returns.toEqualTypeOf<SheetRow[]>();
     expectTypeOf<XlsxSheet['layout']>().toEqualTypeOf<SheetLayout>();
     expectTypeOf<SheetDrawings['notices']>().toEqualTypeOf<readonly DrawingNotice[]>();
@@ -89,7 +93,14 @@ describe('公開の入口（xsheet）', () => {
 
 describe('半公開の入口（xsheet/internal）', () => {
   it('render が使う部品だけを出す（版の互換は約束しない）', () => {
-    expect(Object.keys(internal).sort()).toEqual(['DEFAULT_MDW', 'applyFillMode', 'emptyLayout']);
+    expect(Object.keys(internal).sort()).toEqual([
+      'DEFAULT_MDW',
+      'DEFAULT_THEME',
+      'applyFillMode',
+      'applyTransforms',
+      'emptyLayout',
+      'formatNumberByCode',
+    ]);
   });
 
   it('公開の入口と名前が重ならない', () => {

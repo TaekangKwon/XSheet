@@ -11,6 +11,7 @@
  * 線は図とは別に数える。画像のトリミング（`srcRect`）・回転・反転は読まない（第 1 段）。
  * グループ（`xdr:grpSp`）は中の子（`sp`・`cxnSp`・`pic`・`graphicFrame`・入れ子のグループ）を展開して一覧に足し、グループ自身は足さない。
  * 子はトップレベルと同じ `addDrawing` で読み、グループの子の座標系（`SheetDrawing.group`）を持たせる。写像（px）は表示側が行う（ISSUE-89）。
+ * グラフは `graphicData` の `c:chart r:id` を同じ rels で解いて `chartPath` に持つ（読むのは `XlsxBook.readChart`。ISSUE-101）。
  * 図の名前・画像のパスはログに出さない（console を使わない）。
  */
 import { readFillColor, readOutlineColor } from './drawing-color';
@@ -248,6 +249,27 @@ function resolveMedia(ctx: Ctx, blip: Attrs | null): string | null {
 }
 
 /**
+ * グラフの参照（`graphicFrame` の `a:graphicData` の子 `c:chart r:id`）を zip のパスにする（ADR-0031 §決定 2）。
+ * 名前空間の接頭辞は問わず局所名 `chart` で引く。`uri` が通常のグラフ（`…/chart`）でないもの（chartex など）・`r:id` が無い・
+ * 外部（`TargetMode="External"`）・zip に無いものは null（表示側は破線枠のまま）。
+ * @param at `graphicFrame` の開きタグの位置
+ */
+function resolveChart(ctx: Ctx, body: string, at: number): string | null {
+  const frame = findElement(body, 'graphicFrame', at)?.body;
+  if (frame === null || frame === undefined) return null;
+  const data = findElement(frame, 'graphicData');
+  if (data === null || data.body === null) return null;
+  if (!(parseAttrs(data.open).uri ?? '').endsWith('/chart')) return null;
+  const tag = findOpenTag(data.body, 'chart');
+  const id = tag === null ? undefined : attrByLocalName(parseAttrs(tag), 'id');
+  if (id === undefined || id === '') return null;
+  const rel = ctx.rels.get(id);
+  if (rel === undefined || rel.external) return null;
+  const path = resolveTarget(ctx.dir, rel.target);
+  return ctx.pkg.has(path) ? path : null;
+}
+
+/**
  * 図形（`xdr:sp`）・線（`xdr:cxnSp`）の中身を切り出し、見た目（回転・反転・枠線と塗り・形）を読む。
  * `at` は要素の開きタグの位置。閉じが無いなどで中身が取れなければ null。
  */
@@ -297,6 +319,7 @@ function addDrawing(
 
   let kind: DrawingKind;
   let mediaPath: string | null = null;
+  let chartPath: string | null = null;
   let shape: { spBody: string; props: ShapeProps } | null = null;
   if (name === 'pic') {
     kind = 'image';
@@ -305,6 +328,7 @@ function addDrawing(
   } else if (name === 'graphicFrame') {
     const uri = parseAttrs(findOpenTag(body, 'graphicData', at) ?? '').uri ?? '';
     kind = uri.endsWith('/diagram') ? 'smartart' : 'chart';
+    if (kind === 'chart') chartPath = resolveChart(ctx, body, at);
   } else if (name === 'grpSp') {
     kind = 'group';
   } else if (name === 'cxnSp') {
@@ -339,6 +363,7 @@ function addDrawing(
     descr: (attrs?.descr ?? '').slice(0, MAX_DRAWING_TEXT),
     mediaPath,
   };
+  if (chartPath !== null) drawing.chartPath = chartPath;
   if (group !== undefined) drawing.group = group;
 
   if (kind === 'line') {

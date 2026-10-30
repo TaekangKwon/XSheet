@@ -170,6 +170,8 @@ export interface XlsxSpec {
   noSharedStrings?: boolean;
   /** テーマ（`xl/theme/theme1.xml`・workbook.xml.rels の theme の関係）。省くとテーマ無し */
   theme?: ThemeSpec;
+  /** グラフの部品（`xl/charts/<キー>` → XML。`chartXml` で組める）。`[Content_Types].xml` に Override も足す。省くと何も足さない */
+  charts?: Record<string, string>;
   /** 追加・上書きのファイル */
   extraFiles?: Record<string, string | Uint8Array>;
 }
@@ -272,9 +274,44 @@ export async function buildXlsx(spec: XlsxSpec): Promise<Uint8Array> {
   const z = new JSZip();
 
   const fileOf = (s: SheetSpec, i: number) => s.file ?? `sheet${i + 1}.xml`;
+  const chartOverrides = Object.keys(spec.charts ?? {})
+    .map(
+      (name) =>
+        `<Override PartName="/xl/charts/${esc(name)}" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>`,
+    )
+    .join('');
+  // グラフを持つ spec だけ、Excel が開けるよう主要パーツの Override も足す（Excel は workbook.xml が
+  // application/xml のままだと「ファイル形式が正しくありません」で拒否する。既存の合成ファイルは変えない）
+  const SS = 'application/vnd.openxmlformats-officedocument.spreadsheetml';
+  const coreOverrides = chartOverrides
+    ? `<Override PartName="/xl/workbook.xml" ContentType="${SS}.sheet.main+xml"/>` +
+      spec.sheets
+        .map((s, i) =>
+          s.chartsheet
+            ? `<Override PartName="/xl/chartsheets/${esc(fileOf(s, i))}" ContentType="${SS}.chartsheet+xml"/>`
+            : `<Override PartName="/xl/worksheets/${esc(fileOf(s, i))}" ContentType="${SS}.worksheet+xml"/>`,
+        )
+        .join('') +
+      spec.sheets
+        .map((s, i) =>
+          s.drawing && !s.drawing.omitPart
+            ? `<Override PartName="/xl/drawings/${esc(s.drawing.file ?? `drawing${i + 1}.xml`)}" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>`
+            : '',
+        )
+        .join('') +
+      (spec.noStyles
+        ? ''
+        : `<Override PartName="/xl/styles.xml" ContentType="${SS}.styles+xml"/>`) +
+      (!spec.noSharedStrings && spec.sharedStrings !== undefined
+        ? `<Override PartName="/xl/sharedStrings.xml" ContentType="${SS}.sharedStrings+xml"/>`
+        : '') +
+      (spec.theme && !spec.theme.omitPart
+        ? `<Override PartName="/xl/theme/${esc(spec.theme.file ?? 'theme1.xml')}" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>`
+        : '')
+    : '';
   z.file(
     '[Content_Types].xml',
-    `${HEAD}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/></Types>`,
+    `${HEAD}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${coreOverrides}${chartOverrides}</Types>`,
   );
   z.file(
     '_rels/.rels',
@@ -387,6 +424,7 @@ export async function buildXlsx(spec: XlsxSpec): Promise<Uint8Array> {
     );
   }
 
+  for (const [name, xml] of Object.entries(spec.charts ?? {})) z.file(`xl/charts/${name}`, xml);
   for (const [path, content] of Object.entries(spec.extraFiles ?? {})) z.file(path, content);
   return z.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
 }
@@ -473,6 +511,8 @@ export interface PointSpec {
 const XDR_NS = 'http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing';
 const A_NS = 'http://schemas.openxmlformats.org/drawingml/2006/main';
 const MC_NS = 'http://schemas.openxmlformats.org/markup-compatibility/2006';
+const C_NS = 'http://schemas.openxmlformats.org/drawingml/2006/chart';
+const CX_NS = 'http://schemas.microsoft.com/office/drawing/2014/chartex';
 
 /** `<xdr:from>` / `<xdr:to>` */
 function pointXml(tag: 'from' | 'to', p: PointSpec): string {
@@ -565,14 +605,26 @@ export function cxnSpXml(name: string, id = 4): string {
   return `<xdr:cxnSp macro=""><xdr:nvCxnSpPr>${cNvPr(id, name)}<xdr:cNvCxnSpPr/></xdr:nvCxnSpPr><xdr:spPr><a:prstGeom prst="straightConnector1"><a:avLst/></a:prstGeom></xdr:spPr></xdr:cxnSp>`;
 }
 
-/** グラフ・SmartArt（`xdr:graphicFrame`）。`uri` は `graphicData` の uri（既定はグラフ） */
+/**
+ * グラフ・SmartArt（`xdr:graphicFrame`）。`uri` は `graphicData` の uri（既定はグラフ）。
+ * `chartRid` を渡すと `graphicData` の子に `c:chart r:id` を出す（省くと自己閉じの `graphicData`＝今までと同じ出力）。
+ * `chartTag` は子の要素名（既定 `c:chart`。chartex の試験では `cx:chart`）
+ */
 export function graphicFrameXml(
   name: string,
   uri = 'http://schemas.openxmlformats.org/drawingml/2006/chart',
   id = 5,
   box: Box = [0, 0, 0, 0],
+  chartRid?: string,
+  chartTag = 'c:chart',
 ): string {
-  return `<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr>${cNvPr(id, name)}<xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm>${offExt(box)}</xdr:xfrm><a:graphic><a:graphicData uri="${uri}"/></a:graphic></xdr:graphicFrame>`;
+  const prefix = chartTag.split(':')[0]!;
+  const ns = prefix === 'cx' ? CX_NS : C_NS;
+  const data =
+    chartRid === undefined
+      ? `<a:graphicData uri="${uri}"/>`
+      : `<a:graphicData uri="${uri}"><${chartTag} xmlns:${prefix}="${ns}" r:id="${chartRid}"/></a:graphicData>`;
+  return `<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr>${cNvPr(id, name)}<xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm>${offExt(box)}</xdr:xfrm><a:graphic>${data}</a:graphic></xdr:graphicFrame>`;
 }
 
 /** グループの座標系（`xdr:grpSpPr` の `a:xfrm`） */
@@ -811,4 +863,313 @@ export function lineShapeXml(s: LineShapeSpec): string {
   if (s.asSp)
     return `<xdr:sp macro="" textlink=""><xdr:nvSpPr>${cNvPr(s.id ?? 4, s.name, undefined, s.hidden)}<xdr:cNvSpPr/></xdr:nvSpPr>${props}</xdr:sp>`;
   return `<xdr:cxnSp macro=""><xdr:nvCxnSpPr>${cNvPr(s.id ?? 4, s.name, undefined, s.hidden)}<xdr:cNvCxnSpPr/></xdr:nvCxnSpPr>${props}</xdr:cxnSp>`;
+}
+
+// ---- グラフ（ISSUE-101）。Excel が書く chartN.xml に近づけた合成。指定しない項目は出さない ----
+
+/** 項目（`c:cat`）の指定 */
+export type ChartCatSpec =
+  | { kind: 'str'; values: (string | null)[]; lit?: boolean }
+  | { kind: 'num'; values: (number | null)[]; formatCode?: string; lit?: boolean }
+  /** 多段の項目。`levels[0]` が最も内側の段 */
+  | { kind: 'multi'; levels: string[][] };
+
+/** 系列 1 つの指定 */
+export interface ChartSerSpec {
+  /** 系列名（`c:tx` の `c:strRef` の保存値）。省くと `c:tx` を出さない */
+  name?: string;
+  /** 系列名を `c:tx` の `c:v` で出す */
+  nameLit?: boolean;
+  /**
+   * 値（`c:val`）。位置が点の番号。null は `c:pt` を出さない（疎な点）、文字は数値でない値（`c:v` にそのまま）。
+   * 省くと空の配列（`c:ptCount` が 0）
+   */
+  values?: (number | string | null)[];
+  /** `c:ptCount` を values の長さでなくこの値にする */
+  ptCount?: number;
+  /** `c:numRef` に `c:f` だけで `c:numCache` を出さない（保存値の無い系列） */
+  noCache?: boolean;
+  /** `c:numRef` でなく `c:numLit` で出す */
+  lit?: boolean;
+  /** `c:numCache` の `c:formatCode` */
+  formatCode?: string;
+  cat?: ChartCatSpec;
+  /** `c:idx`（既定は系列の位置。null で要素を出さない） */
+  idx?: number | null;
+  order?: number;
+  /** `c:spPr` の中身（`<a:solidFill>…`） */
+  spPr?: string;
+  /** `c:marker` の中身（`<c:symbol val="none"/>` など） */
+  marker?: string;
+  /** 点ごとの上書き（`c:dPt`）。spPr は `c:spPr` の中身 */
+  dPts?: { idx: number; spPr: string }[];
+  /** `c:smooth` の val */
+  smooth?: boolean;
+  /** 系列の中に足す要素（`c:dLbls`・`c:trendline`）。`c:cat` の前に置く */
+  extra?: string;
+}
+
+/** 軸 1 つの指定（指定した項目だけ出す） */
+export interface ChartAxisSpec {
+  delete?: boolean;
+  axPos?: string;
+  min?: number;
+  max?: number;
+  orientation?: string;
+  logBase?: number;
+  majorUnit?: number;
+  minorUnit?: number;
+  crosses?: string;
+  crossesAt?: number;
+  crossBetween?: string;
+  /** 主・補助の目盛線。true は空の要素、文字は `c:spPr` の中身 */
+  majorGridlines?: true | string;
+  minorGridlines?: true | string;
+  majorTickMark?: string;
+  minorTickMark?: string;
+  tickLblPos?: string;
+  tickLblSkip?: number;
+  numFmt?: { code: string; sourceLinked?: boolean };
+  /** `c:title` の全体（`chartTitleXml`） */
+  title?: string;
+  /** 軸の `c:spPr` の中身 */
+  spPr?: string;
+  /** `c:txPr` の全体（`chartTxPrXml`） */
+  txPr?: string;
+}
+
+/** グラフ全体の指定 */
+export interface ChartSpec {
+  /** 種類（既定 `bar`） */
+  group?: 'bar' | 'line' | 'pie' | 'doughnut';
+  /** 種類の要素名をそのまま指定する（例 `areaChart`・`bar3DChart`。`group` より優先） */
+  groupName?: string;
+  barDir?: string;
+  grouping?: string;
+  varyColors?: boolean;
+  gapWidth?: number;
+  overlap?: number;
+  firstSliceAng?: number;
+  holeSize?: number;
+  /** 折れ線のグループの `c:marker val` */
+  groupMarker?: boolean;
+  /** 種類の要素の中に足す要素（`c:dLbls`） */
+  groupExtra?: string;
+  series?: ChartSerSpec[];
+  /** 種類の要素を足す（組み合わせの試験）。要素の全体 */
+  extraGroups?: string[];
+  /** 項目軸の指定（null で出さない。既定は棒・折れ線で `{}`、円・ドーナツで出さない） */
+  catAx?: ChartAxisSpec | null;
+  /** 数値軸の指定（同上） */
+  valAx?: ChartAxisSpec | null;
+  /** 項目軸を `c:dateAx` にする */
+  dateAx?: boolean;
+  /** 数値軸をもう 1 本足す（第 2 軸の試験） */
+  extraValAx?: boolean;
+  /** `c:title` の全体（`chartTitleXml`） */
+  title?: string;
+  autoTitleDeleted?: boolean;
+  view3D?: boolean;
+  /** `c:legend` の全体 */
+  legend?: string;
+  /** プロットの `c:layout` の中身（`<c:manualLayout>…`） */
+  plotLayout?: string;
+  /** プロットの面の `c:spPr` の中身 */
+  plotSpPr?: string;
+  /** グラフの面の `c:spPr` の中身 */
+  chartSpPr?: string;
+  /** グラフの `c:txPr` の全体（`chartTxPrXml`） */
+  txPr?: string;
+  /** `c:style` を `mc:AlternateContent` の `mc:Fallback` の中に出す（Excel の書き方。Choice の `c14:style` は 100 を足した値） */
+  style?: number;
+  /** `c:style` を直接出す */
+  styleDirect?: number;
+  /** `c:roundedCorners` の `val`（文字そのまま。空文字は `val` の無い要素）。省くと要素を出さない */
+  roundedCorners?: string;
+  /** `c:dispBlanksAs` の val。省くと `gap`、null で要素を出さない */
+  dispBlanksAs?: string | null;
+}
+
+/** `c:pt` の並び（疎：null は出さない） */
+function chartPts(values: readonly (number | string | null)[]): string {
+  return values
+    .map((v, i) => (v === null ? '' : `<c:pt idx="${i}"><c:v>${esc(v)}</c:v></c:pt>`))
+    .join('');
+}
+
+/** `c:cat` の XML */
+function chartCatXml(cat: ChartCatSpec): string {
+  if (cat.kind === 'multi') {
+    const n = Math.max(0, ...cat.levels.map((l) => l.length));
+    const lvls = cat.levels.map((l) => `<c:lvl>${chartPts(l)}</c:lvl>`).join('');
+    return `<c:cat><c:multiLvlStrRef><c:f>Sheet1!$A$2:$B$${n + 1}</c:f><c:multiLvlStrCache><c:ptCount val="${n}"/>${lvls}</c:multiLvlStrCache></c:multiLvlStrRef></c:cat>`;
+  }
+  const n = cat.values.length;
+  if (cat.kind === 'str') {
+    const body = `<c:ptCount val="${n}"/>${chartPts(cat.values)}`;
+    return cat.lit
+      ? `<c:cat><c:strLit>${body}</c:strLit></c:cat>`
+      : `<c:cat><c:strRef><c:f>Sheet1!$A$2:$A$${n + 1}</c:f><c:strCache>${body}</c:strCache></c:strRef></c:cat>`;
+  }
+  const code = `<c:formatCode>${esc(cat.formatCode ?? 'General')}</c:formatCode>`;
+  const body = `${code}<c:ptCount val="${n}"/>${chartPts(cat.values)}`;
+  return cat.lit
+    ? `<c:cat><c:numLit>${body}</c:numLit></c:cat>`
+    : `<c:cat><c:numRef><c:f>Sheet1!$A$2:$A$${n + 1}</c:f><c:numCache>${body}</c:numCache></c:numRef></c:cat>`;
+}
+
+/** `c:ser` の XML */
+function chartSerXml(s: ChartSerSpec, i: number): string {
+  const values = s.values ?? [];
+  const tx =
+    s.name === undefined
+      ? ''
+      : s.nameLit
+        ? `<c:tx><c:v>${esc(s.name)}</c:v></c:tx>`
+        : `<c:tx><c:strRef><c:f>Sheet1!$B$1</c:f><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>${esc(s.name)}</c:v></c:pt></c:strCache></c:strRef></c:tx>`;
+  const dPts = (s.dPts ?? [])
+    .map(
+      (d) =>
+        `<c:dPt><c:idx val="${d.idx}"/><c:invertIfNegative val="0"/><c:bubble3D val="0"/><c:spPr>${d.spPr}</c:spPr></c:dPt>`,
+    )
+    .join('');
+  const cache = `<c:formatCode>${esc(s.formatCode ?? 'General')}</c:formatCode><c:ptCount val="${s.ptCount ?? values.length}"/>${chartPts(values)}`;
+  const val = s.lit
+    ? `<c:val><c:numLit>${cache}</c:numLit></c:val>`
+    : s.noCache
+      ? `<c:val><c:numRef><c:f>Sheet1!$B$2:$B$5</c:f></c:numRef></c:val>`
+      : `<c:val><c:numRef><c:f>Sheet1!$B$2:$B$${values.length + 1}</c:f><c:numCache>${cache}</c:numCache></c:numRef></c:val>`;
+  return (
+    `<c:ser>${s.idx === null ? '' : `<c:idx val="${s.idx ?? i}"/>`}` +
+    (s.order === undefined ? `<c:order val="${i}"/>` : `<c:order val="${s.order}"/>`) +
+    tx +
+    (s.spPr === undefined ? '' : `<c:spPr>${s.spPr}</c:spPr>`) +
+    (s.marker === undefined ? '' : `<c:marker>${s.marker}</c:marker>`) +
+    dPts +
+    (s.extra ?? '') +
+    (s.cat === undefined ? '' : chartCatXml(s.cat)) +
+    val +
+    (s.smooth === undefined ? '' : `<c:smooth val="${s.smooth ? 1 : 0}"/>`) +
+    `</c:ser>`
+  );
+}
+
+/** 軸 1 つの XML（`kind` は要素名） */
+function chartAxisXml(
+  kind: 'catAx' | 'dateAx' | 'valAx',
+  id: number,
+  crossAx: number,
+  a: ChartAxisSpec,
+): string {
+  const n = (tag: string, v: number | string | undefined) =>
+    v === undefined ? '' : `<c:${tag} val="${v}"/>`;
+  const grid = (tag: string, g: true | string | undefined) =>
+    g === undefined
+      ? ''
+      : g === true
+        ? `<c:${tag}/>`
+        : `<c:${tag}><c:spPr>${g}</c:spPr></c:${tag}>`;
+  const scaling =
+    `<c:scaling>${a.logBase === undefined ? '' : `<c:logBase val="${a.logBase}"/>`}` +
+    `<c:orientation val="${a.orientation ?? 'minMax'}"/>` +
+    n('max', a.max) +
+    n('min', a.min) +
+    `</c:scaling>`;
+  return (
+    `<c:${kind}><c:axId val="${id}"/>${scaling}` +
+    (a.delete === undefined ? '' : `<c:delete val="${a.delete ? 1 : 0}"/>`) +
+    n('axPos', a.axPos) +
+    grid('majorGridlines', a.majorGridlines) +
+    grid('minorGridlines', a.minorGridlines) +
+    (a.title ?? '') +
+    (a.numFmt === undefined
+      ? ''
+      : `<c:numFmt formatCode="${esc(a.numFmt.code)}" sourceLinked="${a.numFmt.sourceLinked ? 1 : 0}"/>`) +
+    n('majorTickMark', a.majorTickMark) +
+    n('minorTickMark', a.minorTickMark) +
+    n('tickLblPos', a.tickLblPos) +
+    (a.spPr === undefined ? '' : `<c:spPr>${a.spPr}</c:spPr>`) +
+    (a.txPr ?? '') +
+    `<c:crossAx val="${crossAx}"/>` +
+    n('crosses', a.crosses) +
+    n('crossesAt', a.crossesAt) +
+    n('crossBetween', a.crossBetween) +
+    n('tickLblSkip', a.tickLblSkip) +
+    n('majorUnit', a.majorUnit) +
+    n('minorUnit', a.minorUnit) +
+    `</c:${kind}>`
+  );
+}
+
+/** グラフ・軸のタイトル（`c:title`）。`lines` は段落（文字列で 1 段落）、extra は title の中に足す要素（`<c:overlay val="1"/>` など） */
+export function chartTitleXml(lines: string[], rPr = '', extra = '', bodyPr = ''): string {
+  const paras = lines
+    .map(
+      (l) =>
+        `<a:p><a:pPr><a:defRPr/></a:pPr><a:r><a:rPr lang="ja-JP"${rPr}/><a:t>${esc(l)}</a:t></a:r></a:p>`,
+    )
+    .join('');
+  return `<c:title><c:tx><c:rich><a:bodyPr${bodyPr}/><a:lstStyle/>${paras}</c:rich></c:tx>${extra}</c:title>`;
+}
+
+/** `c:txPr`（`a:defRPr` の属性と中身を指定する。`bodyPr` は `a:bodyPr` の属性） */
+export function chartTxPrXml(defRPrAttrs = '', defRPrInner = '', bodyPr = ''): string {
+  const def =
+    defRPrInner === ''
+      ? `<a:defRPr${defRPrAttrs}/>`
+      : `<a:defRPr${defRPrAttrs}>${defRPrInner}</a:defRPr>`;
+  return `<c:txPr><a:bodyPr${bodyPr}/><a:lstStyle/><a:p><a:pPr>${def}</a:pPr><a:endParaRPr lang="ja-JP"/></a:p></c:txPr>`;
+}
+
+/** グラフの部品（`chartN.xml` の中身）を組む。指定しない項目は出さない */
+export function chartXml(spec: ChartSpec = {}): string {
+  const group = spec.group ?? 'bar';
+  const name = spec.groupName ?? `${group}Chart`;
+  const ser = (spec.series ?? []).map(chartSerXml).join('');
+  const val = (tag: string, v: number | string | boolean | undefined) =>
+    v === undefined ? '' : `<c:${tag} val="${typeof v === 'boolean' ? (v ? 1 : 0) : v}"/>`;
+  const hasAxes = group === 'bar' || group === 'line';
+  const axIds = hasAxes ? `<c:axId val="111"/><c:axId val="222"/>` : '';
+  let head: string;
+  let tail: string;
+  if (group === 'bar') {
+    head =
+      val('barDir', spec.barDir) +
+      val('grouping', spec.grouping) +
+      val('varyColors', spec.varyColors);
+    tail = val('gapWidth', spec.gapWidth) + val('overlap', spec.overlap);
+  } else if (group === 'line') {
+    head = val('grouping', spec.grouping) + val('varyColors', spec.varyColors);
+    tail = val('marker', spec.groupMarker);
+  } else {
+    head = val('varyColors', spec.varyColors);
+    tail = val('firstSliceAng', spec.firstSliceAng) + val('holeSize', spec.holeSize);
+  }
+  const groupXml = `<c:${name}>${head}${ser}${spec.groupExtra ?? ''}${tail}${axIds}</c:${name}>`;
+
+  const catAx = spec.catAx === undefined ? (hasAxes ? {} : null) : spec.catAx;
+  const valAx = spec.valAx === undefined ? (hasAxes ? {} : null) : spec.valAx;
+  const axes =
+    (catAx === null ? '' : chartAxisXml(spec.dateAx ? 'dateAx' : 'catAx', 111, 222, catAx)) +
+    (valAx === null ? '' : chartAxisXml('valAx', 222, 111, valAx)) +
+    (spec.extraValAx ? chartAxisXml('valAx', 333, 111, {}) : '');
+
+  const style =
+    spec.style === undefined
+      ? ''
+      : `<mc:AlternateContent><mc:Choice Requires="c14" xmlns:c14="http://schemas.microsoft.com/office/drawing/2007/8/2/chart"><c14:style val="${100 + spec.style}"/></mc:Choice><mc:Fallback><c:style val="${spec.style}"/></mc:Fallback></mc:AlternateContent>`;
+  const blanks =
+    spec.dispBlanksAs === null ? '' : `<c:dispBlanksAs val="${spec.dispBlanksAs ?? 'gap'}"/>`;
+  return (
+    `${HEAD}<c:chartSpace xmlns:c="${C_NS}" xmlns:a="${A_NS}" xmlns:r="${REL}" xmlns:mc="${MC_NS}">` +
+    `<c:date1904 val="0"/>${spec.roundedCorners === undefined ? '' : `<c:roundedCorners${spec.roundedCorners === '' ? '' : ` val="${spec.roundedCorners}"`}/>`}${style}${val('style', spec.styleDirect)}` +
+    `<c:chart>${spec.title ?? ''}${val('autoTitleDeleted', spec.autoTitleDeleted)}` +
+    (spec.view3D ? `<c:view3D><c:rotX val="15"/></c:view3D>` : '') +
+    `<c:plotArea><c:layout>${spec.plotLayout ?? ''}</c:layout>${groupXml}${(spec.extraGroups ?? []).join('')}${axes}` +
+    (spec.plotSpPr === undefined ? '' : `<c:spPr>${spec.plotSpPr}</c:spPr>`) +
+    `</c:plotArea>${spec.legend ?? ''}<c:plotVisOnly val="1"/>${blanks}</c:chart>` +
+    (spec.chartSpPr === undefined ? '' : `<c:spPr>${spec.chartSpPr}</c:spPr>`) +
+    (spec.txPr ?? '') +
+    `</c:chartSpace>`
+  );
 }

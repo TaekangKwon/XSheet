@@ -139,6 +139,21 @@ export function createFormatter(styles: Styles, date1904: boolean): CellFormatte
 }
 
 /**
+ * 書式コードを直接当てて数値を文字にする（グラフの項目・軸の文字用。セルの xf を介さない）。
+ * 書式コードは非信頼のファイルから来るため、長さが上限（MAX_FORMAT_CODE_LENGTH）を超えるものは ssf に渡さず General として値だけを出す（ReDoS 対策）。
+ * `General`・`@`・解釈できない書式は General の表示（壊れずに数字を見せる）。
+ */
+export function formatNumberByCode(code: string, value: number, date1904: boolean): string {
+  if (code.length > MAX_FORMAT_CODE_LENGTH || code === 'General' || code === '@')
+    return formatGeneral(value, date1904);
+  try {
+    return ssf.format(code, value, { date1904 });
+  } catch {
+    return formatGeneral(value, date1904);
+  }
+}
+
+/**
  * ISO 8601 の日付・日時（`2023-03-15`・`2023-03-15T18:00:00`）を Excel のシリアル値にする。
  * 読めなければ null。時刻の無い日付は hasTime=false。タイムゾーンの印は無視する。
  */

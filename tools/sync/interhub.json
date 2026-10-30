@@ -7,7 +7,7 @@
     "取り込んだら interhub.baseCommit を取り込んだ InterHub のコミットへ進め、docs/.history/progress.md に記録する。"
   ],
   "interhub": {
-    "baseCommit": "943e4f0",
+    "baseCommit": "f035f68",
     "defaultDir": "C:/GitHub/InterHub",
     "envVar": "INTERHUB_DIR",
     "root": "src_V1/"

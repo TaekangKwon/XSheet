@@ -183,7 +183,7 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
 
 | 指定 | 理由 |
 | --- | --- |
-| `script-src 'self'` | ライブラリと形の表（`geom` のチャンク・単独版では `xsheet-geom.mjs`。図形を描くときに動的 import）を同じ出所から読む。`eval`・`new Function` は使わない（N1）ので `'unsafe-eval'` は要らない |
+| `script-src 'self'` | ライブラリと形の表（`geom` のチャンク・単独版では `xsheet-geom.mjs`。図形を描くときに動的 import）・グラフの描画（`chart-draw` のチャンク・単独版では `xsheet-chart.mjs`。グラフを描くときに動的 import）を同じ出所から読む。`eval`・`new Function` は使わない（N1）ので `'unsafe-eval'` は要らない |
 | `style-src 'nonce-<値>'`（または `'unsafe-inline'`） | 書式の `<style>` 要素（表示の根に 1 枚）と、`view` が自動で入れる表示の CSS の `<style>`（M6-2）。`nonce` を渡すとどちらにも付く。`style.css` を `<link>` で読むなら（`view` では `css: 'none'`）、その `<link>` にも同じ nonce を付けるか、`style-src` に出所（`'self'` など）を足す |
 | `img-src blob:` | 図の画像は blob URL で出す（`data:` の URL は作らない） |
 
@@ -216,6 +216,7 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
 | 図 | `maxDrawings` 1,000／`maxLines` 1,000／`maxGroupDepth` 8 |
 | 図形の文字 | `maxShapeTextChars` 10,000／`maxShapeParagraphs` 500／`maxShapeRuns` 2,000／`maxSheetTextChars` 1,000,000 |
 | 画像 | `maxImageBytes` 20 MiB／`maxSheetImageBytes` 128 MiB／`maxImageSidePx` 16,384／`maxImagePixels` 64 Mi 画素 |
+| グラフ（M7） | `maxChartSeries` 255／`maxChartPoints` 100,000／`maxChartTextChars` 200,000／`maxSheetChartPoints` 1,000,000（超えたグラフは破線枠） |
 | 形の式 | `maxGeomGuides` 512／`maxGeomCommands` 4,096／`maxSheetGeomUnits` 200,000／`maxShapeAdjustments` 16 |
 | 書式 | `maxBorders` 65,536／`maxFonts` 65,536／`maxFills` 65,536／`maxCellFormats` 4,096 |
 
@@ -282,7 +283,7 @@ dist/
 ├─ index.d.ts・core/*.d.ts・render/*.d.ts・geom/*.d.ts・facade/*.d.ts  # 型（src と同じ並び。src/testing は出さない）
 ├─ style.css                            # xsheet/style.css（src/style.css の写し）
 ├─ xsheet.min.js                        # 単独版（A）：IIFE・大域 XSheet・依存と形の表を中に持つ・圧縮済み
-├─ xsheet.mjs・xsheet-geom.mjs          # 単独版（A）：ESM・依存を中に持つ・圧縮済み。形の表は図形を描くときだけ同じフォルダから読む
+├─ xsheet.mjs・xsheet-geom.mjs・xsheet-chart.mjs  # 単独版（A）：ESM・依存を中に持つ・圧縮済み。形の表・グラフの描画は描くときだけ同じフォルダから読む
 ├─ xsheet.css                           # 単独版（A）：style.css と同じ
 ├─ xsheet.d.ts・xsheet.d.mts            # 単独版の型（大域 XSheet と declare module 'xsheet'／xsheet.mjs の型）
 ├─ xsheet.licenses.txt                  # 単独版が中に持つ依存のライセンスの全文
@@ -300,31 +301,35 @@ dist/
   - `xsheet.licenses.txt`：束ねたパッケージ（ビルドの moduleIds から決める）ごとに、`package.json` の版とライセンスと、ライセンスの文の全文をまとめる（MIT・Apache-2.0 などは、配る物に著作権表示と許諾の文を含めることを求めるため）。
   - `xsheet.d.ts`：`dist` の d.ts を `index` から辿り、1 つのファイルの ambient module（`declare module 'xsheet'`・`'xsheet/_/<パス>'`）にまとめ、`declare const XSheet: typeof import('xsheet')` を足す。
 - `npm run check:consumer`：一時フォルダに使う側のプロジェクトを作り、`npm pack` で入るファイルだけを `node_modules/xsheet` に写して（リンクは作らない。jszip・ssf は使う側の Vite の alias でこのリポジトリの node_modules を指す）、`exports` を通して型検査（strict）と Vite のビルドをする。形の表が使う側のビルドでも別のチャンクになること、`xsheet/style.css` が CSS に入ることを見る。`xsheet`（`view`・`read`）・`xsheet/core` の import も見る。
-- `npm run check:standalone`：① jsdom の窓で `xsheet.min.js` を `<script>` と同じく実行し、`XSheet.view` が fixtures の xlsx をタブ・図形付きで描く（形の表が中に入っている）② 素の Node（`--disallow-code-generation-from-strings`）で `xsheet.mjs` を import して `read` で開け、`xsheet-geom.mjs` も読める ③ 大域の `XSheet`・`import type … from 'xsheet'`・`import … from './xsheet.mjs'` の型検査が通る。
+- `npm run check:standalone`：① jsdom の窓で `xsheet.min.js` を `<script>` と同じく実行し、`XSheet.view` が fixtures の xlsx をタブ・図形付きで描き、`ref-charts.xlsx` のグラフを svg で描く（形の表・グラフの描画が中に入っている）② 素の Node（`--disallow-code-generation-from-strings`）で `xsheet.mjs` を import して `read` で開け、`xsheet-geom.mjs`・`xsheet-chart.mjs` も読める ③ 大域の `XSheet`・`import type … from 'xsheet'`・`import … from './xsheet.mjs'` の型検査が通る。
 - 例のページ：`examples/index.html` は dist ではなく src を直接読む（ビルドの前でも動かすため）。`examples/standalone.html`・`examples/esm.html` は単独版の例なので、`npm run build` の後に `dist/` の単独版を読む。
 
 ### 大きさ（N6・M4-2）
 
-`npm run size` が入口ごとに、static に辿れるファイル（共有のチャンクを含む・依存は含めない）の合計を測り、上限を超えたら失敗する。上限は「圧縮＋gzip」の列で、2026-10-29 の実測に約 1 割の余裕を足した値（`tools/size.mjs` の `LIMITS`）。表の値は 2026-10-30 の実測（render は `MESSAGES_KO` の分だけ増えた）。入口 `index`（`xsheet`）は core・render・入口の層を合わせたもので、別には測らない。ライブラリモードの ES の出力は圧縮しても空白とコメントの一部が残る（Vite の仕様）ため、この列は使う側の圧縮より少し大きめに出る。
+`npm run size` が入口ごとに、static に辿れるファイル（共有のチャンクを含む・依存は含めない）の合計を測り、上限を超えたら失敗する。上限は「圧縮＋gzip」の列で、2026-10-29 の実測に約 1 割の余裕を足した値（`tools/size.mjs` の `LIMITS`）。表の値は 2026-10-30 の実測（M7 のグラフの取り込みの後。core はグラフの読み取りの分、render はそれと図の層の分だけ増えた）。グラフの描画（配置と SVG）は遅れて読むチャンク `chart-draw` で、render には入らない。入口 `index`（`xsheet`）は core・render・入口の層を合わせたもので、別には測らない。ライブラリモードの ES の出力は圧縮しても空白とコメントの一部が残る（Vite の仕様）ため、この列は使う側の圧縮より少し大きめに出る。
 
 | 入口 | dist（B） | gzip | 圧縮＋gzip | 上限 |
 | --- | ---: | ---: | ---: | ---: |
-| `core/index`（`xsheet/core`） | 180,727 | 60,104 | 27,781 | 31,000 |
-| `render/index`（`xsheet/render`。core を含む） | 325,475 | 107,725 | 47,996 | 52,000 |
+| `core/index`（`xsheet/core`） | 215,747 | 70,042 | 32,897 | 36,000 |
+| `render/index`（`xsheet/render`。core を含む） | 364,970 | 118,714 | 53,699 | 59,000 |
 | `geom/index`（`xsheet/geom`。形の表を含む） | 236,078 | 36,752 | 32,519 | 36,000 |
 
-- 使う側のビルド（`check:consumer` の Vite・圧縮あり）では、最初に読む JS が 235,602 B（gzip 78,051。jszip・ssf・core・render を含む）、図形を描くときに読む形の表のチャンクが 176,422 B（gzip 30,477）、CSS が 5,404 B（gzip 1,537）。
+- 遅れて読むチャンク `chart-draw`（グラフを描くときだけ）：dist 98,631・gzip 32,632・圧縮＋gzip 15,829（上限 17,500。`tools/size.mjs` の `CHUNK_LIMITS`。チャンクのファイルだけを測り、render から static に辿れたら失敗する）。
+- 使う側のビルド（`check:consumer` の Vite・圧縮あり。0.2.0 の時点）では、最初に読む JS が 235,602 B（gzip 78,051。jszip・ssf・core・render を含む）、図形を描くときに読む形の表のチャンクが 176,422 B（gzip 30,477）、CSS が 5,404 B（gzip 1,537）。
 - 参考（01 N6）：xrag の初版は読み取り＋表示で 40,760 B、jszip が 96,716 B。XSheet は図形・罫線・書式の描画を持つぶん大きい。形の表は図形のあるシートでだけ読む。
 
 ### 単独版の大きさ（M6-3）
 
-`npm run size` は単独版（A）も測る。単独版は圧縮済みで依存を中に持つので、ファイルをそのまま gzip した値で見る。上限は 2026-10-30 の実測に約 1 割の余裕を足した値（`tools/size.mjs` の `STANDALONE_LIMITS`）。遅れて読む部品（`LAZY_PARTS`）を足して上限が無いと失敗する。
+`npm run size` は単独版（A）も測る。単独版は圧縮済みで依存を中に持つので、ファイルをそのまま gzip した値で見る。上限は 2026-10-30 の実測（M7 のグラフの取り込みの後）に約 1 割の余裕を足した値（`tools/size.mjs` の `STANDALONE_LIMITS`）。遅れて読む部品（`LAZY_PARTS`）を足して上限が無いと失敗する。
 
 | ファイル | 圧縮済み | gzip | 上限 |
 | --- | ---: | ---: | ---: |
-| `xsheet.min.js`（形の表を含む） | 416,799 | 110,818 | 122,000 |
-| `xsheet.mjs`（最初に読む分） | 242,076 | 80,520 | 89,000 |
+| `xsheet.min.js`（形の表・グラフの描画を含む） | 470,375 | 130,861 | 144,000 |
+| `xsheet.mjs`（最初に読む分） | 258,152 | 85,931 | 94,000 |
 | `xsheet-geom.mjs`（図形を描くときだけ） | 176,674 | 30,588 | 34,000 |
+| `xsheet-chart.mjs`（グラフを描くときだけ） | 67,545 | 25,031 | 28,000 |
+
+- `xsheet-chart.mjs` は部品ごとに別に束ねるため、軸の文字の書式（`formatNumberByCode`・ssf）と色の変換を `xsheet.mjs` と重ねて持つ（約 10 KB）。ssf の `format` は状態を持たないので、写しが 2 つでも結果は同じ。グラフの無いブックでは読まないので、最初に読む分を軽くするほうを採った（ADR-0003 §1）。
 
 - ADR-0003 §1 の見込み（約 110 KB）どおり。B を使う側のビルド（最初の JS が gzip 78,051・形の表 30,477）より、単独版は依存を丸ごと持つぶん少し大きい。
 - `dist/index.js`（`xsheet`）は CSS の自動挿入のため `style.css` の文面（約 18 KB・圧縮前）を文字列で持つ。
@@ -361,4 +366,4 @@ dist/
 3. `main` から作業用のブランチ（例 `release/v0.1.0`）を切り、`git add -f dist` だけのコミットを作る（`main` には入れない・ADR-0002）。
 4. そのコミットに注釈付きのタグ（`git tag -a v0.1.0`）を打ち、タグを push する。
 5. 使う側で `npm install github:TaekangKwon/XSheet#v0.1.0` を入れ、表示を確かめる（M5）。
-6. （M6 から）`npm run release:zip` で単独版の zip（`release/xsheet-<版>-standalone.zip`）を作り、タグの GitHub Release に添付する（ADR-0003 §6・M6-5）。中身は `xsheet.min.js`・`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet.css`・`xsheet.d.ts`・`xsheet.d.mts`・`xsheet.licenses.txt`・`NOTICE`・`viewer.html`（`examples/standalone.html` を `xsheet.min.js` と同じフォルダで動くようにしたもの）。zip を展開した `viewer.html` を `file://` で開いて表示を確かめる。
+6. （M6 から）`npm run release:zip` で単独版の zip（`release/xsheet-<版>-standalone.zip`）を作り、タグの GitHub Release に添付する（ADR-0003 §6・M6-5）。中身は `xsheet.min.js`・`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet-chart.mjs`・`xsheet.css`・`xsheet.d.ts`・`xsheet.d.mts`・`xsheet.licenses.txt`・`NOTICE`・`viewer.html`（`examples/standalone.html` を `xsheet.min.js` と同じフォルダで動くようにしたもの）。zip を展開した `viewer.html` を `file://` で開いて表示を確かめる。

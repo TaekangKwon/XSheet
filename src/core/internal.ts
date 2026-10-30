@@ -7,3 +7,9 @@
 export { applyFillMode } from './color';
 /** 既定の最大桁幅と、寸法の指定が無いシートの layout（描画の部品の試験で使う） */
 export { DEFAULT_MDW, emptyLayout } from './types';
+/** 色の変換（lumMod など）を色に掛ける（グラフの既定の色で使う。ISSUE-103） */
+export { applyTransforms, type Rgba } from './color';
+/** 数値の表示形式でひとつの値を書式にする（グラフの軸・データラベルで使う。ISSUE-102） */
+export { formatNumberByCode } from './format';
+/** 既定のテーマ（Office 2013〜）とテーマの型（グラフの既定の系列色で使う。ISSUE-103） */
+export { DEFAULT_THEME, type Theme, type ThemeSlot } from './theme';
