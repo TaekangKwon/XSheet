@@ -1,0 +1,554 @@
+/*
+ * XSheet の表示の規則（`xsheet/style.css`）。
+ * 正: InterHub src_V1/src/styles/global.css（943e4f0）の .xlsx の部分と、表示が使う共用の規則
+ *     （`.ih-data-view`・`.ih-data-body--table`・`.ih-data-banner`・`.ih-dv-*`・`.ih-toolbar`・`.ih-toggle`）。
+ *     接頭辞は `xs-`（D6）。対応は docs/03_source-map.md の「M3-1 で写した結果」。
+ *
+ * - 変数は明るい既定値だけを持つ（docs/02_architecture.md §6）。ダーク表示は使う側が `--xs-*` を上書きする。
+ *   既定値は詳細度 0 の `:where()` に置くため、使う側の `:root`・テーマの属性・コンテナのどこで上書きしても勝つ。
+ * - Excel の色（塗り・文字の色・図形の色）は変数ではなく、表示の根の `<style>`（書式の CSS）とインラインの値で入る。
+ * - `container` は高さが決まっていて、表示はその中でスクロールする（`.xs-body` がスクロール枠）。
+ */
+
+:where(:root, :host) {
+  /* 文字の色（塗りの無いセル・自動の文字・図形の色の省略） */
+  --xs-fg: #1a1a1a;
+  /* 面の地（タブ・ボタン） */
+  --xs-bg: #ffffff;
+  /* セルの地。白の塗り（「紙」）と、はみ出す文字が罫線を覆う色・二重線の隙間もこれ。書式のために別の変数を増やさない */
+  --xs-cell-bg: #f5f6f8;
+  /* 列記号・行番号の地。図の破線枠・図形の塗りの省略の色の元 */
+  --xs-head-bg: #eef0f4;
+  /* グリッド線（セルの右と下） */
+  --xs-grid: #e5e8ee;
+  /* 見出し行の下の線・タブとボタンの枠 */
+  --xs-border: #d0d0d0;
+  /* 破線枠・文字の枠の線 */
+  --xs-muted: #6b7280;
+  /* 行番号・空の表示の文字 */
+  --xs-faint: #8a92a2;
+  /* 選ばれているタブ・ボタンの強調 */
+  --xs-accent: #3b82f6;
+  /* 通知・エラーの帯 */
+  --xs-warn: #b45309;
+  --xs-warn-bg: #fef3c7;
+  /* 自動・黒の罫線の墨色（ダークは明るい灰色にする） */
+  --xs-border-ink: #000000;
+  /* 図の下地（ダーク表示だけ白にする）。-display は下地の svg の表示（明るい表示は none＝描画・レイアウトの負荷を省く） */
+  --xs-backdrop: transparent;
+  --xs-backdrop-display: none;
+}
+
+/* --- 表示の根 ---
+   `renderSheet` は `div.xs-sheet`、`renderWorkbook` は `div.xs-workbook`（タブ列＋`div.xs-sheet`）を container の子に足す。
+   どちらも container の高さいっぱいに広がり、表はスクロール枠（.xs-body）の中で動く。 */
+.xs-sheet,
+.xs-workbook {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  color: var(--xs-fg);
+  font-family: system-ui, sans-serif;
+}
+
+.xs-workbook > .xs-sheet {
+  flex: 1 1 0;
+  height: auto;
+}
+
+/* 本文枠（.xs-body）が仮想化の窓。描き直しでスクロール位置が動かないようスクロールアンカリングを切る。
+   面の色は、文字がはみ出す部分の罫線を覆う色（.xs-text）と必ず同じ（--xs-cell-bg）。 */
+.xs-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overflow-anchor: none;
+  background: var(--xs-cell-bg);
+}
+
+/* 図の通知（1 行）・開けないファイル・シートを開けないときの帯。通知は無ければ hidden。 */
+.xs-notice,
+.xs-banner {
+  flex: 0 0 auto;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--xs-warn-bg);
+  color: var(--xs-warn);
+}
+
+.xs-notice[hidden] {
+  display: none;
+}
+
+/* シートが 0 枚・セルも図も無いシート */
+.xs-empty {
+  padding: 8px 0;
+  color: var(--xs-faint);
+  font-style: italic;
+}
+
+/* --- 表 ---
+   表は Excel の寸法（core の geometry）で固定する。
+   - 列幅は <colgroup> の <col width>、行の高さは <tr height> とセル内側の要素（.xs-cell）の height で固定する。
+   - 罫線は右と下だけ（border-collapse: separate・border-spacing: 0）。セルの寸法が罫線を含んだ整数 px になり、
+     行の位置が geometry の rowTop と 1px もずれない。td の左右 padding は 0（列が 6px など狭くても幅が崩れない）。
+   - 縦位置は下揃え（Excel の既定）。セルは折り返さず、はみ出しは内側の要素で隠す。
+   - 書式ごとの規則（`.xs-sheet[data-xs-fmt] td.xs-xf-<番号>`）は表示の根の `<style>` にあり、ここの規則より詳細度が強い。 */
+.xs-grid {
+  width: auto;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+
+.xs-grid th,
+.xs-grid td {
+  box-sizing: border-box;
+  padding: 0;
+  border: 0 solid var(--xs-grid);
+  border-width: 0 1px 1px 0;
+  text-align: left;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+
+.xs-grid th {
+  overflow: hidden;
+  background: var(--xs-head-bg);
+}
+
+/* td は overflow: visible（文字がはみ出す入れ物 .is-spill が右の空セルの上へ出られるように）。切るのは内側の要素。 */
+.xs-grid td {
+  overflow: visible;
+}
+
+/* 列記号の見出し行。高さは src/render/grid.ts の GRID_HEADER_HEIGHT と同じ値。 */
+.xs-grid thead th {
+  height: 24px;
+  line-height: 22px;
+  text-align: center;
+  vertical-align: middle;
+  border-bottom-color: var(--xs-border);
+}
+
+/* 行番号の列（左上の角を含む） */
+.xs-grid .xs-rownum {
+  position: sticky;
+  left: 0;
+  color: var(--xs-faint);
+  text-align: right;
+  background: var(--xs-head-bg);
+}
+
+/* スクロール中も見出し行・行番号の列を固定し、対応関係を見失わないようにする。
+   重ね順：セル・罫線の層・図の層（z 0）＜ 行番号（z 1）＜ 見出し行（z 2）＜ 左上の角（z 3）。 */
+.xs-body thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.xs-body tbody .xs-rownum {
+  z-index: 1;
+}
+
+.xs-body thead th.xs-rownum {
+  z-index: 3;
+}
+
+/* セル（と行番号）の中身。高さは JS が行高から出して指定する（行の高さを固定し、内容で伸ばさない）。 */
+.xs-cell {
+  display: flex;
+  align-items: flex-end;
+  box-sizing: border-box;
+  padding: 0 3px 1px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* 文字のはみ出し：幅は JS が右の空セルの列幅の合計で指定する。行番号・見出し（z-index 1 以上）の下に入るよう z-index 0。
+   文字を包む span だけがシートの面の色を持ち、文字の範囲の縦罫線を隠す（文字の届かない空セルの罫線は見える）。 */
+.xs-cell.is-spill {
+  position: relative;
+  z-index: 0;
+}
+
+.xs-cell.is-spill .xs-text {
+  display: flex;
+  align-items: flex-end;
+  align-self: stretch;
+  margin: 0 -3px -1px -3px;
+  padding: 0 3px 1px 3px;
+  background: var(--xs-cell-bg);
+}
+
+/* 白以外の塗りが絡むはみ出し（grid-table.ts が is-over-fill を付ける）。
+   文字の下に面の色を敷かない（敷くと右の空セルの塗りを隠す）。各セルは自分の塗りを保つ。
+   「自動」色の文字が塗りの状態の違う列をまたぐときは、grid-table.ts（inkSpill）が span に列ごとの区間の
+   linear-gradient＋background-clip: text＋color: transparent をインラインで足す（塗りの上は黒、塗りなしは --xs-fg）。 */
+.xs-cell.is-spill.is-over-fill .xs-text {
+  background: transparent;
+}
+
+/* 型ごとの既定の配置（Excel の「標準」）：数値・日付は右、真偽・エラーは中央、文字列は左。
+   safe：入れ物より文字が広いとき（フォントの差で ### が溢れる等）は左から並べて右を切る（左が切れて途中の桁だけ見えるのを避ける）。
+   safe に対応しないブラウザは 1 行目の指定になる。 */
+.xs-cell.is-right {
+  justify-content: flex-end;
+  justify-content: safe flex-end;
+}
+
+.xs-cell.is-center {
+  justify-content: center;
+  justify-content: safe center;
+}
+
+.xs-grid .xs-rownum .xs-cell {
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 6px;
+}
+
+/* 非表示の行・列は畳む（Excel どおり。見出し・行番号も一緒に畳む）。 */
+.xs-grid .xs-collapsed {
+  visibility: collapse;
+}
+
+/* 仮想化で描かない行の高さを埋める行 */
+.xs-grid .xs-spacer td {
+  padding: 0;
+  border: 0;
+}
+
+/* --- 図の層 ---
+   スクロール枠（.xs-body）の中の wrapper（position: relative）に、表・罫線の層・図の層を並べる。
+   層の原点は A1 の左上（JS が left/top に行番号の列の幅・見出し行の高さを指定する）。
+   z-index: 0 の位置指定のため、セルの背景・文字の上、列見出し（sticky・z 2）・行番号（sticky・z 1）の下を通る。
+   図にクリック操作は持たない（pointer-events: none で、セルの選択・コピーを妨げない）。 */
+.xs-wrap {
+  position: relative;
+}
+
+.xs-layer {
+  position: absolute;
+  z-index: 0;
+  /* 重ね順の文脈を層が作る（z-index: 0 の位置指定と同じだが明示）。下地（z-index: -1）は層の中で全図の下・セルの上に描かれる。 */
+  isolation: isolate;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* 図の要素には transform・opacity・z-index を付けない（重ね順の文脈を作らない。回転は内側の要素・下地の svg だけ）。 */
+.xs-figure {
+  position: absolute;
+}
+
+/* 罫線の層（border-layer.ts）。表の直後・図の層の直前の svg。
+   z-index: 0 の位置指定で、DOM の順にセル（はみ出しの文字を含む）の上・図の層の下・sticky の見出しと行番号（z 1・2）の下を通る。
+   原点・大きさは JS が style に指定する（描いた線の外接矩形）。クリック操作は持たない（pointer-events: none）。
+   色は変数 --xs-border-ink（自動・黒の罫線の墨色）と --xs-cell-bg（二重線の隙間）だけ。
+   明示色は JS が CSSOM で stroke に入れる（要素の style は下の規則に勝つ）。テーマの切り替えで描き直さない。 */
+.xs-borders {
+  position: absolute;
+  z-index: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.xs-border-path {
+  fill: none;
+}
+
+.xs-border-path.is-ink {
+  stroke: var(--xs-border-ink);
+}
+
+.xs-border-path.is-gap {
+  stroke: var(--xs-cell-bg);
+}
+
+/* ダーク表示の図の下地（図形・線・代替の文字枠の直前の兄弟 svg。image-layer.ts）。
+   色は変数 --xs-backdrop だけ（明るい表示は透明・ダークは白。要素の style に色を入れないため、テーマの切り替えで描き直さない）。
+   z-index: -1 で、層の中の全図（画像・線・図形・文字）の下に描く。縁取り（太い白い線）が svg の外へ出ても切らない。
+   明るい表示は透明の下地を描く意味が無いため --xs-backdrop-display を none にする（形のある図形 1,000 個の計測で、透明のままでも描画の負荷が増えたため）。 */
+.xs-backdrop {
+  position: absolute;
+  z-index: -1;
+  display: var(--xs-backdrop-display, block);
+  overflow: visible;
+}
+
+.xs-backdrop-part {
+  fill: none;
+  stroke: none;
+}
+
+.xs-backdrop-part.is-fill {
+  fill: var(--xs-backdrop);
+}
+
+.xs-backdrop-part.is-stroke {
+  stroke: var(--xs-backdrop);
+}
+
+/* グラフ（render/chart-svg.ts・InterHub ISSUE-103・ADR-0031 §決定 10）。svg 1 枚を図の枠いっぱいに置く（はみ出しは svg の既定の overflow: hidden で切る）。
+   グラフは「紙」として、明るい表示・ダークとも Excel の色のまま描く（ダークで補正しない）。グラフの面が塗りなしの時の白い下地は、svg の中ではなく、
+   図形と同じ兄弟の svg.xs-backdrop（上の規則・z-index: -1）として図の直前に置く（グラフより下の図形・画像を隠さない）。色と表示は既存のテーマ変数
+   （--xs-backdrop＝ダークだけ白・--xs-backdrop-display）。要素の style に色を入れないため、テーマの切り替えで描き直さない。 */
+.xs-chart {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 切り抜き・回転・反転は無視し、アンカーの枠いっぱいに伸ばす（既知の差異）。 */
+.xs-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 画像以外・描けない画像・壊れた画像の種類名入りの破線枠。色は変数だけ（ダーク表示でも読める）。 */
+.xs-frame {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 2px 4px;
+  overflow: hidden;
+  border: 1px dashed var(--xs-muted);
+  background: color-mix(in srgb, var(--xs-head-bg) 75%, transparent);
+  color: var(--xs-fg);
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 文字のある図形・テキストボックス。段落（div）・ラン（span）は JS が文字の大きさ・太さ等を style に入れる。
+   縦位置は flex（column の主軸＝ブロック方向）、揃えは text-align の論理値のため、縦書きでもそのまま合う。
+   枠線・塗りは Excel の有無に合わせてクラスで切り替える（色は変数だけ）。枠線は outline（余白・文字の位置を動かさない）。 */
+.xs-shape-text {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--xs-fg);
+  line-height: 1.2;
+  overflow-wrap: break-word;
+}
+
+.xs-shape-text.has-outline {
+  outline: 1px dashed var(--xs-muted);
+  outline-offset: -1px;
+}
+
+.xs-shape-text.has-fill {
+  background: color-mix(in srgb, var(--xs-head-bg) 75%, transparent);
+}
+
+/* 線・矢印（線 1 本につき svg 1 つ）。外接矩形が矢じり・太さを含むため overflow は既定のまま。
+   色は Excel の色を要素の style（fill・stroke）に入れる。色が無い（省略）ときだけ currentColor 経由で --xs-fg。 */
+.xs-line {
+  display: block;
+  color: var(--xs-fg);
+}
+
+/* 図形の形（図形 1 つにつき svg 1 つ＋文字の枠。image-layer.ts）。
+   色は Excel の色を要素の style（fill・stroke）に入れる。以下は色が無い（省略）ときだけ効く（枠線＝--xs-fg、塗り＝--xs-head-bg の 75%）。
+   svg は外接矩形いっぱい。miter の角が外接矩形から少し出ても切らない（overflow: visible。層が外側で切る）。 */
+.xs-shape-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  overflow: visible;
+  color: var(--xs-fg);
+}
+
+.xs-shape-path {
+  fill: none;
+  stroke: none;
+}
+
+.xs-shape-path.has-fill {
+  fill: color-mix(in srgb, var(--xs-head-bg) 75%, transparent);
+}
+
+.xs-shape-path.has-stroke {
+  stroke: currentColor;
+}
+
+/* 面の濃淡（path の fill が darken・darkenLess・lighten・lightenLess）：塗りに文字色（暗く）・面の地（明るく）の薄い膜を重ねた色。 */
+.xs-shape-path.has-fill.is-darken {
+  fill: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--xs-fg) 15%, var(--xs-head-bg)) 75%,
+    transparent
+  );
+}
+
+.xs-shape-path.has-fill.is-darken-less {
+  fill: color-mix(in srgb, color-mix(in srgb, var(--xs-fg) 8%, var(--xs-head-bg)) 75%, transparent);
+}
+
+.xs-shape-path.has-fill.is-lighten {
+  fill: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--xs-bg) 30%, var(--xs-head-bg)) 75%,
+    transparent
+  );
+}
+
+.xs-shape-path.has-fill.is-lighten-less {
+  fill: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--xs-bg) 15%, var(--xs-head-bg)) 75%,
+    transparent
+  );
+}
+
+/* 回転前の矩形（JS が left/top/width/height と rotate() を指定）。文字は図形の矩形で切る。
+   文字領域（.xs-shape-text）は box の中に絶対配置し、領域では切らない（楕円の内接矩形からはみ出した文字も、矩形の中なら見える）。 */
+.xs-shape-box {
+  position: absolute;
+  overflow: hidden;
+  color: var(--xs-fg);
+}
+
+.xs-shape-box > .xs-shape-text {
+  position: absolute;
+  overflow: visible;
+}
+
+/* --- シートのタブ（renderWorkbook）---
+   Excel のシート見出しのように 1 行に並べ、入りきらない分は横スクロール。
+   表示範囲の左右に ◀ ▶ ボタンを置く（JS が端・あふれに応じて disabled・hidden にする）。 */
+.xs-sheet-strip {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.xs-sheet-tabs {
+  position: relative; /* タブの offsetLeft をスクロール領域の中の座標にする */
+  display: flex;
+  flex: 1 1 auto;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.xs-sheet-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.xs-sheet-tab {
+  flex-shrink: 0;
+  max-width: 240px;
+  padding: 6px 12px;
+  overflow: hidden;
+  border: 1px solid var(--xs-border);
+  border-radius: 6px;
+  background: var(--xs-bg);
+  color: var(--xs-fg);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.xs-sheet-tab.is-active {
+  border-color: var(--xs-accent);
+  background: var(--xs-accent);
+  color: #fff;
+}
+
+/* 非表示のシートのタブ（⌀ 付き）は区別できるよう斜体・破線にする。 */
+.xs-sheet-tab.is-hidden-sheet {
+  font-style: italic;
+  border-style: dashed;
+}
+
+.xs-sheet-nav {
+  flex: 0 0 auto;
+  padding: 0 8px;
+  border: 1px solid var(--xs-border);
+  border-radius: 6px;
+  background: var(--xs-bg);
+  color: var(--xs-fg);
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.xs-sheet-nav:hover:not(:disabled) {
+  border-color: var(--xs-accent);
+  color: var(--xs-accent);
+}
+
+.xs-sheet-nav:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.xs-sheet-nav[hidden] {
+  display: none;
+}
+
+/* --- ダーク表示（M6-2・ADR-0003 §2）---
+   `data-xs-theme="dark"` を表示の根か、その祖先（`<html>` など）に付ける。`view` の theme は表示の根 `.xs-viewer` に付ける。
+   `auto` は OS・ブラウザの設定（prefers-color-scheme）に従う。値を変えたいときは、同じ要素か内側で `--xs-*` を上書きする。 */
+[data-xs-theme='dark'] {
+  color-scheme: dark;
+  --xs-fg: #e6e6e6;
+  --xs-bg: #1e1e1e;
+  --xs-cell-bg: #0f1115;
+  --xs-head-bg: #1f232c;
+  --xs-grid: #232733;
+  --xs-border: #3a3a3a;
+  --xs-muted: #9ca3af;
+  --xs-faint: #6b7386;
+  --xs-accent: #60a5fa;
+  --xs-warn: #fbbf24;
+  --xs-warn-bg: rgba(251, 191, 36, 0.14);
+  --xs-border-ink: #d4d4d4;
+  --xs-backdrop: #ffffff;
+  --xs-backdrop-display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-xs-theme='auto'] {
+    color-scheme: dark;
+    --xs-fg: #e6e6e6;
+    --xs-bg: #1e1e1e;
+    --xs-cell-bg: #0f1115;
+    --xs-head-bg: #1f232c;
+    --xs-grid: #232733;
+    --xs-border: #3a3a3a;
+    --xs-muted: #9ca3af;
+    --xs-faint: #6b7386;
+    --xs-accent: #60a5fa;
+    --xs-warn: #fbbf24;
+    --xs-warn-bg: rgba(251, 191, 36, 0.14);
+    --xs-border-ink: #d4d4d4;
+    --xs-backdrop: #ffffff;
+    --xs-backdrop-display: block;
+  }
+}
+
+/* --- `view` の表示の根（M6-2）---
+   container の高さいっぱいに広がる。container の高さが 0 のときは `view` が既定の高さ（480px）を CSSOM で付ける。 */
+.xs-viewer {
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+}
