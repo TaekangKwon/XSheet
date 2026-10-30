@@ -1,0 +1,29 @@
+presetShapeDefinitions.xml の出典と利用条件（XSheet。InterHub の U1・ISSUE-90 から引き継ぎ）
+================================================================
+- 出典: ECMA-376 Part 1 第 5 版（2016-12）の配布物（ECMA-376-1_5th_edition_december_2016.zip）に入っている
+  OfficeOpenXML-DrawingMLGeometries.zip（2015-05-27 付）の「presetShapeDefinitions.xml」（Ecma International）。
+- 取得元: Ecma International の公式サイト（ECMA-376 第 5 版の配布物）。
+- tools/geom/presetShapeDefinitions.xml は原本のまま（内容は改変していない）。
+- 変換器 tools/geom/build-preset-geom.mjs が、この原本から形の表 src/geom/preset-geom.json を生成する（派生物）。
+  生成物にも下記の表示を `_notice` として含める。本ファイル（NOTICE）は配布物（npm パッケージ・dist）に同梱する。
+- 利用の根拠: 下記の Default copyright notice の (iv)「標準に適合する製品で、機能を実装するために
+  （全部または一部をコピー＆ペーストして）使う派生物」。条件は、著作権表示と Copyright License and
+  Disclaimer を派生物に含めること。
+- 表示の出典: https://www.ecma-international.org/policies/by-ipr/ecma-text-copyright-policy/ （Default copyright notice）
+
+----------------------------------------------------------------
+COPYRIGHT NOTICE
+© Ecma International
+By obtaining and/or copying this work, you (the licensee) agree that you have read, understood, and will comply with the following terms and conditions.
+This document may be copied, published and distributed to others, and certain derivative works of it may be prepared, copied, published, and distributed, in whole or in part, provided that the above copyright notice and this Copyright License and Disclaimer are included on all such copies and derivative works. The only derivative works that are permissible under this Copyright License and Disclaimer are:
+(i) works which incorporate all or portion of this document for the purpose of providing commentary or 
+explanation (such as an annotated version of the document),
+(ii) works which incorporate all or portion of this document for the purpose of incorporating features that 
+provide accessibility,
+(iii) translations of this document into languages other than English and into different formats and
+(iv) works by making use of this specification in standard conformant products by implementing (e.g. by 
+copy and paste wholly or partly) the functionality therein.
+However, the content of this document itself may not be modified in any way, including by removing the copyright notice or references to Ecma International, except as required to translate it into languages other than English or into a different format.
+The official version of an Ecma International document is the English language version on the Ecma International website. In the event of discrepancies between a translated version and the official version, the official version shall govern.
+The limited permissions granted above are perpetual and will not be revoked by Ecma International or its successors or assigns.
+This document and the information contained herein is provided on an “AS IS” basis and ECMA INTERNATIONAL DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION HEREIN WILL NOT INFRINGE ANY OWNERSHIP RIGHTS OR ANY IMPLIED WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
