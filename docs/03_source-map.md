@@ -4,13 +4,14 @@
 | --- | --- |
 | 文書 | XSheet 立ち上げ資料 03 |
 | 元 | `C:\GitHub\InterHub` main `943e4f0`（以下のパスは `src_V1/src/` 基準。`tools/` だけ `src_V1/` 基準） |
-| 更新日 | 2026-10-28 |
-| 関連 | [02_architecture.md](02_architecture.md)・[04_roadmap.md](04_roadmap.md) |
+| 更新日 | 2026-10-30 |
+| 関連 | [02_architecture.md](02_architecture.md)・[04_roadmap.md](04_roadmap.md)・[ADR-0003](adr/0003-universal-distribution.md) §4 |
 
 ## TL;DR
 - core は `lib/xlsx/` をほぼそのまま写す。geom は描画側から core と並ぶ層へ移す。render は `lib/viewers/xlsx-*.ts` を写し、`spreadsheet.ts` から .xlsx の部分だけを抜き出す。
 - 直すのは 6 点：層の逆転・`t()`・`ih-` のクラスと変数・モジュール変数の状態・InterHub の共用部品・型だけの import。
 - InterHub 側は読むだけで変更しない。写した時点のコミット（`943e4f0`）を新リポジトリの最初のコミットに記録する。
+- 943e4f0 より後の変更は、道具（`npm run sync:status`・`sync:patch`）で差分を出して取り込む（§6・M6-1）。**今の対応は `tools/sync/interhub.json` を正とする**。§1〜§5 の表は写した時点の記録として残す。
 
 ---
 
@@ -220,3 +221,61 @@
 
 - テストは vitest＋jsdom。`node:fs` で fixtures を読むテストがある（Node で走る前提）。
 - InterHub の版：vitest 3.2・jsdom 29・TypeScript 5.9・vite 6.4。新しい版（xrag は vitest 5・jsdom 30・TS 7・vite 8）へ上げるときの落ちは M1・M2 で直す。
+
+## 6. 写しの規約と取り込みの道具（M6-1・2026-10-30）
+
+- 今のファイルの対応・変換の規則・取り込み済みのコミットは `tools/sync/interhub.json` を正とする。§1〜§5 は写した時点の記録で、書き換えない。
+- 道具は `tools/sync/sync.mjs`（依存なしの Node のスクリプト）。InterHub は読むだけで、コミット済みのものだけを比べる（[ADR-0003](adr/0003-universal-distribution.md) §4-2）。
+
+### 写しの規約（ADR-0003 §4-1）
+
+1. InterHub から写したファイルは、ファイル名・関数の並び・中身を InterHub と揃えたまま保つ。整理や改名のためだけには変えない（差分が当たらなくなる）。
+2. XSheet が決まった変換で直すのは、接頭辞（`ih-` → `xs-`）・文言（`t()` → `messages`）・import のパス・モジュール変数の状態をインスタンスへ（§4 の 6 点）だけ。このうち接頭辞と import のパスは道具が機械的にかける。文言と状態は手で直す（`interhub.json` の `manualTransforms` に書いてあり、`sync:patch` の最後に出る）。
+3. それ以外の XSheet 固有の変更は、別のファイル（`src/facade/` など）に置くか、写したファイルの中では `// XSheet:` の印を付けて 1 か所にまとめる。
+4. 新しい機能を XSheet で先に作るときは、InterHub の構成に合う置き場所に置く（core＝`lib/xlsx`、render＝`lib/viewers/xlsx-*` に当たる所）。
+
+### 対応表（`tools/sync/interhub.json`）
+
+| 項目 | 中身 |
+| --- | --- |
+| `interhub` | 取り込み済みのコミット（`baseCommit`。今は `943e4f0`）・InterHub の場所（`defaultDir`。環境変数 `INTERHUB_DIR` で替えられる）・パスの基準（`root` = `src_V1/`） |
+| `watch` | 見るパス（`lib/xlsx`・`lib/viewers`・`global.css`・`locales/ja.ts`・`en.ts`・`tools/geom`） |
+| `files` | 写した実績の組（§1〜§5 の表と同じ。`linear-time.test.ts` → `linear-time.perf.test.ts` など名前を変えたものも） |
+| `manual` | 手で直すもの。`spreadsheet.ts`（.xlsx の部分を 5 ファイルに分けた）・`spreadsheet.*.render.test.ts`・`global.css`・`locales`・`NOTICE` |
+| `exclude` | 写さないもの。`table-fit.ts` と .xlsx 以外の表示（`pdf.ts` など） |
+| `patterns` | まだ写していないファイルの行き先の提案（上から順に最初に合ったもの）。`lib/xlsx/*.ts` → `src/core/`、`lib/xlsx/*.test.ts` → `tests/core/`、`lib/viewers/xlsx-*.ts` → `src/render/`（`xlsx-` を外す）、`__fixtures__/excel/*` → `fixtures/excel/`。テストだけが使う部品（`xlsx-chart-fixtures.ts` など）は `tests/render/` |
+| `imports` | 相対の import（`from`・`import()`・`vi.mock()`・`new URL()`）は、元と指す先を対応表で引き、行き先どうしの相対パスに書き直す。render から core は `../core/index` か `../core/internal` に寄せる（`overrides`） |
+| `transforms` | 機械的にかける置き換え（正規表現）。`data-ih-xlsx-fmt` → `data-xs-fmt`・`--ih-` → `--xs-`・`ih-xlsx-` → `xs-`・`ih-xf-` → `xs-xf-`・`ih-spreadsheet` → `xs-sheet`・`ih-dv-rownum` などの一部・`// 正: docs/` → `// 正: InterHub docs/` |
+| `leftovers` | 変換の後に残ったら知らせるもの（`ih-` の残り・`t(` の残り） |
+| `manualTransforms` | 機械的にかけられない直し（文言・モジュール変数の状態・共用の部品・geom の層・公開の範囲・Prettier・`// XSheet:` の印）。書くだけで、かけない |
+
+- 行き先の引き方：`files` → `manual` → `exclude` → `patterns`。どれにも合わなければ「対応なし」と出る。新しいファイルが「対応なし」なら、`files` か `patterns` に行き先を足すか、`exclude` に足す。
+- `ih-toggle`・`ih-toolbar`・`ih-data-*` は場所ごとに XSheet の名前が違う（§3 M2-3・M2-4）ので、変換にしない（残りとして知らせる）。
+
+### 使い方
+
+| 順 | すること |
+| --- | --- |
+| 1 | `npm run sync:status`：取り込み済みより後で対応表のパスに触れたコミットと、ファイルごとの追加・変更・削除・改名・行数・行き先（対応表・規則・新規・手作業・除外・対応なし）を見る。`--json` も出せる。範囲は `npm run sync:status -- <a>..<b>` |
+| 2 | 「対応なし」があれば `interhub.json` に行き先を足す |
+| 3 | `npm run sync:patch -- [<範囲>]`（既定は `<baseCommit>..HEAD`）：パッチを一時フォルダ（`os.tmpdir()` の下の `xsheet-sync-*`。リポジトリの外。`--out-dir` で替えられる）に書き、場所と当てるコマンドを出す。当てはしない |
+| 4 | 作業用のブランチで `git apply --3way --check <パッチ>` → `git apply --3way <パッチ>`。当たらないファイルがあれば `git apply --reject <パッチ>` で当たる所だけ当て、`.rej` を読んで手で直す |
+| 5 | 行き先の無いファイル（手作業・対応なし）の差分は `*.manual.patch`（元のパスのまま）に入る。読んで写した先を手で直す。「確かめること」（`core/internal` に寄せた import・行き先の無い import・残った `ih-`・`t()`）も見る |
+| 6 | 新しく写したファイルを 1 ファイルずつ `npx prettier --write <ファイル>` で整え、`npm run typecheck`・`npm run lint`・`npm run test` を通す |
+| 7 | `interhub.json` の `baseCommit` を取り込んだ InterHub のコミットへ進め、`docs/.history/progress.md` に記録する |
+
+- `--3way` の 3-way のマージは、パッチの元の blob が XSheet に無いため働かない（git は「Falling back to direct application」と出して普通に当てる）。1 ファイルでも当たらなければ何も当たらないので、そのときは手順 4 の `--reject` にする（`--3way` と `--reject` は一緒に使えない）。
+- 当たらないのは、写すときに直した所（Prettier の整形・import を 1 文にまとめた所・`t()` を `messages` にした所・公開の範囲）に触れる hunk。新しいファイルと、写したまま触っていない所の hunk はそのまま当たる。
+
+### 道具が守ること
+
+- InterHub には書き込まない。git は読むだけのサブコマンド（`rev-parse`・`log`・`diff`・`show`・`ls-tree`・`cat-file`）だけを、シェルを通さずに呼ぶ。それ以外のサブコマンドと `--output`・`--ext-diff`・`--textconv` は呼ぶ前に断る。`GIT_OPTIONAL_LOCKS=0` で任意の書き込み（index の更新など）もさせない。パッチの書き先が InterHub の下なら断る。
+- 比べるのはコミットどうしだけで、作業ツリー・index・追跡していないファイルは読まない（InterHub の作業中の変更は取り込まない）。
+- 通信しない。依存を足さない（Node の組み込みだけ）。
+- テスト（`tests/sync.test.ts`）は本物の InterHub を使わず、一時フォルダに作った git の模型で、行き先・変換・未コミットの変更を読まないこと・模型の HEAD と `.git` を含む全ファイルが変わらないことを確かめる。
+
+### 最初に動かした結果（2026-10-30・InterHub `cd6d5d5`）
+
+- 943e4f0..cd6d5d5 のコミット 25 件（マージ 2 件を含む）のうち、対応表のパスに触れたものは 14 件（グラフの ISSUE-101〜111）。差分は 54 ファイル（追加 43・変更 11）で、対応表 8・規則 43・手作業 3（`spreadsheet.ts`・`spreadsheet.image.render.test.ts`・`global.css`）・対応なし 0。
+- パッチは 51 ファイル（約 6.6 MB。照合の JSON が大半）。`git apply --check` で当たらないのは `src/render/image-layer.ts` と `src/core/index.ts` の 2 つだけだった。
+- 取り込みそのものは M7 の最初の項目（ADR-0003 §4-3）。

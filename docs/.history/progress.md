@@ -98,3 +98,8 @@
 - InterHub の 943e4f0 以降（グラフ・22 コミット）を読むだけで確認し、写しの規約と同期の道具（`tools/sync/interhub.json`・`sync:status`・`sync:patch`）を提案した。グラフは M6 の後に取り込む。
 - 04 に M6（誰でも使える配り方・v0.2.0）を足し、旧 M6（拡張）を M7 にした（01・02・05・docs/README の参照も）。
 - ユーザーが Q1〜Q4 を提案のとおりに決め、ADR-0003 を accepted（1.0）にした（社内向けから・`xsheet` の入口を全部に・`view` の既定の言語は auto・`MESSAGES_KO` を同梱）。
+
+## 2026-10-30 M6-1 同期の道具
+- `tools/sync/interhub.json`（対応表・規則・手作業・除くもの・変換・取り込み済み 943e4f0）と `tools/sync/sync.mjs`（`npm run sync:status`・`sync:patch`）。git は読むだけのサブコマンドに限り、InterHub に書かない・作業ツリーを読まない。
+- 実行の結果：943e4f0..b16f45d で対応表に触れたコミット 14 件・54 ファイル（対応表 8・規則 43・手作業 3・対応なし 0）。`git apply --check` は image-layer.ts・core/index.ts の 2 つだけ当たらない。
+- 03 §6 に写しの規約と使い方。`tests/sync.test.ts`（31 件・一時の git の写しで InterHub に触れないことを確かめる）。
