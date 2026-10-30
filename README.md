@@ -66,11 +66,12 @@ book.close();
 非公開の間は GitHub のタグから git 依存で入れる（タグに `dist/` が入っている。ビルドのスクリプトは走らない。[ADR-0002](docs/adr/0002-build-and-distribution.md)）。
 
 ```bash
-npm install github:TaekangKwon/XSheet#v0.2.0
+npm install github:TaekangKwon/XSheet#v0.3.0
 ```
 
 - 依存は `jszip` と `ssf` だけ（一緒に入る）。
 - `view`・`read`・`xsheet/core`・`MESSAGES_KO`・単独版は v0.2.0 から。v0.1.0 には無い。
+- グラフの表示・`readChart`・`xsheet-chart.mjs` は v0.3.0 から。
 
 ## `view(target, source, options?)`
 

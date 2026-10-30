@@ -92,7 +92,7 @@ flowchart LR
 
 | 候補 | 内容 |
 | --- | --- |
-| グラフ | **取り込み済み（2026-10-30・InterHub f035f68）**。InterHub のグラフ（ADR-0031・ISSUE-101〜111。G1）を M6-1 の同期の道具で取り込み、描画を遅れて読む部品（`chart-draw`・`xsheet-chart.mjs`）にした。残りは InterHub の後続（G2 など）を同じ道具で取り込む |
+| グラフ | **取り込み済み（2026-10-30・InterHub f035f68・v0.3.0）**。InterHub のグラフ（ADR-0031・ISSUE-101〜111。G1）を M6-1 の同期の道具で取り込み、描画を遅れて読む部品（`chart-draw`・`xsheet-chart.mjs`）にした。残りは InterHub の後続（G2 など）を同じ道具で取り込む |
 | Web Components・埋め込み | `<x-sheet>` 要素、iframe と `postMessage` で置けるビューア（ADR-0003 の却下した案・§5） |
 | 生の値 | `cellValue(r, c)`、`sheetToJson`・`sheetToCsv`（SheetJS の `sheet_to_json` に当たる） |
 | Worker | 解析を Worker で動かす補助（core は DOM 非依存なのでそのまま動く。転送の型を用意する） |
