@@ -13,7 +13,7 @@
 
 ## Why this exists
 
-In teams that write their specs and designs in Excel, the information lives in the *look* of the sheet: borders, fills, column widths, merged cells, the screenshots pasted on top, and the boxes and arrows drawn between them. A grid of raw values loses most of it.
+Many Excel viewers show the text of a workbook and roughly the shape of its sheets. But large workbooks (tens of thousands of cells or more) open slowly or not at all, and everything that is not text is lost or drawn wrong: cell borders and fills, column widths, merged cells, screenshots pasted onto the sheet, and shapes such as arrows and text boxes. So I built a viewer that does what I needed.
 
 I had written an `.xlsx` viewer twice — once for **InterHub**, a Chrome extension that shows a project's documents in one screen (it ships with [InterHub-MCP](https://github.com/TaekangKwon/InterHub-MCP)), and once for another document viewer. Fixing the same rendering bug in two places got old, so the code became one library: **XSheet**.
 

@@ -131,3 +131,8 @@
 - `LICENSE`（MIT）、`package.json`（`private` を外す・`license`・`repository` など）、`files` と単独版の zip に `LICENSE`。README を英語にし、`README.ja.md`・`README.ko.md`、`SECURITY.md`、CI（`.github/workflows/ci.yml`）を足した。
 - 作者の PC のパス（文書・`tools/sync/interhub.json` の `defaultDir` → `../InterHub`・`compare-ref-geoms.mjs`）と、非公開の InterHub の中のパスに頼る手順・無い資料の参照を外した。ESLint の対象から `release/` を外した。
 - テスト 2,161 件・typecheck・lint・format:check・build・size・check:consumer・check:standalone が通る。
+
+## 2026-10-30 公開前の見直しと README の訳の手直し
+- 公開前の見直し：追跡中のファイルに秘密の値・作者の PC のパスは無い。残るのはコミットのメールアドレス（41 件）、fixtures の .xlsx の作成者名、非公開の InterHub・xrag-Viewer の名前と中のパス（03・ADR-0003 などの記録）。PR #11 の前に外した `.interhub/` を含むコミット 1dc9467 は GitHub 上にまだ残るが、中身はこのリポジトリのファイル一覧だけ。
+- `README.ko.md`・`README.ja.md` を、InterHub-MCP の訳に合わせて丁寧な文体（합니다체・です／ます）の自然な文に書き直した（見出し・表・コード・リンクの数は英語版と同じ）。「なぜ作ったか」の 1 段落目はユーザーが書いた韓国語の内容（既存のビューアは大きな文書で遅く、文字以外を描けない）に 3 つともそろえた。
+- docs/README の「ADR-0005」が xrag-Viewer 側の ADR だと分かるように直した。
