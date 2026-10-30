@@ -101,7 +101,7 @@ describe('対応表（interhub.json）', () => {
   const at = (p: string) => mapPath(cfg, `src_V1/${p}`);
 
   it('取り込み済みのコミットと InterHub の場所', () => {
-    expect(cfg.baseCommit).toBe('943e4f0');
+    expect(cfg.baseCommit).toBe('f035f68');
     expect(cfg.envVar).toBe('INTERHUB_DIR');
     expect(cfg.root).toBe('src_V1/');
   });

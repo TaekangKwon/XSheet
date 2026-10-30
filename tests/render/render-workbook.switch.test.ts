@@ -58,6 +58,7 @@ vi.mock('../../src/core/index', async (importOriginal) => {
           return notices ? { ...r, notices } : r;
         },
         readImage: readImage ?? ((i, p) => book.readImage(i, p)),
+        readChart: (i, p) => book.readChart(i, p),
         close: () => book.close(),
       };
       return wrapped;

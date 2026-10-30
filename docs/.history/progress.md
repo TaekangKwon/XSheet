@@ -114,3 +114,9 @@
 - PR #7 をマージ（main b9ae956）。main で test 1,722 件・typecheck・lint・format:check・build・check:consumer・check:standalone・size が通ることを確かめた。
 - CHANGELOG に日付（8752d96）。release/v0.2.0 に `git add -f dist` だけのコミット（5e12803）を作り、注釈付きのタグ v0.2.0 を打って push（タグだけ）。git archive でタグの中に exports の先・NOTICE・単独版があることを確かめた。
 - GitHub Release「XSheet 0.2.0」に xsheet-0.2.0-standalone.zip（275,196 B）を添付。zip の viewer.html を file:// で開く目視はユーザーに任せた。
+
+## 2026-10-30 M7 グラフの取り込み（InterHub f035f68）
+- `sync:patch`（943e4f0..f035f68・ISSUE-101〜111）を当て、`image-layer.ts`・`core/index.ts` の当たらない hunk と手作業の 3 ファイル（`readChart` の配線・`.xs-chart`・描画のテスト）を写した。公開の型に `Chart*`、`core/internal` にグラフが使う部品を足した。`baseCommit` を f035f68 に。
+- グラフの描画は遅れて読む部品（`render/chart-draw.ts`・B では別のチャンク・単独版は `xsheet-chart.mjs`）。`size` に遅れて読むチャンクの上限、`check:standalone` にグラフの描画を足した。上限は core 36,000・render 59,000・chart-draw 17,500・min.js 144,000・mjs 94,000・chart.mjs 28,000。
+- examples のサンプルに `ref-charts.xlsx`・`ref-charts2.xlsx` を足し、開発サーバーで明るい表示・ダークのグラフを目視（プレビュー）。zip の `file://` の目視はユーザーが OK（2026-10-30）。
+- テスト 2,161 件・typecheck・lint・format:check・build・size・check:consumer・check:standalone が通る。

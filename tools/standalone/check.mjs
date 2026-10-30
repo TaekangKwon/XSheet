@@ -1,7 +1,7 @@
 // 単独版が使う側の形で動くか確かめる（M6-3・`npm run check:standalone`）。先に `npm run build` で dist/ を作っておくこと。
 // 1. xsheet.min.js：jsdom の窓で <script> と同じく読み込み（vm で窓の中で実行する。文字列からのコード生成は止める）、大域の XSheet.view が
-//    fixtures の xlsx をタブ付きで描くこと（図形があり、形の表が中に入っていること）。
-// 2. xsheet.mjs：素の Node（文字列からのコード生成を禁止）で import し、read で開けること。遅れて読む部品（xsheet-geom.mjs）が
+//    fixtures の xlsx をタブ付きで描くこと（図形があり、形の表が中に入っていること）。グラフの xlsx のグラフを svg で描くこと（グラフの描画が中に入っていること）。
+// 2. xsheet.mjs：素の Node（文字列からのコード生成を禁止）で import し、read で開けること。遅れて読む部品（xsheet-geom.mjs・xsheet-chart.mjs）が
 //    同じフォルダから読めること。
 // 3. xsheet.d.ts・xsheet.d.mts：大域の XSheet・`import type … from 'xsheet'`・`import … from './xsheet.mjs'` の型検査が通ること。
 // 外へは通信しない。
@@ -18,6 +18,7 @@ import { STANDALONE_FILES } from './parts.mjs';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const dist = path.join(repo, 'dist');
 const fixture = path.join(repo, 'fixtures/excel/ref-drawings.xlsx');
+const chartFixture = path.join(repo, 'fixtures/excel/ref-charts.xlsx');
 
 /** 窓の中で次のフレームと少しの時間を待つ */
 const settle = (window, ms = 50) =>
@@ -82,7 +83,17 @@ const settle = (window, ms = 50) =>
   }
   viewer.destroy();
   if (container.children.length !== 0) throw new Error('destroy の後に表示が残る');
-  console.log(`xsheet.min.js：OK（jsdom で XSheet.view・タブ ${tabs}・図形の path ${shapes}）`);
+  // グラフ：見えている範囲のグラフを svg で描く（グラフの描画を中に持つ）
+  const chartViewer = await X.view(container, new window.Uint8Array(readFileSync(chartFixture)));
+  // 1 枚目（Data）は値だけ。2 枚目からグラフがある
+  await chartViewer.showSheet(2);
+  await settle(window, 300);
+  const charts = container.querySelectorAll('svg.xs-chart').length;
+  chartViewer.destroy();
+  if (charts === 0) throw new Error('xsheet.min.js がグラフを svg で描かない');
+  console.log(
+    `xsheet.min.js：OK（jsdom で XSheet.view・タブ ${tabs}・図形の path ${shapes}・グラフ ${charts}）`,
+  );
   window.close();
 }
 
@@ -92,9 +103,10 @@ const settle = (window, ms = 50) =>
     `import { readFileSync } from 'node:fs';`,
     `const x = await import(${JSON.stringify(pathToFileURL(path.join(dist, 'xsheet.mjs')).href)});`,
     `const geom = await import(${JSON.stringify(pathToFileURL(path.join(dist, 'xsheet-geom.mjs')).href)});`,
+    `const chart = await import(${JSON.stringify(pathToFileURL(path.join(dist, 'xsheet-chart.mjs')).href)});`,
     `const book = await x.read(readFileSync(${JSON.stringify(fixture)}));`,
     `const sheet = await book.openSheet(book.sheets[0].index);`,
-    `const out = { sheets: book.sheets.length, rows: sheet.rowCount, presets: geom.presetNames().length, view: typeof x.view };`,
+    `const out = { sheets: book.sheets.length, rows: sheet.rowCount, presets: geom.presetNames().length, chart: typeof chart.layoutChart, view: typeof x.view };`,
     `book.close();`,
     `process.stdout.write(JSON.stringify(out));`,
   ].join('\n');
@@ -105,7 +117,13 @@ const settle = (window, ms = 50) =>
       { cwd: repo, encoding: 'utf8' },
     ),
   );
-  if (out.sheets === 0 || out.rows === 0 || out.presets < 100 || out.view !== 'function') {
+  if (
+    out.sheets === 0 ||
+    out.rows === 0 ||
+    out.presets < 100 ||
+    out.chart !== 'function' ||
+    out.view !== 'function'
+  ) {
     throw new Error(`xsheet.mjs の読み取りが足りない（${JSON.stringify(out)}）`);
   }
   console.log(`xsheet.mjs：OK（素の Node で read・シート ${out.sheets}・形 ${out.presets}）`);

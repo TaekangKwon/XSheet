@@ -19,9 +19,10 @@
 
 | ファイル | 中身 | gzip |
 | --- | --- | ---: |
-| `xsheet.min.js` | IIFE。大域の `XSheet` を作る。依存と形の表をすべて中に持つ・圧縮済み | 110,818 B |
-| `xsheet.mjs` | ESM。依存を中に持つ・圧縮済み。形の表は持たない | 80,520 B |
+| `xsheet.min.js` | IIFE。大域の `XSheet` を作る。依存と形の表・グラフの描画をすべて中に持つ・圧縮済み | 130,861 B |
+| `xsheet.mjs` | ESM。依存を中に持つ・圧縮済み。形の表・グラフの描画は持たない | 85,931 B |
 | `xsheet-geom.mjs` | 形の表（遅れて読む部品）。`xsheet.mjs` が図形を描くときだけ、同じフォルダから読む | 30,588 B |
+| `xsheet-chart.mjs` | グラフの描画（遅れて読む部品）。`xsheet.mjs` がグラフを描くときだけ、同じフォルダから読む | 25,031 B |
 | `xsheet.css` | 表示の CSS（`style.css` と同じ）。`view` が自動で入れるので、読まなくてよい | — |
 | `xsheet.d.ts` | 型。大域の `XSheet` と `declare module 'xsheet'` | — |
 | `xsheet.d.mts` | `xsheet.mjs` の型（中身は `xsheet.d.ts` を引くだけ） | — |
@@ -61,7 +62,7 @@
 ```
 
 - **http で配る**。ブラウザは `file://` のページでモジュールのスクリプトを読まない。このリポジトリでは `npm run build` の後に `npm run examples:static` を走らせ、http://localhost:5174/examples/esm.html を開く（[examples/esm.html](../../examples/esm.html)）。
-- `xsheet-geom.mjs` を `xsheet.mjs` と**同じフォルダ**に置く。`xsheet.mjs` は図形のあるシートを開いたときだけ、自分の場所からの相対（`./xsheet-geom.mjs`）で読む。置き忘れても表は出るが、図形は簡略化して通知を出す。
+- `xsheet-geom.mjs`・`xsheet-chart.mjs` を `xsheet.mjs` と**同じフォルダ**に置く。`xsheet.mjs` は図形・グラフのあるシートを開いたときだけ、自分の場所からの相対（`./xsheet-geom.mjs`・`./xsheet-chart.mjs`）で読む。置き忘れても表は出るが、図形は簡略化して通知を出し、グラフは種類名の破線枠のままになる。
 - import map で名前を付けてもよい：
 
 ```html
@@ -81,7 +82,7 @@ GitHub Release に添付する単独版の zip（[ADR-0003](../adr/0003-universa
 
 | ファイル | 内容 |
 | --- | --- |
-| `xsheet.min.js`・`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet.css` | 上の 1 のとおり |
+| `xsheet.min.js`・`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet-chart.mjs`・`xsheet.css` | 上の 1 のとおり |
 | `xsheet.d.ts`・`xsheet.d.mts` | 型 |
 | `viewer.html` | 出来上がりのビューア（`examples/standalone.html` を `xsheet.min.js` と同じフォルダで動くようにしたもの）。ダブルクリックで開ける |
 | `NOTICE` | XSheet の著作権表示（形の表の元の Ecma の表示） |

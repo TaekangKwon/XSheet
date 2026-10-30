@@ -60,6 +60,14 @@ export interface XlsxLimits {
   maxFills: number;
   /** 重複を除いた「見える書式」（塗り・文字の装飾）の数。超えた書式のセルは書式なし（ADR-0030 §決定 11） */
   maxCellFormats: number;
+  /** グラフ 1 つの系列数。超えたグラフは `too-large`（破線枠。ADR-0031 §決定 9） */
+  maxChartSeries: number;
+  /** グラフ 1 つの全系列の点の合計（系列数 × 項目の数）。超えたグラフは `too-large` */
+  maxChartPoints: number;
+  /** グラフ 1 つの系列名・項目・タイトルの文字数の合計。超えたグラフは `too-large` */
+  maxChartTextChars: number;
+  /** 1 シートで読んだグラフの点の合計。超えたら、以後そのシートの新しいグラフは `too-large` */
+  maxSheetChartPoints: number;
 }
 
 /**
@@ -154,6 +162,18 @@ export const MAX_FILLS = 65_536;
 /** 重複を除いた見える書式の数の上限（＝生成 CSS の規則の数。ADR-0030 §決定 11）。超えた書式のセルは書式なし */
 export const MAX_CELL_FORMATS = 4_096;
 
+/** グラフ 1 つの系列数の上限（Excel のグラフ 1 つの系列数の上限。ADR-0031 §決定 9） */
+export const MAX_CHART_SERIES = 255;
+
+/** グラフ 1 つの全系列の点の合計の上限（系列 10・点 1,000 のグラフの 10 倍の水準） */
+export const MAX_CHART_POINTS = 100_000;
+
+/** グラフ 1 つの系列名・項目・タイトルの文字数の合計の上限 */
+export const MAX_CHART_TEXT_CHARS = 200_000;
+
+/** 1 シートで読んだグラフの点の合計の上限（グラフ 10 個分。超えたら以後の新しいグラフは破線枠） */
+export const MAX_SHEET_CHART_POINTS = 1_000_000;
+
 /** 既定の上限の組 */
 export const DEFAULT_LIMITS: Readonly<XlsxLimits> = Object.freeze({
   maxSheetXmlBytes: MAX_SHEET_XML_BYTES,
@@ -181,6 +201,10 @@ export const DEFAULT_LIMITS: Readonly<XlsxLimits> = Object.freeze({
   maxFonts: MAX_FONTS,
   maxFills: MAX_FILLS,
   maxCellFormats: MAX_CELL_FORMATS,
+  maxChartSeries: MAX_CHART_SERIES,
+  maxChartPoints: MAX_CHART_POINTS,
+  maxChartTextChars: MAX_CHART_TEXT_CHARS,
+  maxSheetChartPoints: MAX_SHEET_CHART_POINTS,
 });
 
 /** 書式コードの長さの上限（文字数）。非信頼の styles.xml から来る書式を ssf へ渡す前の ReDoS 対策 */

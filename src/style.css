@@ -295,6 +295,16 @@
   stroke: var(--xs-backdrop);
 }
 
+/* グラフ（render/chart-svg.ts・InterHub ISSUE-103・ADR-0031 §決定 10）。svg 1 枚を図の枠いっぱいに置く（はみ出しは svg の既定の overflow: hidden で切る）。
+   グラフは「紙」として、明るい表示・ダークとも Excel の色のまま描く（ダークで補正しない）。グラフの面が塗りなしの時の白い下地は、svg の中ではなく、
+   図形と同じ兄弟の svg.xs-backdrop（上の規則・z-index: -1）として図の直前に置く（グラフより下の図形・画像を隠さない）。色と表示は既存のテーマ変数
+   （--xs-backdrop＝ダークだけ白・--xs-backdrop-display）。要素の style に色を入れないため、テーマの切り替えで描き直さない。 */
+.xs-chart {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 /* 切り抜き・回転・反転は無視し、アンカーの枠いっぱいに伸ばす（既知の差異）。 */
 .xs-img {
   display: block;

@@ -441,6 +441,8 @@ export function createSheetView(
             drawings,
             boxes,
             readImage: (path) => book.readImage(index, path),
+            // グラフ（InterHub ISSUE-103）：図が見える範囲に入った時に読む。描けなければ破線枠のまま
+            readChart: (path) => book.readChart(index, path),
             onOverBudget: () => {
               // 画像の合計の上限超過（通知）。別のシートへ切り替わった後の結果は捨てる
               if (!isStale()) {

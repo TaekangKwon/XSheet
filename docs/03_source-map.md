@@ -279,3 +279,11 @@
 - 943e4f0..cd6d5d5 のコミット 25 件（マージ 2 件を含む）のうち、対応表のパスに触れたものは 14 件（グラフの ISSUE-101〜111）。差分は 54 ファイル（追加 43・変更 11）で、対応表 8・規則 43・手作業 3（`spreadsheet.ts`・`spreadsheet.image.render.test.ts`・`global.css`）・対応なし 0。
 - パッチは 51 ファイル（約 6.6 MB。照合の JSON が大半）。`git apply --check` で当たらないのは `src/render/image-layer.ts` と `src/core/index.ts` の 2 つだけだった。
 - 取り込みそのものは M7 の最初の項目（ADR-0003 §4-3）。
+
+### グラフの取り込み（M7・2026-10-30・InterHub `f035f68`）
+
+- `sync:patch` の 943e4f0..f035f68（ISSUE-101〜111・51 ファイル）を `git apply --reject` で当てた。当たらなかったのは `src/render/image-layer.ts`（import と文言の hunk）と `src/core/index.ts`（公開の型の並び）だけで、手で直した。`baseCommit` を `f035f68` に進めた。
+- 手作業の 3 ファイル：`spreadsheet.ts` の `readChart` は `src/render/sheet-view.ts` に、`global.css` の `.ih-xlsx-chart` は `style.css` の `.xs-chart` に、`spreadsheet.image.render.test.ts` の TD-103-40・41 は `tests/render/render-sheet.image.test.ts` に写した。`xlsx-chart-css.test.ts` は `style-css.helpers` で読む形にした（ダークの値の置き場所が違う）。
+- 公開の型に `Chart*`・`ManualLayout` を足し、`core/internal` に `applyTransforms`・`Rgba`・`formatNumberByCode`・`DEFAULT_THEME`・`Theme`・`ThemeSlot` を足した（render の `chart-axis.ts`・`chart-layout.ts` が使う）。
+- XSheet 固有：グラフの描画（`layoutChart`・`buildChartSvg`）は遅れて読む部品の入口 `src/render/chart-draw.ts` にまとめ、`image-layer.ts` は `// XSheet:` の印の所で動的 import する（ADR-0003 §1）。`tools/standalone/parts.mjs` に `chart` を足した。
+- lint に合わせた直し（初期値の要らない `let`）が `chart-axis.ts` と `make-xlsx.ts` に 1 か所ずつある。次の取り込みで当たらなければここを見る。

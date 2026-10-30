@@ -92,11 +92,11 @@ flowchart LR
 
 | 候補 | 内容 |
 | --- | --- |
-| グラフ | InterHub のグラフ（ADR-0031・ISSUE-101〜111）を M6-1 の同期の道具で取り込む。InterHub の作業が一段落してから。描画は遅れて読む部品にする（ADR-0003 §1・§4-3） |
+| グラフ | **取り込み済み（2026-10-30・InterHub f035f68）**。InterHub のグラフ（ADR-0031・ISSUE-101〜111。G1）を M6-1 の同期の道具で取り込み、描画を遅れて読む部品（`chart-draw`・`xsheet-chart.mjs`）にした。残りは InterHub の後続（G2 など）を同じ道具で取り込む |
 | Web Components・埋め込み | `<x-sheet>` 要素、iframe と `postMessage` で置けるビューア（ADR-0003 の却下した案・§5） |
 | 生の値 | `cellValue(r, c)`、`sheetToJson`・`sheetToCsv`（SheetJS の `sheet_to_json` に当たる） |
 | Worker | 解析を Worker で動かす補助（core は DOM 非依存なのでそのまま動く。転送の型を用意する） |
 | Excel との照合 | 罫線 E1〜E5・書式 F1〜F10 の暫定項目を Excel 16 で確かめる（[05_quality.md](05_quality.md) §3） |
-| 表示の追加 | 揃えと折り返し・条件付き書式・テーブルのスタイル・フォント名・リッチテキストの部分書式・グラフ |
+| 表示の追加 | 揃えと折り返し・条件付き書式・テーブルのスタイル・フォント名・リッチテキストの部分書式・グラフの G2（面・散布図・データラベル・第 2 軸・組み合わせ） |
 | 操作 | `scrollToCell`・セルの選択とコピー・検索 |
 | 公開 | npm 公開（ライセンスの決定・名前の確認・`provenance`） |

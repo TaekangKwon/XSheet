@@ -2,6 +2,21 @@
 
 この形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に倣う。版は [Semantic Versioning](https://semver.org/lang/ja/) に従う（1.0.0 までは小さい版の上げでも互換を崩すことがある）。
 
+## [Unreleased]
+
+InterHub のグラフ（ADR-0031・ISSUE-101〜111）を取り込んだ（M7）。
+
+### 追加
+
+- グラフの表示：縦棒・横棒（集合・積み上げ・100% 積み上げ）、折れ線（マーカー含む）、円・ドーナツと、タイトル・凡例・項目軸・数値軸・目盛線を、保存された値（`c:numCache`・`c:strCache`）から SVG で描く。描けない種類・失敗は今までどおり種類名の破線枠。グラフは明るい表示・ダークとも Excel の色のまま描く。
+- `XlsxBook.readChart(index, path)` とグラフの型（`ChartModel`・`ChartResult` など）。`SheetDrawing.chartPath`。
+- 上限 `maxChartSeries`・`maxChartPoints`・`maxChartTextChars`・`maxSheetChartPoints`。
+- グラフの描画は遅れて読む部品：バンドラ向けでは別のチャンク、単独版では `xsheet-chart.mjs`（`xsheet.mjs` と同じフォルダに置く。`xsheet.min.js` は中に持つ）。
+
+### 変更
+
+- `XlsxBook` に `readChart` が増えた（`XlsxBook` を自分で実装している場合は足す）。
+
 ## [0.2.0] - 2026-10-30
 
 誰でも軽く使える配り方にした（ADR-0003・M6）。`<script>` 1 つ・`import` 1 つ・1 行で表示できる。0.1.0 の公開物はすべて残る。

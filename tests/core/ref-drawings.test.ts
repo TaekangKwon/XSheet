@@ -206,6 +206,8 @@ describe('TD-85-13 Excel 実ファイル：ref-calibri・ref-yugothic・ref-malg
         name: 'chart1',
         descr: '',
         mediaPath: null,
+        // ISSUE-101：グラフの部品のパスを持つ（実ファイルの drawing の rels を解いたもの）
+        chartPath: 'xl/charts/chart1.xml',
         anchor: {
           type: 'twoCell',
           from: { col: 5, colOff: 0, row: 14, rowOff: 0 },

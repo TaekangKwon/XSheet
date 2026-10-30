@@ -4,6 +4,7 @@
 
 - セルの値・表示形式・列幅と行高・結合・罫線・塗りと文字の装飾を、Excel 16 の表示に合わせて描く（寸法と図の位置は 1px 以内が目標）。
 - 画像・図形（プリセットの形 176 種・自由な形）・線・グループ・図形の文字を、セルの上の層に描く。
+- グラフ（縦棒・横棒の集合・積み上げ・100% 積み上げ、折れ線とマーカー、円・ドーナツ、タイトル・凡例・軸・目盛線）を、保存された値から SVG で描く。ほかの種類は位置だけを破線枠で示す。
 - 100 万セルのシートでも見えている範囲だけを描く（スクロールで描き足す）。
 - 外へ通信しない・`eval` を使わない・ファイルの中身は信頼しない入力として `textContent` でだけ DOM に入れる・読み取りの量に上限がある。
 
@@ -93,7 +94,7 @@ npm install github:TaekangKwon/XSheet#v0.2.0
 | `theme` | `'light'` | `'light'`・`'dark'`・`'auto'`（OS の `prefers-color-scheme` に従う）。[docs/guide/theme.md](docs/guide/theme.md) |
 | `css` | `'auto'` | 表示の CSS を `<style>` で 1 回だけ入れる。`style.css`・`xsheet.css` を読み込み済みなら入れない。`'none'` なら入れない |
 | `height` | `'auto'` | container の高さが 0 のときだけ 480px にする。数値は px、文字列は CSS の長さ（`'70vh'` など） |
-| `drawings` | `true` | 図の層（画像・図形・線）を出すか |
+| `drawings` | `true` | 図の層（画像・図形・線・グラフ）を出すか |
 | `nonce` | なし | 自動で入れる `<style>` と書式の `<style>` に付ける nonce（CSP 用。[docs/guide/csp.md](docs/guide/csp.md)） |
 | `limits` | `DEFAULT_LIMITS` | 読み取りの上限を一部だけ替える |
 
@@ -165,7 +166,7 @@ book.close();
 | 指定 | 既定 | 内容 |
 | --- | --- | --- |
 | `messages` | 日本語（`MESSAGES_JA`） | 文言。一部のキーだけ渡してもよい。英語は `MESSAGES_EN`、韓国語は `MESSAGES_KO` を渡す |
-| `drawings` | `true` | 図の層（画像・図形・線）を出すか。`false` なら図を読まない |
+| `drawings` | `true` | 図の層（画像・図形・線・グラフ）を出すか。`false` なら図を読まない |
 | `nonce` | なし | 書式の `<style>` 要素に付ける nonce（CSP の `style-src 'nonce-…'` 用） |
 | `limits` | `DEFAULT_LIMITS` | 読み取りの上限（`renderWorkbook` だけ。`renderSheet` では `openXlsx` に渡す） |
 
@@ -184,7 +185,7 @@ API の全体は [docs/02_architecture.md](docs/02_architecture.md) §2（core�
 
 - ESM だけ。型は同梱（TypeScript は `moduleResolution: "bundler"` が前提）。
 - `xsheet` を Node で import しても、読み込んだ時点では DOM に触れない。ただし DOM を使わないと約束するのは `xsheet/core` だけ。
-- 形の表（gzip 約 30 KB）は図形のあるシートを開いたときだけ読まれる（使う側のビルドでも別のチャンクになる）。大きさは [02](docs/02_architecture.md) §8。
+- 形の表（gzip 約 30 KB）は図形のあるシートを、グラフの描画（圧縮＋gzip 約 16 KB）はグラフのあるシートを開いたときだけ読まれる（使う側のビルドでも別のチャンクになる）。大きさは [02](docs/02_architecture.md) §8。
 
 ## 見た目（テーマと CSS 変数）
 
@@ -219,7 +220,7 @@ API の全体は [docs/02_architecture.md](docs/02_architecture.md) §2（core�
 
 ## 上限
 
-悪意のあるファイルで止まらないよう、zip の展開量・部品の大きさ・件数・図形の式・画像の大きさに上限（25 項目）がある。超えたら `XlsxError('too-large')`（`view`・`renderWorkbook` は文言を出す）か、その図だけを簡略化して通知を出す。既定値は `DEFAULT_LIMITS`、一覧は [02](docs/02_architecture.md) §5。`limits` で一部だけ変えられる。
+悪意のあるファイルで止まらないよう、zip の展開量・部品の大きさ・件数・図形の式・画像の大きさ・グラフの点の数に上限（29 項目）がある。超えたら `XlsxError('too-large')`（`view`・`renderWorkbook` は文言を出す）か、その図だけを簡略化して通知を出す。既定値は `DEFAULT_LIMITS`、一覧は [02](docs/02_architecture.md) §5。`limits` で一部だけ変えられる。
 
 例外のメッセージにはセル値・シート名を入れない。
 

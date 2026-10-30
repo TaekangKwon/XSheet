@@ -1,12 +1,13 @@
 // 配る JS の大きさを測り、上限（N6）を超えたら失敗する（M4-2・`npm run size`）。
 // 先に `npm run build` で dist/ を作っておくこと。
-// - 入口ごとに、その入口から static に辿れるファイル（共有のチャンクを含む）の合計を測る。動的 import（形の表）は辿らない。
+// - 入口ごとに、その入口から static に辿れるファイル（共有のチャンクを含む）の合計を測る。動的 import（形の表・グラフの描画）は辿らない。
+// - 遅れて読むチャンク（グラフの描画）は、そのチャンクのファイルだけを測る（共有のチャンクは render の側で数えている）。
 // - 測るのは 3 通り：dist のまま（圧縮なし）・それを gzip・Vite で圧縮（minify）してから gzip。使う側のビルドは圧縮するので、上限は最後の値で決める。
 //   ライブラリモードの ES の出力は、圧縮しても空白とコメントの一部が残る（Vite の仕様）。使う側の圧縮より少し大きめに出る。
 // - 依存（jszip・ssf）は含めない（使う側の依存）。
 // - 単独版（M6-3・dist の根の xsheet*.js／mjs）は、依存を中に持ち圧縮済みのファイルをそのまま gzip して、別の上限で見る。
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -21,9 +22,17 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
  * 超えたら、大きくなった理由を確かめてから上限を見直す。
  */
 const LIMITS = {
-  'core/index': 31_000,
-  'render/index': 52_000,
+  'core/index': 36_000,
+  'render/index': 59_000,
   'geom/index': 36_000,
+};
+
+/**
+ * 遅れて読むチャンクの上限（B・圧縮して gzip・チャンクのファイルだけ）。キーはチャンクの名前（`chunks/<名前>-<hash>.js`）。
+ * M7 のグラフの取り込み（2026-10-30）の実測に 1 割ほどの余裕を足した値。
+ */
+const CHUNK_LIMITS = {
+  'chart-draw': 17_500,
 };
 
 /**
@@ -31,9 +40,10 @@ const LIMITS = {
  * xsheet.min.js は遅れて読む部品を中に持つ。xsheet.mjs は最初に読む分だけ（部品は別に測る）。
  */
 const STANDALONE_LIMITS = {
-  'xsheet.min.js': 122_000,
-  'xsheet.mjs': 89_000,
+  'xsheet.min.js': 144_000,
+  'xsheet.mjs': 94_000,
   'xsheet-geom.mjs': 34_000,
+  'xsheet-chart.mjs': 28_000,
 };
 
 /**
@@ -107,6 +117,33 @@ try {
     rows.push({
       entry,
       files: files.length,
+      raw: plain.raw,
+      gzip: plain.gzip,
+      minGzip: minified.gzip,
+      limit,
+      over,
+    });
+  }
+  // 遅れて読むチャンク：名前で探し、見つからなければ失敗（動的 import が static になって消えた、など）
+  const chunkFile = (dir, name) => {
+    const files = readdirSync(path.join(dir, 'chunks')).filter((f) => f.startsWith(`${name}-`));
+    if (files.length !== 1)
+      throw new Error(`遅れて読むチャンク ${name} が 1 つでない：${files.join(', ')}`);
+    return `chunks/${files[0]}`;
+  };
+  for (const [name, limit] of Object.entries(CHUNK_LIMITS)) {
+    for (const dir of [dist, min]) {
+      if (closure(dir, 'render/index').includes(chunkFile(dir, name))) {
+        throw new Error(`遅れて読むチャンク ${name} が render から static に辿れる`);
+      }
+    }
+    const plain = measure(dist, [chunkFile(dist, name)]);
+    const minified = measure(min, [chunkFile(min, name)]);
+    const over = minified.gzip > limit;
+    failed ||= over;
+    rows.push({
+      entry: `${name}（遅れて読む）`,
+      files: 1,
       raw: plain.raw,
       gzip: plain.gzip,
       minGzip: minified.gzip,

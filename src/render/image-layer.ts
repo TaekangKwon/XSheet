@@ -15,10 +15,16 @@
  * - ダーク表示の下地（ISSUE-96）：図形・線・代替の文字枠は、図の要素の直前に独立した `svg.xs-backdrop`（`z-index: -1`・片側 3px 広げる）を兄弟として置く。
  *   形の塗りの path と線の縁取り（太さ＋6px・実線・丸）だけを持ち、色は CSS のテーマ変数（ライトは透明）で決める＝style に色を入れず、テーマの切り替えで描き直さない。
  *   レイヤーが `isolation: isolate` で重ね順の文脈を作り、下地は全図の下・セルの上に描かれる。図と一緒に出し入れする。
+ * - グラフ（ISSUE-103・ADR-0031）：kind が chart で `chartPath` があり `readChart` を渡されたら、図が初めて見える範囲に入った時に読み（{@link createChartStore}。1 つずつ順に）、
+ *   `layoutChart` → `buildChartSvg` で `<svg>` にして破線枠の代わりに入れる。`<svg>` は図の位置ごとにシート単位でキャッシュし、範囲から外れたら DOM から外すだけ（作り直さない）。
+ *   グラフの面が塗りなし（場面の `backdrop`）なら、ダーク表示の下地も図形と同じ兄弟の `svg.xs-backdrop`（図の直前・図の矩形と同じ位置と大きさ）にする＝グラフより下の図形・画像を隠さない。
+ *   下地は `<svg>` と一緒にキャッシュし、図と一緒に出し入れする（`<svg>` の中には置かない）。
+ *   読み込み中・失敗（unsupported・too-large・broken・no-data・場面が null・例外）は破線枠「グラフ」のまま（P8）。シートの差し替え・dispose でキャッシュと `<svg>` を捨て、後から返った結果は足さない。
  * - blob URL は {@link createImageStore}（シート 1 枚ぶん）が持つ。シートの差し替え・{@link ImageLayer.dispose} で revoke する。
  * 位置の計算は DOM 非依存の `drawings.ts`、blob の管理は `image-store.ts` に切り出している。
  */
 import type {
+  ChartResult,
   ImageResult,
   SheetDrawing,
   DrawingColor,
@@ -43,6 +49,16 @@ import {
   type ShapeShade,
 } from './shapes';
 import { createImageStore, type ImageEntry, type ImageStore } from './image-store';
+import { createChartStore, type ChartStore } from './chart-store';
+// XSheet: グラフの描画（layoutChart・buildChartSvg）は遅れて読む部品（ADR-0003 §1）。初めてグラフを描く時に 1 回だけ読む。
+// 読めなければ（チャンクの取得の失敗）グラフは破線枠のまま。下の buildChart・mountChart はこの部品を引数で受け取る
+type ChartDraw = typeof import('./chart-draw');
+let chartDrawLoad: Promise<ChartDraw | null> | null = null;
+const loadChartDraw = (): Promise<ChartDraw | null> =>
+  (chartDrawLoad ??= import('./chart-draw').catch(() => {
+    chartDrawLoad = null;
+    return null;
+  }));
 import { formatMessage, MESSAGES_JA, type XSheetMessages } from './messages';
 
 /** 画像レイヤーに渡すシートの図 */
@@ -53,6 +69,11 @@ export interface LayerSheet {
   boxes: readonly DrawingBox[];
   /** 画像を読む（`XlsxBook.readImage` をシート番号込みで束ねたもの） */
   readImage: (path: string) => Promise<ImageResult>;
+  /**
+   * グラフを読む（`XlsxBook.readChart` をシート番号込みで束ねたもの）。省略すると、グラフは破線枠のまま。
+   * 描けたら破線枠の代わりに `<svg>`（ISSUE-103）。どの失敗も破線枠のまま。
+   */
+  readChart?: (path: string) => Promise<ChartResult>;
   /** 画像の合計の上限を超えたとき（バナー用）。1 シートにつき 1 回 */
   onOverBudget?: () => void;
 }
@@ -106,6 +127,12 @@ export function frameLabel(
   return messages[KIND_KEYS[drawing.kind]];
 }
 
+/** 描けたグラフ 1 つ：`<svg>` と、面が塗りなしのときだけのダーク表示の下地（ISSUE-96 と同じ兄弟の `svg.xs-backdrop`） */
+interface ChartDrawn {
+  svg: SVGSVGElement;
+  backdrop?: SVGSVGElement;
+}
+
 /** 図 1 つの要素（画像・破線枠・文字の枠は `div`、線は `<svg>`） */
 type FigureEl = HTMLElement | SVGSVGElement;
 
@@ -114,7 +141,7 @@ interface Figure {
   box: DrawingBox;
   drawing: SheetDrawing;
   el: FigureEl;
-  /** ダーク表示の下地（図形・線・代替の文字枠だけ。図の要素の直前に置く。ISSUE-96） */
+  /** ダーク表示の下地（図形・線・代替の文字枠・面が塗りなしのグラフ。図の要素の直前に置く。ISSUE-96） */
   backdrop?: SVGSVGElement;
 }
 
@@ -555,12 +582,15 @@ function hasAnyColor(drawing: SheetDrawing): boolean {
 }
 
 /** 代替の矩形の文字枠の下地（ISSUE-96）：回転前の矩形（`r`）の位置に置き、図の要素と同じく中心で回す。余白は付けない（縁取りの無い塗りだけ） */
-function buildFrameBackdrop(r: PxRect, deg: number): SVGSVGElement {
+function buildFrameBackdrop(r: PxRect, deg: number, radius = 0): SVGSVGElement {
   const svg = backdropSvg(r, 0);
   if (deg !== 0) {
     svg.style.transform = `rotate(${deg}deg)`;
   }
-  svg.append(backdropPart('rect', { width: num(r.w), height: num(r.h) }, true));
+  // 角丸（グラフの面が角丸の時の下地。面と同じ半径を付ける＝隅に白がはみ出さない。ISSUE-109。数値の rx・ry だけ）
+  const round: Record<string, number> =
+    Number.isFinite(radius) && radius > 0 ? { rx: num(radius), ry: num(radius) } : {};
+  svg.append(backdropPart('rect', { width: num(r.w), height: num(r.h), ...round }, true));
   return svg;
 }
 
@@ -626,6 +656,10 @@ export function createImageLayer(
 
   let sheet: LayerSheet | null = null;
   let store: ImageStore | null = null;
+  /** グラフの読み込み（シート 1 枚ぶん。`readChart` を渡されたシートだけ） */
+  let chartStore: ChartStore | null = null;
+  /** 描けたグラフの `<svg>` と下地（図の位置 → 要素）。null＝描けなかった（破線枠のまま・再試行しない）。シートの差し替え・dispose で捨てる */
+  let charts = new Map<number, ChartDrawn | null>();
   /** 今 DOM にある図（図の位置 → 要素）。重ね順は `order`（図の位置の昇順） */
   let mounted = new Map<number, Figure>();
   let order: number[] = [];
@@ -653,6 +687,65 @@ export function createImageLayer(
     } else {
       fillFrame(fig.el, frameLabel(fig.drawing, entry, messages));
     }
+  };
+
+  /**
+   * グラフの結果から `<svg>` を作る（図の矩形の大きさで配置する）。面が塗りなしなら下地（図の矩形と同じ位置と大きさ）も作る。
+   * 描けない（失敗・場面が null・例外）は null
+   */
+  const buildChart = (
+    result: ChartResult,
+    rect: PxRect,
+    { layoutChart, buildChartSvg }: ChartDraw,
+  ): ChartDrawn | null => {
+    if (!result.ok) {
+      return null;
+    }
+    try {
+      const scene = layoutChart(result.chart, rect.w, rect.h, result.theme);
+      if (scene === null) {
+        return null;
+      }
+      const svg = buildChartSvg(scene, document, messages.chart);
+      return scene.backdrop
+        ? { svg, backdrop: buildFrameBackdrop(rect, 0, scene.cornerRadius) }
+        : { svg };
+    } catch {
+      return null;
+    }
+  };
+
+  /**
+   * グラフの図に `<svg>` を入れる（破線枠は先に入っている）。作り済みなら DOM に戻すだけ、未読なら読み込みを始める。
+   * 読み込みの結果は、破棄・シートの切替で store が変わっていたら捨てる。図が外れていたら `charts` に覚えるだけで、次に出す時に使う。
+   */
+  const mountChart = (fig: Figure): void => {
+    const path = fig.drawing.chartPath;
+    if (!path || !chartStore) {
+      return;
+    }
+    if (charts.has(fig.box.index)) {
+      return; // 作り済みは mount が先に入れている／描けなかったものは破線枠のまま
+    }
+    const current = chartStore;
+    void Promise.all([current.load(path), loadChartDraw()]).then(([result, draw]) => {
+      if (!result || !draw || disposed || chartStore !== current) {
+        return;
+      }
+      let drawn = charts.get(fig.box.index);
+      if (drawn === undefined) {
+        drawn = buildChart(result, fig.box.rect, draw);
+        charts.set(fig.box.index, drawn);
+      }
+      if (drawn && mounted.get(fig.box.index) === fig) {
+        fig.el.replaceChildren(drawn.svg);
+        if (drawn.backdrop && !fig.backdrop) {
+          // 今 DOM にある図の直前へ（update が次に並べ直す時は fig.backdrop から入る）
+          fig.backdrop = drawn.backdrop;
+          fig.el.before(drawn.backdrop);
+        }
+      }
+    });
   };
 
   /** 図 1 つの要素を作る。画像は読み込み済みなら反映し、未読なら読み込みを始める（読み込み中は空） */
@@ -717,7 +810,17 @@ export function createImageLayer(
     el.style.width = `${box.rect.w}px`;
     el.style.height = `${box.rect.h}px`;
     if (drawing.kind !== 'image') {
-      fillFrame(el, frameLabel(drawing, undefined, messages));
+      // 描けたグラフの <svg> は作り済みなら破線枠を作らずに戻す（範囲の出入りで作り直さない）
+      const chartDrawn = drawing.kind === 'chart' ? charts.get(box.index) : undefined;
+      if (chartDrawn) {
+        el.append(chartDrawn.svg);
+        fig.backdrop = chartDrawn.backdrop;
+      } else {
+        fillFrame(el, frameLabel(drawing, undefined, messages));
+        if (drawing.kind === 'chart') {
+          mountChart(fig);
+        }
+      }
     } else if (drawing.mediaPath === null || !store) {
       fillFrame(el, messages.imageBroken);
     } else {
@@ -750,6 +853,9 @@ export function createImageLayer(
       }
       store?.dispose();
       store = null;
+      chartStore?.dispose();
+      chartStore = null;
+      charts = new Map();
       unmountAll();
       sheet = next;
       if (next) {
@@ -759,6 +865,9 @@ export function createImageLayer(
           revokeUrl: deps.revokeUrl,
           onOverBudget: next.onOverBudget,
         });
+        if (next.readChart) {
+          chartStore = createChartStore({ read: next.readChart });
+        }
       }
     },
     place(left, top, width, height) {
@@ -799,6 +908,9 @@ export function createImageLayer(
       disposed = true;
       store?.dispose();
       store = null;
+      chartStore?.dispose();
+      chartStore = null;
+      charts = new Map();
       sheet = null;
       unmountAll();
     },
