@@ -3,11 +3,11 @@
 | 項目 | 値 |
 | --- | --- |
 | 文書 | XSheet 立ち上げ資料 04 |
-| 更新日 | 2026-10-28 |
+| 更新日 | 2026-10-30 |
 | 関連 | [03_source-map.md](03_source-map.md)・[05_quality.md](05_quality.md) |
 
 ## TL;DR
-- M0 雛形 → M1 core → M2 render → M3 見た目と文言 → M4 ビルドと配布（v0.1.0）→ M5 利用者の切り替え（xrag-Viewer・InterHub）→ M6 拡張。
+- M0 雛形 → M1 core → M2 render → M3 見た目と文言 → M4 ビルドと配布（v0.1.0）→ M5 利用者の切り替え（xrag-Viewer・InterHub）→ M7 拡張。M6 誰でも使える配り方（v0.2.0・[ADR-0003](adr/0003-universal-distribution.md)）は M5 の保留中に先に進める。
 - 1 Issue＝1 回の指示で終わる大きさ。各 Issue の完了条件はテスト・型検査・ビルドが通ること。目視が要る Issue（M3・M5）は実機の確認を条件に足す。
 - M1・M2 は機械的な移動が中心。判断が要るのは M2-3（`renderSheet` の切り出し）と M4（配布の形）と M5（利用者の切り替え）。
 
@@ -20,10 +20,12 @@ flowchart LR
   M1 --> M2[M2 render]
   M2 --> M3[M3 見た目と文言]
   M3 --> M4[M4 v0.1.0]
+  M4 --> U[M6 誰でも使える配り方]
   M4 --> X[M5a xrag-Viewer]
   M4 --> I[M5b InterHub]
-  X --> M6[M6 拡張]
-  I --> M6
+  U --> M7[M7 拡張]
+  X --> M7
+  I --> M7
 ```
 
 ## M0 雛形
@@ -74,10 +76,24 @@ flowchart LR
 | M5a | xrag-Viewer：依存に追加し、`src/viewers/xlsx.ts` の表の部分を `renderSheet` に置き換える。`src/lib/xlsx/` と `tests/lib/xlsx/` を消す。`source.css` で変数を対応づける（手順は InterHub `docs/guides/xlsx-library-plan.md` の L5・L6） | xrag のテスト・e2e（`network-csp`・`perf`）が通る。実機の目視 OK |
 | M5b | InterHub：`spreadsheet.ts` の .xlsx 部分と `lib/xlsx/`・`viewers/xlsx-*` をライブラリへ置き換える。`.xls`（SheetJS）・タブ・バナーは InterHub に残す | InterHub のテスト・ビルドが通る。実機の回帰 TV-36〜TV-44 が OK |
 
-## M6 拡張（候補・優先は利用者と決める）
+## M6 誰でも使える配り方（v0.2.0）
+
+[ADR-0003](adr/0003-universal-distribution.md)。2026-10-30 に ADR を accepted にした（Q1〜Q4 は提案のとおり。まず社内向けで、公開は別に決める）。
+
+| Issue | 内容 | 完了の条件 |
+| --- | --- | --- |
+| M6-1 | 同期の道具：`tools/sync/interhub.json`（対応表・変換の規則・取り込み済みのコミット `943e4f0`）・`npm run sync:status`・`sync:patch`。写しの規約を 03 に書く | `sync:status` が 943e4f0 以降のグラフのコミットと行き先を一覧にする。InterHub に書き込まないことをテストで確かめる |
+| M6-2 | 入口の層 `src/facade/`：`view`・`read`・`Viewer`。`source` の形（Blob・ArrayBuffer・型付き配列・Response・Promise）・`lang`・`theme`（ダークの値を style.css へ）・`css` の自動挿入・`height` の既定。`MESSAGES_KO`。`xsheet` の入口を全部に、`xsheet/core` を足す | テスト（jsdom）が通る。Node で `xsheet` を import して DOM に触れない |
+| M6-3 | 単独版のビルド：`xsheet.min.js`（IIFE・大域 `XSheet`）・`xsheet.mjs`＋`xsheet-geom.mjs`・`xsheet.css`・`xsheet.d.ts`。遅れて読む部品の一覧からビルドの設定を作る。`npm run size` に上限を足す | 裸の import と `eval`・`new Function` が無い。jsdom で `XSheet.view` が合成の xlsx を描く。大きさが上限の内 |
+| M6-4 | README の先頭を「3 行で始める」に。`docs/guide/`（React・Vue・Worker・CSP・ダーク）。`examples/standalone.html`（ビルド不要・`file://`）・`examples/esm.html` | 実機で standalone と esm の例を目視 OK（`file://` を含む） |
+| M6-5 | 版を出す手順に単独版の zip（GitHub Release の添付）を足す。CHANGELOG 0.2.0。タグ `v0.2.0` | タグと zip から入れて動く（タグ・Release はユーザーの指示があるとき） |
+
+## M7 拡張（候補・優先は利用者と決める）
 
 | 候補 | 内容 |
 | --- | --- |
+| グラフ | InterHub のグラフ（ADR-0031・ISSUE-101〜111）を M6-1 の同期の道具で取り込む。InterHub の作業が一段落してから。描画は遅れて読む部品にする（ADR-0003 §1・§4-3） |
+| Web Components・埋め込み | `<x-sheet>` 要素、iframe と `postMessage` で置けるビューア（ADR-0003 の却下した案・§5） |
 | 生の値 | `cellValue(r, c)`、`sheetToJson`・`sheetToCsv`（SheetJS の `sheet_to_json` に当たる） |
 | Worker | 解析を Worker で動かす補助（core は DOM 非依存なのでそのまま動く。転送の型を用意する） |
 | Excel との照合 | 罫線 E1〜E5・書式 F1〜F10 の暫定項目を Excel 16 で確かめる（[05_quality.md](05_quality.md) §3） |

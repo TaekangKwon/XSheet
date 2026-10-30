@@ -23,10 +23,10 @@
 | 2 | [01_requirements.md](01_requirements.md) | 目的・範囲（やる／やらない）・SheetJS との違い・非機能要件 | 全員 |
 | 3 | [02_architecture.md](02_architecture.md) | 構成・公開 API・データモデル・CSS 変数・文言 | 実装する人 |
 | 4 | [03_source-map.md](03_source-map.md) | InterHub のどのファイルをどこへ写し、何を直すか | 実装する人 |
-| 5 | [04_roadmap.md](04_roadmap.md) | マイルストーン M0〜M6 と Issue の切り方・完了条件 | 計画する人 |
+| 5 | [04_roadmap.md](04_roadmap.md) | マイルストーン M0〜M7 と Issue の切り方・完了条件 | 計画する人 |
 | 6 | [05_quality.md](05_quality.md) | テスト・Excel との照合・性能・既知の制限 | 実装・確認する人 |
 | — | [../CLAUDE.md](../CLAUDE.md) | Claude Code 向けのプロジェクト指示書（立ち上げ資料の雛形から作った） | 全員 |
-| — | [adr/](adr/) | 設計の判断の記録（ADR-0001＝ライブラリ化の決定と D1〜D8） | 全員 |
+| — | [adr/](adr/) | 設計の判断の記録（ADR-0001＝ライブラリ化の決定と D1〜D8・0002＝ビルドと配り方・0003＝誰でも使える配り方と InterHub の取り込み） | 全員 |
 
 ## 2. 先に決めること
 

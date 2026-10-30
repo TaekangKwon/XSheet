@@ -92,3 +92,9 @@
 - PR #4 をマージ（main a6d9990）。main で test 1,656 件・typecheck・lint・format:check・build・check:consumer・size が通ることを確かめた。
 - CHANGELOG に日付（45dff90）。release/v0.1.0 に `git add -f dist` だけのコミット（fe5a269）を作り、注釈付きのタグ v0.1.0 を打って push（タグだけ。release ブランチは push しない）。
 - タグの中身を git archive で取り出し、npm pack で exports の先・NOTICE・dist/NOTICE が入り src が入らないことを確かめた。日付のコミットは chore/changelog-v0.1.0 から main へ入れる。
+
+## 2026-10-30 ADR-0003（誰でも使える配り方・InterHub の取り込み。提案）
+- 使いにくさ P1〜P8 と SheetJS・PDF.js の配り方を整理し、単独版（`xsheet.min.js`・`xsheet.mjs`）と 1 行の入口 `view()`（`src/facade/`）を提案した。バンドラ向けの出力は今のまま。
+- InterHub の 943e4f0 以降（グラフ・22 コミット）を読むだけで確認し、写しの規約と同期の道具（`tools/sync/interhub.json`・`sync:status`・`sync:patch`）を提案した。グラフは M6 の後に取り込む。
+- 04 に M6（誰でも使える配り方・v0.2.0）を足し、旧 M6（拡張）を M7 にした（01・02・05・docs/README の参照も）。
+- ユーザーが Q1〜Q4 を提案のとおりに決め、ADR-0003 を accepted（1.0）にした（社内向けから・`xsheet` の入口を全部に・`view` の既定の言語は auto・`MESSAGES_KO` を同梱）。

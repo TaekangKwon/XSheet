@@ -86,7 +86,7 @@ export { DEFAULT_LIMITS, colName, createGeometry, colWidthToPx, defaultColWidthT
   - `xsheet/internal`（`src/core/internal.ts`・半公開で版の互換を約束しない）：render が使う `applyFillMode` と、描画の部品の試験で使う `emptyLayout`・`DEFAULT_MDW`。
   - `src/render/**` は core を `../core/index` と `../core/internal` からだけ引く（ESLint の `no-restricted-imports`）。M4 で core と render を別のチャンクにしたときに部品が重ならないようにするため。
   - DOM 非依存は、core の入口を Vite で束ねて素の Node（`--disallow-code-generation-from-strings`）で import し、Excel で作ったファイルを開いて元のソースと同じ結果になることで確かめる（`tests/core/node-import.test.ts`）。形の表（`preset-geom.json`）が core に入らないことも同じテストで見る。
-- M6 の候補：`cellValue(r, c)`（生の値と型）、`sheetToJson`・`sheetToCsv`（SheetJS の `sheet_to_json` に当たる）。
+- M7 の候補：`cellValue(r, c)`（生の値と型）、`sheetToJson`・`sheetToCsv`（SheetJS の `sheet_to_json` に当たる）。
 
 ## 3. 公開 API — render
 
@@ -98,7 +98,7 @@ export interface RenderOptions {
 }
 export interface SheetView {
   destroy(): void;                      // blob URL・リスナ・シートを放す（book は閉じない）
-  scrollToCell?(r: number, c: number): void; // M6 の候補
+  scrollToCell?(r: number, c: number): void; // M7 の候補
 }
 export function renderSheet(container: HTMLElement, book: XlsxBook, sheetIndex: number, options?: RenderOptions): Promise<SheetView>;
 
