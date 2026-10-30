@@ -493,3 +493,52 @@
 .xs-sheet-nav[hidden] {
   display: none;
 }
+
+/* --- ダーク表示（M6-2・ADR-0003 §2）---
+   `data-xs-theme="dark"` を表示の根か、その祖先（`<html>` など）に付ける。`view` の theme は表示の根 `.xs-viewer` に付ける。
+   `auto` は OS・ブラウザの設定（prefers-color-scheme）に従う。値を変えたいときは、同じ要素か内側で `--xs-*` を上書きする。 */
+[data-xs-theme='dark'] {
+  color-scheme: dark;
+  --xs-fg: #e6e6e6;
+  --xs-bg: #1e1e1e;
+  --xs-cell-bg: #0f1115;
+  --xs-head-bg: #1f232c;
+  --xs-grid: #232733;
+  --xs-border: #3a3a3a;
+  --xs-muted: #9ca3af;
+  --xs-faint: #6b7386;
+  --xs-accent: #60a5fa;
+  --xs-warn: #fbbf24;
+  --xs-warn-bg: rgba(251, 191, 36, 0.14);
+  --xs-border-ink: #d4d4d4;
+  --xs-backdrop: #ffffff;
+  --xs-backdrop-display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-xs-theme='auto'] {
+    color-scheme: dark;
+    --xs-fg: #e6e6e6;
+    --xs-bg: #1e1e1e;
+    --xs-cell-bg: #0f1115;
+    --xs-head-bg: #1f232c;
+    --xs-grid: #232733;
+    --xs-border: #3a3a3a;
+    --xs-muted: #9ca3af;
+    --xs-faint: #6b7386;
+    --xs-accent: #60a5fa;
+    --xs-warn: #fbbf24;
+    --xs-warn-bg: rgba(251, 191, 36, 0.14);
+    --xs-border-ink: #d4d4d4;
+    --xs-backdrop: #ffffff;
+    --xs-backdrop-display: block;
+  }
+}
+
+/* --- `view` の表示の根（M6-2）---
+   container の高さいっぱいに広がる。container の高さが 0 のときは `view` が既定の高さ（480px）を CSSOM で付ける。 */
+.xs-viewer {
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+}

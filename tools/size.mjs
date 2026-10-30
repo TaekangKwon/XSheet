@@ -4,6 +4,7 @@
 // - 測るのは 3 通り：dist のまま（圧縮なし）・それを gzip・Vite で圧縮（minify）してから gzip。使う側のビルドは圧縮するので、上限は最後の値で決める。
 //   ライブラリモードの ES の出力は、圧縮しても空白とコメントの一部が残る（Vite の仕様）。使う側の圧縮より少し大きめに出る。
 // - 依存（jszip・ssf）は含めない（使う側の依存）。
+// - 単独版（M6-3・dist の根の xsheet*.js／mjs）は、依存を中に持ち圧縮済みのファイルをそのまま gzip して、別の上限で見る。
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -11,6 +12,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
+import { LAZY_PARTS } from './standalone/parts.mjs';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -22,6 +24,16 @@ const LIMITS = {
   'core/index': 31_000,
   'render/index': 52_000,
   'geom/index': 36_000,
+};
+
+/**
+ * 単独版の上限（gzip・依存を含む）。M6-3 の実測（docs/02_architecture.md §8）に 1 割ほどの余裕を足した値。
+ * xsheet.min.js は遅れて読む部品を中に持つ。xsheet.mjs は最初に読む分だけ（部品は別に測る）。
+ */
+const STANDALONE_LIMITS = {
+  'xsheet.min.js': 122_000,
+  'xsheet.mjs': 89_000,
+  'xsheet-geom.mjs': 34_000,
 };
 
 /**
@@ -108,6 +120,25 @@ try {
   for (const r of rows) {
     console.log(
       `| ${r.entry} | ${r.files} | ${fmt(r.raw)} | ${fmt(r.gzip)} | ${fmt(r.minGzip)}${r.over ? ' ✗' : ''} | ${fmt(r.limit)} |`,
+    );
+  }
+  // 単独版
+  const standalone = Object.keys(STANDALONE_LIMITS);
+  const missing = [
+    `xsheet.min.js`,
+    `xsheet.mjs`,
+    ...LAZY_PARTS.map((p) => `xsheet-${p.name}.mjs`),
+  ].filter((f) => !standalone.includes(f));
+  if (missing.length > 0) throw new Error(`単独版の上限が無い：${missing.join(', ')}`);
+  console.log('');
+  console.log('| 単独版 | 圧縮済み | gzip | 上限 |');
+  console.log('| --- | ---: | ---: | ---: |');
+  for (const f of standalone) {
+    const { raw, gzip } = measure(dist, [f]);
+    const over = gzip > STANDALONE_LIMITS[f];
+    failed ||= over;
+    console.log(
+      `| ${f} | ${fmt(raw)} | ${fmt(gzip)}${over ? ' ✗' : ''} | ${fmt(STANDALONE_LIMITS[f])} |`,
     );
   }
 } finally {

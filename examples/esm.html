@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      XSheet の単独版（xsheet.mjs）をバンドラ無しで import する例（M6-4・ADR-0003 §5）。
+      - モジュールのスクリプトは file:// では読めない（ブラウザの決まり）。http で配る：このリポジトリでは
+        `npm run build` の後に `npm run examples:static` で http://localhost:5174/examples/esm.html を開く。
+      - 形の表（xsheet-geom.mjs）は、図形のあるシートを開いたときだけ xsheet.mjs と同じフォルダから読まれる。
+      CSP は examples/standalone.html と同じ考え方（通信は許さない）。
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' 'nonce-xsheet-esm'; style-src 'nonce-xsheet-esm'; img-src blob:; base-uri 'none'; form-action 'none'"
+    />
+    <title>XSheet（ESM）</title>
+    <style nonce="xsheet-esm">
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        font-family: system-ui, sans-serif;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        padding: 8px 12px;
+      }
+      #viewer {
+        flex: 1 1 0;
+        min-height: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>XSheet（ESM）</strong>
+      <input id="file" type="file" accept=".xlsx" />
+      <output id="status" aria-live="polite"></output>
+    </header>
+    <div id="viewer"></div>
+    <script type="module" nonce="xsheet-esm">
+      import { view } from '../dist/xsheet.mjs';
+
+      // 同じ要素に view を呼び直すと、XSheet が前の表示を外す（読み込み中の前の呼び出しは捨てられる）
+      const status = document.getElementById('status');
+      let seq = 0;
+      document.getElementById('file').addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const mine = ++seq;
+        try {
+          const viewer = await view('#viewer', file, { theme: 'auto', nonce: 'xsheet-esm' });
+          if (mine === seq) status.value = viewer.sheets.map((s) => s.name).join(' / ');
+        } catch (err) {
+          if (mine === seq) status.value = err instanceof Error ? err.message : String(err);
+        }
+      });
+    </script>
+  </body>
+</html>

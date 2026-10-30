@@ -7,8 +7,8 @@ import { DEFAULTS, declaredValues, rule } from './style-css.helpers';
  */
 
 describe('TD-98-12 罫線の層の CSS：変数・重ね順・色', () => {
-  it('墨色の変数 --xs-border-ink は既定値のブロックの 1 か所だけにあり、明るい表示は黒', () => {
-    expect(declaredValues('--xs-border-ink')).toEqual(['#000000']);
+  it('墨色の変数 --xs-border-ink は明るい既定値が黒で、ほかはダーク（dark・auto）の明るい灰色だけ', () => {
+    expect(declaredValues('--xs-border-ink')).toEqual(['#000000', '#d4d4d4', '#d4d4d4']);
     expect(rule(DEFAULTS)).toContain('--xs-border-ink: #000000');
   });
 

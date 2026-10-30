@@ -13,6 +13,8 @@ const PERF = 'tests/**/*.perf.test.ts';
 export default defineConfig({
   test: {
     watch: false,
+    // 入口の層（facade/style.ts）が `style.css?inline` で CSS の文面を読む。既定では vitest が CSS を空にするため、style.css だけは中身を返す（M6-2）
+    css: { include: [/src[\\/]style\.css/] },
     projects: [
       {
         extends: true,
@@ -27,7 +29,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'render',
-          include: ['tests/render/**/*.test.ts'],
+          include: ['tests/render/**/*.test.ts', 'tests/facade/**/*.test.ts'],
           exclude: [PERF],
           environment: 'node',
           // 形の表（geom）は render から動的 import するため、部品のテストの前に読み込んでおく（M2-3）

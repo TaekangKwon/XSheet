@@ -20,8 +20,8 @@ describe('TD-100-19 is-over-fill の規則', () => {
     expect(over).toBeGreaterThan(normal);
   });
 
-  it('書式のために変数を増やさない（--xs-cell-bg の定義は既定値のブロックの 1 か所だけ）', () => {
-    expect(declaredValues('--xs-cell-bg')).toHaveLength(1);
+  it('書式のために変数を増やさない（--xs-cell-bg の定義は既定値のブロックと、ダークのテーマ（dark・auto）だけ）', () => {
+    expect(declaredValues('--xs-cell-bg')).toEqual(['#f5f6f8', '#0f1115', '#0f1115']);
     expect(rule(DEFAULTS)).toContain('--xs-cell-bg:');
     expect(css).not.toMatch(/--xs-(fill|fmt|format)/);
   });

@@ -117,3 +117,42 @@ describe('examples/main.ts', () => {
     }
   });
 });
+
+describe('examples/standalone.html・esm.html（M6-4・単独版）', () => {
+  const pages = {
+    standalone: read('examples/standalone.html'),
+    esm: read('examples/esm.html'),
+  };
+
+  it.each(Object.entries(pages))(
+    '%s：CSP は通信・外の出所・eval・unsafe-inline を許さず、画像は blob: だけ',
+    (_, html) => {
+      const csp = /http-equiv="Content-Security-Policy"\s+content="([^"]+)"/.exec(html)?.[1] ?? '';
+      expect(csp).toContain("default-src 'none'");
+      expect(csp).toContain('img-src blob:');
+      expect(csp).not.toMatch(/connect-src|unsafe-|https?:|\*/);
+    },
+  );
+
+  it.each(Object.entries(pages))(
+    '%s：インラインの script・style は CSP の nonce を持ち、同じ nonce を view に渡す',
+    (_, html) => {
+      const nonce = /'nonce-([\w-]+)'/.exec(html)?.[1];
+      expect(nonce).toBeDefined();
+      // 説明のコメントの中の <style> などは数えない
+      const code = html.replace(/<!--[\s\S]*?-->/g, '');
+      const inline = [...code.matchAll(/<(script|style)\b([^>]*)>([\s\S]*?)<\/\1>/g)].filter(
+        ([, , attrs, body]) => !attrs!.includes('src=') && body!.trim() !== '',
+      );
+      expect(inline.length).toBeGreaterThan(0);
+      for (const [, , attrs] of inline) expect(attrs).toContain(`nonce="${nonce}"`);
+      expect(html).toContain(`nonce: '${nonce}'`);
+    },
+  );
+
+  it('standalone は ../dist/xsheet.min.js を 1 つだけ読み（zip を作る道具がこの場所を直す）、esm は ../dist/xsheet.mjs を import する', () => {
+    expect(pages.standalone.split('<script src="../dist/xsheet.min.js"></script>')).toHaveLength(2);
+    expect(pages.standalone).toContain('XSheet.view(');
+    expect(pages.esm).toContain("import { view } from '../dist/xsheet.mjs';");
+  });
+});

@@ -1,0 +1,345 @@
+{
+  "$comment": [
+    "InterHub から XSheet への取り込みの対応表（M6-1・ADR-0003 §4-2）。今の対応はこのファイルを正とする（docs/03_source-map.md の表は写した時点の記録）。",
+    "パスは InterHub の root（src_V1/）からの相対。* は / を含まない 1 区切り、** は / を含む任意の並び（to の * は from で拾った順に入る）。",
+    "行き先の引き方：files（写した実績の組）→ manual（手で直すもの）→ exclude（写さないもの）→ patterns（まだ写していないファイルの行き先の提案。上から順に最初に合ったもの）。どれにも合わなければ「対応なし」。",
+    "transforms は機械的にかけてよい置き換えだけ（行き先のパスが scope に合うファイルの差分の行にかける）。機械的にかけられない直し（t() → messages など）は manualTransforms に書くだけで、かけない。",
+    "取り込んだら interhub.baseCommit を取り込んだ InterHub のコミットへ進め、docs/.history/progress.md に記録する。"
+  ],
+  "interhub": {
+    "baseCommit": "943e4f0",
+    "defaultDir": "C:/GitHub/InterHub",
+    "envVar": "INTERHUB_DIR",
+    "root": "src_V1/"
+  },
+  "watch": [
+    "src/lib/xlsx",
+    "src/lib/viewers",
+    "src/styles/global.css",
+    "src/locales/ja.ts",
+    "src/locales/en.ts",
+    "tools/geom"
+  ],
+  "files": {
+    "src/lib/xlsx/borders.ts": "src/core/borders.ts",
+    "src/lib/xlsx/cell-color.ts": "src/core/cell-color.ts",
+    "src/lib/xlsx/cell-format.ts": "src/core/cell-format.ts",
+    "src/lib/xlsx/color.ts": "src/core/color.ts",
+    "src/lib/xlsx/drawing-color.ts": "src/core/drawing-color.ts",
+    "src/lib/xlsx/drawing-geom.ts": "src/core/drawing-geom.ts",
+    "src/lib/xlsx/drawing-group.ts": "src/core/drawing-group.ts",
+    "src/lib/xlsx/drawing-shape.ts": "src/core/drawing-shape.ts",
+    "src/lib/xlsx/drawing-text.ts": "src/core/drawing-text.ts",
+    "src/lib/xlsx/drawing.ts": "src/core/drawing.ts",
+    "src/lib/xlsx/font-metrics.ts": "src/core/font-metrics.ts",
+    "src/lib/xlsx/format.ts": "src/core/format.ts",
+    "src/lib/xlsx/geometry.ts": "src/core/geometry.ts",
+    "src/lib/xlsx/image.ts": "src/core/image.ts",
+    "src/lib/xlsx/index.ts": "src/core/index.ts",
+    "src/lib/xlsx/limits.ts": "src/core/limits.ts",
+    "src/lib/xlsx/open.ts": "src/core/open.ts",
+    "src/lib/xlsx/shared-strings.ts": "src/core/shared-strings.ts",
+    "src/lib/xlsx/sheet.ts": "src/core/sheet.ts",
+    "src/lib/xlsx/styles.ts": "src/core/styles.ts",
+    "src/lib/xlsx/theme.ts": "src/core/theme.ts",
+    "src/lib/xlsx/types.ts": "src/core/types.ts",
+    "src/lib/xlsx/workbook.ts": "src/core/workbook.ts",
+    "src/lib/xlsx/xml.ts": "src/core/xml.ts",
+    "src/lib/xlsx/make-xlsx.ts": "src/testing/make-xlsx.ts",
+    "src/lib/xlsx/make-image.ts": "src/testing/make-image.ts",
+
+    "src/lib/xlsx/borders.test.ts": "tests/core/borders.test.ts",
+    "src/lib/xlsx/cell-color.test.ts": "tests/core/cell-color.test.ts",
+    "src/lib/xlsx/cell-format.test.ts": "tests/core/cell-format.test.ts",
+    "src/lib/xlsx/cells.test.ts": "tests/core/cells.test.ts",
+    "src/lib/xlsx/color.test.ts": "tests/core/color.test.ts",
+    "src/lib/xlsx/drawing-color.test.ts": "tests/core/drawing-color.test.ts",
+    "src/lib/xlsx/drawing-geom.test.ts": "tests/core/drawing-geom.test.ts",
+    "src/lib/xlsx/drawing-group.test.ts": "tests/core/drawing-group.test.ts",
+    "src/lib/xlsx/drawing-limits.test.ts": "tests/core/drawing-limits.test.ts",
+    "src/lib/xlsx/drawing-line.test.ts": "tests/core/drawing-line.test.ts",
+    "src/lib/xlsx/drawing-text.test.ts": "tests/core/drawing-text.test.ts",
+    "src/lib/xlsx/drawing.test.ts": "tests/core/drawing.test.ts",
+    "src/lib/xlsx/geom-compare.test.ts": "tests/core/geom-compare.test.ts",
+    "src/lib/xlsx/geometry.test.ts": "tests/core/geometry.test.ts",
+    "src/lib/xlsx/image-read.test.ts": "tests/core/image-read.test.ts",
+    "src/lib/xlsx/image.test.ts": "tests/core/image.test.ts",
+    "src/lib/xlsx/layout.test.ts": "tests/core/layout.test.ts",
+    "src/lib/xlsx/linear-time.test.ts": "tests/core/linear-time.perf.test.ts",
+    "src/lib/xlsx/open.test.ts": "tests/core/open.test.ts",
+    "src/lib/xlsx/ref-colors.test.ts": "tests/core/ref-colors.test.ts",
+    "src/lib/xlsx/ref-drawings.test.ts": "tests/core/ref-drawings.test.ts",
+    "src/lib/xlsx/ref-excel.test.ts": "tests/core/ref-excel.test.ts",
+    "src/lib/xlsx/ref-geoms.adjust.test.ts": "tests/core/ref-geoms.adjust.test.ts",
+    "src/lib/xlsx/ref-geoms.compare.test.ts": "tests/core/ref-geoms.compare.test.ts",
+    "src/lib/xlsx/ref-geoms.test.ts": "tests/core/ref-geoms.test.ts",
+    "src/lib/xlsx/ref-shapes.test.ts": "tests/core/ref-shapes.test.ts",
+    "src/lib/xlsx/rows.test.ts": "tests/core/rows.test.ts",
+    "src/lib/xlsx/safety.test.ts": "tests/core/safety.test.ts",
+    "src/lib/xlsx/sheet.borders.test.ts": "tests/core/sheet.borders.test.ts",
+    "src/lib/xlsx/sheet.formats.test.ts": "tests/core/sheet.formats.test.ts",
+    "src/lib/xlsx/theme.test.ts": "tests/core/theme.test.ts",
+    "src/lib/xlsx/workbook.test.ts": "tests/core/workbook.test.ts",
+
+    "src/lib/viewers/xlsx-geom.ts": "src/geom/evaluate.ts",
+    "src/lib/viewers/xlsx-preset-geom.json": "src/geom/preset-geom.json",
+    "src/lib/viewers/xlsx-geom.test.ts": "tests/geom/evaluate.test.ts",
+    "src/lib/viewers/xlsx-preset-geom.test.ts": "tests/geom/preset-geom.test.ts",
+    "tools/geom/.gitattributes": "tools/geom/.gitattributes",
+    "tools/geom/build-preset-geom.d.mts": "tools/geom/build-preset-geom.d.mts",
+    "tools/geom/build-preset-geom.mjs": "tools/geom/build-preset-geom.mjs",
+    "tools/geom/presetShapeDefinitions.xml": "tools/geom/presetShapeDefinitions.xml",
+
+    "src/lib/viewers/xlsx-border-layer.ts": "src/render/border-layer.ts",
+    "src/lib/viewers/xlsx-borders.ts": "src/render/borders.ts",
+    "src/lib/viewers/xlsx-drawings.ts": "src/render/drawings.ts",
+    "src/lib/viewers/xlsx-format-css.ts": "src/render/format-css.ts",
+    "src/lib/viewers/xlsx-grid.ts": "src/render/grid.ts",
+    "src/lib/viewers/xlsx-image-layer.ts": "src/render/image-layer.ts",
+    "src/lib/viewers/xlsx-image-store.ts": "src/render/image-store.ts",
+    "src/lib/viewers/xlsx-shapes.ts": "src/render/shapes.ts",
+
+    "src/lib/viewers/xlsx-backdrop-css.test.ts": "tests/render/backdrop-css.test.ts",
+    "src/lib/viewers/xlsx-border-layer.test.ts": "tests/render/border-layer.test.ts",
+    "src/lib/viewers/xlsx-borders-css.test.ts": "tests/render/borders-css.test.ts",
+    "src/lib/viewers/xlsx-borders.perf.test.ts": "tests/render/borders.perf.test.ts",
+    "src/lib/viewers/xlsx-borders.test.ts": "tests/render/borders.test.ts",
+    "src/lib/viewers/xlsx-drawings.test.ts": "tests/render/drawings.test.ts",
+    "src/lib/viewers/xlsx-format-css-static.test.ts": "tests/render/format-css-static.test.ts",
+    "src/lib/viewers/xlsx-format-css.test.ts": "tests/render/format-css.test.ts",
+    "src/lib/viewers/xlsx-format.perf.test.ts": "tests/render/format.perf.test.ts",
+    "src/lib/viewers/xlsx-grid.test.ts": "tests/render/grid.test.ts",
+    "src/lib/viewers/xlsx-group-ref.test.ts": "tests/render/group-ref.test.ts",
+    "src/lib/viewers/xlsx-group.test.ts": "tests/render/group.test.ts",
+    "src/lib/viewers/xlsx-image-layer.color.test.ts": "tests/render/image-layer.color.test.ts",
+    "src/lib/viewers/xlsx-image-layer.shape.test.ts": "tests/render/image-layer.shape.test.ts",
+    "src/lib/viewers/xlsx-image-layer.test.ts": "tests/render/image-layer.test.ts",
+    "src/lib/viewers/xlsx-image-store.test.ts": "tests/render/image-store.test.ts",
+    "src/lib/viewers/xlsx-shape-ref.test.ts": "tests/render/shape-ref.test.ts",
+    "src/lib/viewers/xlsx-shape-render.test.ts": "tests/render/shape-render.test.ts",
+    "src/lib/viewers/xlsx-shapes.backdrop.test.ts": "tests/render/shapes.backdrop.test.ts",
+    "src/lib/viewers/xlsx-shapes.test.ts": "tests/render/shapes.test.ts"
+  },
+  "manual": [
+    {
+      "path": "src/lib/viewers/spreadsheet.ts",
+      "dest": [
+        "src/render/grid-table.ts",
+        "src/render/sheet-view.ts",
+        "src/render/render-sheet.ts",
+        "src/render/sheet-tabs.ts",
+        "src/render/render-workbook.ts"
+      ],
+      "note": ".xlsx の部分だけを分けて写した（03 §3 M2-3・M2-4）。.xls の経路・fitTableBodyToWindow・バナーとツールバーは写さない"
+    },
+    {
+      "path": "src/lib/viewers/spreadsheet.*.render.test.ts",
+      "dest": ["tests/render/render-sheet.*.test.ts", "tests/render/render-workbook*.test.ts"],
+      "note": "renderSheet・renderWorkbook を呼ぶ形に書き直した（03 §3 M2-3）"
+    },
+    {
+      "path": "src/styles/global.css",
+      "dest": ["src/style.css"],
+      "note": ".ih-spreadsheet・.ih-xlsx-* の規則だけを xs- にして写した（03 §3 M3-1）。テーマのブロックは写さない"
+    },
+    {
+      "path": "src/locales/*.ts",
+      "dest": ["src/render/messages.ts"],
+      "note": "spreadsheet.*・data.noData のキーだけを MESSAGES_JA・MESSAGES_EN の既定値にした（03 §3）"
+    },
+    {
+      "path": "tools/geom/NOTICE",
+      "dest": ["NOTICE"],
+      "note": "冒頭の日本語の説明だけを直した。Ecma の著作権表示の本文は変えない（03 §2）"
+    }
+  ],
+  "exclude": [
+    {
+      "path": "src/lib/viewers/table-fit.ts",
+      "reason": "枠の高さは使う側の仕事（03 §4 の 5）"
+    },
+    {
+      "path": "src/lib/viewers/data.ts",
+      "reason": ".xlsx 以外の表示"
+    },
+    {
+      "path": "src/lib/viewers/docx.ts",
+      "reason": ".xlsx 以外の表示"
+    },
+    {
+      "path": "src/lib/viewers/markdown.ts",
+      "reason": ".xlsx 以外の表示"
+    },
+    {
+      "path": "src/lib/viewers/mermaid.ts",
+      "reason": ".xlsx 以外の表示"
+    },
+    {
+      "path": "src/lib/viewers/pdf.ts",
+      "reason": ".xlsx 以外の表示"
+    },
+    {
+      "path": "src/lib/viewers/source*.ts",
+      "reason": ".xlsx 以外の表示"
+    },
+    {
+      "path": "src/lib/viewers/unsupported*.ts",
+      "reason": ".xlsx 以外の表示"
+    },
+    {
+      "path": "src/locales/catalog.test.ts",
+      "reason": "InterHub の文言の表の試験"
+    }
+  ],
+  "patterns": [
+    {
+      "from": "src/lib/xlsx/__fixtures__/excel/*",
+      "to": "fixtures/excel/*",
+      "note": "照合の fixtures（05_quality.md §2）"
+    },
+    {
+      "from": "src/lib/xlsx/*.test.ts",
+      "to": "tests/core/*.test.ts"
+    },
+    {
+      "from": "src/lib/xlsx/make-*.ts",
+      "to": "src/testing/make-*.ts",
+      "note": "テストだけが使う合成の道具。公開しない"
+    },
+    {
+      "from": "src/lib/xlsx/*.ts",
+      "to": "src/core/*.ts"
+    },
+    {
+      "from": "src/lib/viewers/xlsx-*.test.ts",
+      "to": "tests/render/*.test.ts"
+    },
+    {
+      "from": "src/lib/viewers/xlsx-chart-fixtures.ts",
+      "to": "tests/render/chart-fixtures.ts",
+      "note": "テストだけが使う部品"
+    },
+    {
+      "from": "src/lib/viewers/xlsx-chart-ref-scene.ts",
+      "to": "tests/render/chart-ref-scene.ts",
+      "note": "テストだけが使う部品"
+    },
+    {
+      "from": "src/lib/viewers/xlsx-chart-ref2-checks.ts",
+      "to": "tests/render/chart-ref2-checks.ts",
+      "note": "テストだけが使う部品"
+    },
+    {
+      "from": "src/lib/viewers/xlsx-*.ts",
+      "to": "src/render/*.ts",
+      "note": "render の中はすべて xlsx の描画なので、ファイル名から xlsx- を外す（03 §3 M2-1）"
+    },
+    {
+      "from": "tools/geom/*",
+      "to": "tools/geom/*"
+    }
+  ],
+  "imports": {
+    "$comment": "相対の import（from・import()・vi.mock()・new URL()）は、元のファイルと指す先の両方を対応表で引いて、行き先どうしの相対パスに書き直す。書き直した後の指定に overrides を順にかける",
+    "overrides": [
+      {
+        "scope": ["src/render/**"],
+        "find": "^\\.\\./core/types$",
+        "replace": "../core/index",
+        "note": "render は core を ../core/index か ../core/internal からだけ引く（eslint.config.js）"
+      },
+      {
+        "scope": ["src/render/**"],
+        "find": "^\\.\\./core/(?!index$|internal$)[^/]+$",
+        "replace": "../core/internal",
+        "warn": "core/internal から出しているか確かめる（render は core の中の作りに直接つながない）"
+      }
+    ]
+  },
+  "transforms": [
+    {
+      "id": "prefix-data-attr",
+      "scope": ["src/**", "tests/**"],
+      "find": "data-ih-xlsx-fmt",
+      "replace": "data-xs-fmt"
+    },
+    {
+      "id": "prefix-css-var",
+      "scope": ["src/**", "tests/**"],
+      "find": "--ih-(?:xlsx-)?(?=[a-z])",
+      "replace": "--xs-"
+    },
+    {
+      "id": "prefix-xlsx-class",
+      "scope": ["src/**", "tests/**"],
+      "find": "(?<![\\w-])ih-xlsx-(?=[a-z])",
+      "replace": "xs-"
+    },
+    {
+      "id": "prefix-xf-class",
+      "scope": ["src/**", "tests/**"],
+      "find": "(?<![\\w-])ih-xf-",
+      "replace": "xs-xf-"
+    },
+    {
+      "id": "prefix-sheet-root",
+      "scope": ["src/**", "tests/**"],
+      "find": "(?<![\\w-])ih-spreadsheet(?![\\w-])",
+      "replace": "xs-sheet"
+    },
+    {
+      "id": "prefix-shared-parts",
+      "scope": ["src/**", "tests/**"],
+      "find": "(?<![\\w-])ih-(?:dv-(rownum|empty)|(sheet-(?:tabs|nav|strip)))(?![\\w-])",
+      "replace": "xs-$1$2"
+    },
+    {
+      "id": "source-comment",
+      "scope": ["src/**", "tests/**"],
+      "find": "^(\\s*(?://|\\*)\\s*正: )docs/",
+      "replace": "$1InterHub docs/"
+    }
+  ],
+  "leftovers": [
+    {
+      "scope": ["src/**", "tests/**"],
+      "find": "(?<![\\w-])ih-[a-z]",
+      "note": "InterHub の接頭辞が残った（ih-toggle・ih-toolbar・ih-data-* などは場所ごとに名前が違うので手で直す）"
+    },
+    {
+      "scope": ["src/**"],
+      "find": "\\bt\\(\\s*['\"]",
+      "note": "InterHub の文言関数 t() が残った（messages に替える）"
+    }
+  ],
+  "manualTransforms": [
+    {
+      "id": "messages",
+      "note": "文言：InterHub の t('spreadsheet.*') は RenderOptions.messages（src/render/messages.ts の MESSAGES_JA・MESSAGES_EN）に替える。キーを messages.ts に足す（03 §4 の 2）"
+    },
+    {
+      "id": "module-state",
+      "note": "モジュール変数の状態（renderGeneration・disposeXlsxView など）は表示のインスタンスへ（03 §4 の 4）"
+    },
+    {
+      "id": "shared-parts",
+      "note": "InterHub の共用の部品とクラス（ih-toggle・ih-toolbar・ih-data-view・ih-data-body・ih-data-banner・fitTableBodyToWindow）は、render に要るものだけ xs- で作り直してある（03 §3 M2-3・M2-4・§4 の 5）"
+    },
+    {
+      "id": "geom-layer",
+      "note": "geom：render は geom を型だけ静的に引き、形の表は shapes.ts の loadGeom で動的 import する（03 §3 M2-3）。core の drawing-geom.ts・limits.ts は ../geom/defs から引く（03 §1 M1-2）"
+    },
+    {
+      "id": "core-entry",
+      "note": "新しい公開の型・関数は src/core/index.ts から出すか決める（02_architecture.md §2）。render が使う中の関数は src/core/internal.ts から出す"
+    },
+    {
+      "id": "prettier",
+      "note": "InterHub のコードは Prettier で整っていない。新しく写したファイルは 1 ファイルずつ npx prettier --write <ファイル> で整える（リポジトリ全体への --write はしない）"
+    },
+    {
+      "id": "xsheet-marks",
+      "note": "XSheet 固有の直しは別のファイルに置くか、写したファイルの中では // XSheet: の印を付けて 1 か所にまとめる（ADR-0003 §4-1 の 3）"
+    }
+  ]
+}

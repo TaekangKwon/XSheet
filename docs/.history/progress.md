@@ -98,3 +98,14 @@
 - InterHub の 943e4f0 以降（グラフ・22 コミット）を読むだけで確認し、写しの規約と同期の道具（`tools/sync/interhub.json`・`sync:status`・`sync:patch`）を提案した。グラフは M6 の後に取り込む。
 - 04 に M6（誰でも使える配り方・v0.2.0）を足し、旧 M6（拡張）を M7 にした（01・02・05・docs/README の参照も）。
 - ユーザーが Q1〜Q4 を提案のとおりに決め、ADR-0003 を accepted（1.0）にした（社内向けから・`xsheet` の入口を全部に・`view` の既定の言語は auto・`MESSAGES_KO` を同梱）。
+
+## 2026-10-30 M6-1 同期の道具
+- `tools/sync/interhub.json`（対応表・規則・手作業・除くもの・変換・取り込み済み 943e4f0）と `tools/sync/sync.mjs`（`npm run sync:status`・`sync:patch`）。git は読むだけのサブコマンドに限り、InterHub に書かない・作業ツリーを読まない。
+- 実行の結果：943e4f0..b16f45d で対応表に触れたコミット 14 件・54 ファイル（対応表 8・規則 43・手作業 3・対応なし 0）。`git apply --check` は image-layer.ts・core/index.ts の 2 つだけ当たらない。
+- 03 §6 に写しの規約と使い方。`tests/sync.test.ts`（31 件・一時の git の写しで InterHub に触れないことを確かめる）。
+
+## 2026-10-30 M6-2〜M6-5 誰でも使える配り方（v0.2.0）
+- 入口の層 `src/facade/`：`view`・`read`・`Viewer`、`lang`（auto）・`theme`（ダークの値を style.css の `data-xs-theme` へ）・`css` の自動挿入・`height` の既定・同じ container の差し替え。`MESSAGES_KO`。入口 `xsheet` を全部に、`xsheet/core` を足した。
+- 単独版 `tools/standalone/build.mjs`：`xsheet.min.js`（gzip 110,818）・`xsheet.mjs`（80,520）＋`xsheet-geom.mjs`（30,588）・`xsheet.css`・`xsheet.d.ts`・`xsheet.d.mts`・`xsheet.licenses.txt`。jszip は lib から束ね、setimmediate を `new Function` の無い版に替えた。`npm run check:standalone`・上限を size に。
+- README の「3 行で始める」・`docs/guide/`（6 本）・02 の更新、`examples/standalone.html`・`esm.html`（http で目視 OK。file:// はプレビューで確かめられず未確認）。
+- `npm run release:zip`（release/xsheet-0.2.0-standalone.zip）・CHANGELOG 0.2.0（日付は未定）・版を 0.2.0 に。独立のレビューの指摘 7 件を直した。テスト 1,722 件・typecheck・lint・format・build・size・check:consumer・check:standalone が通る。

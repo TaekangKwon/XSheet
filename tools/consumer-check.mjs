@@ -27,6 +27,8 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const keep = process.argv.includes('--keep');
 
 for (const f of [
+  'dist/index.js',
+  'dist/index.d.ts',
   'dist/core/index.js',
   'dist/core/index.d.ts',
   'dist/render/index.js',
@@ -118,11 +120,13 @@ write(
   'index.html',
   '<!doctype html><html><head><meta charset="utf-8"><script type="module" src="/src/main.ts"></script></head><body><div id="app"></div></body></html>\n',
 );
-// ふつうの使い方（core・render・style.css）。ビルドの入口
+// ふつうの使い方（入口の xsheet・core・render・style.css）。ビルドの入口。view は M6-2
 write(
   'src/main.ts',
   `import { DEFAULT_LIMITS, XlsxError, colName, openXlsx, type XlsxBook, type XlsxLimits } from 'xsheet';
 import { MESSAGES_EN, renderSheet, renderWorkbook, type WorkbookView, type XSheetMessages } from 'xsheet/render';
+import { MESSAGES_KO, read, view, type Viewer, type ViewOptions } from 'xsheet';
+import { openXlsx as openCore } from 'xsheet/core';
 import 'xsheet/style.css';
 
 const limits: XlsxLimits = { ...DEFAULT_LIMITS };
@@ -149,6 +153,12 @@ document.querySelector('input')?.addEventListener('change', async (e) => {
   const data = await file.arrayBuffer();
   await first(app, data);
   (await show(app, data)).destroy();
+  const options: ViewOptions = { lang: 'auto', theme: 'auto', messages: { noData: MESSAGES_KO.noData } };
+  const viewer: Viewer = await view('#app', file, options);
+  await viewer.showSheet(viewer.sheets[0]?.name ?? 1);
+  viewer.destroy();
+  (await read(file)).close();
+  (await openCore(data)).close();
   console.log(colName(1));
 });
 `,

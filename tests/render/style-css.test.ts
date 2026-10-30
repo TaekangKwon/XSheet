@@ -45,9 +45,8 @@ describe('style.css と render の DOM', () => {
     expect(defined.filter((v) => !used.has(v))).toEqual([]);
   });
 
-  it('既定値のブロックは 1 つだけで、詳細度 0（:where）。ダークの値・テーマの属性を持たない', () => {
+  it('既定値のブロックは 1 つだけで、詳細度 0（:where）。:root に値を書かない', () => {
     expect(css.split(`\n${DEFAULTS} {`)).toHaveLength(2);
-    expect(css).not.toMatch(/prefers-color-scheme|data-theme/);
     expect(cssBody).not.toMatch(/(^|\n):root\s*\{/);
   });
 
@@ -98,6 +97,47 @@ describe('スクロール枠と固定の見出し', () => {
     expect(tabs).toContain('overflow-x: auto');
     expect(tabs).toContain('min-width: 0');
     expect(rule('.xs-sheet-tab')).toContain('flex-shrink: 0');
+  });
+});
+
+describe('ダーク表示（M6-2・ADR-0003 §2）', () => {
+  /** テーマの属性のブロックの変数（名前 → 値）。auto は prefers-color-scheme: dark の中 */
+  function themeVars(theme: 'dark' | 'auto'): Record<string, string> {
+    const m = new RegExp(`\\[data-xs-theme='${theme}'\\] \\{([^}]*)\\}`).exec(cssBody);
+    expect(m, theme).not.toBeNull();
+    return Object.fromEntries(
+      [...m![1]!.matchAll(/(--xs-[a-z-]+):\s*([^;]+);/g)].map((v) => [v[1]!, v[2]!.trim()]),
+    );
+  }
+
+  it('dark と auto（prefers-color-scheme: dark の中）は、既定値のブロックの変数すべてに同じ値を持つ', () => {
+    const dark = themeVars('dark');
+    expect(Object.keys(dark).sort()).toEqual([...defined].sort());
+    expect(themeVars('auto')).toEqual(dark);
+    expect(cssBody).toMatch(/@media \(prefers-color-scheme: dark\) \{\s*\[data-xs-theme='auto'\]/);
+    expect(rule("[data-xs-theme='dark']")).toContain('color-scheme: dark');
+  });
+
+  it('dark の値は docs/02_architecture.md §6 の「ダークの例」の列と同じ', () => {
+    const doc = readFileSync(join(process.cwd(), 'docs/02_architecture.md'), 'utf8').replace(
+      /\r\n/g,
+      '\n',
+    );
+    const section = doc.slice(doc.indexOf('\n## 6.'), doc.indexOf('\n## 7.'));
+    const dark = themeVars('dark');
+    const rows = section.split('\n').filter((line) => line.startsWith('| `--xs-'));
+    expect(rows.length).toBeGreaterThan(0);
+    for (const line of rows) {
+      const cells = line.split('|').map((c) => c.trim());
+      const names = [...cells[1]!.matchAll(/`(--xs-[a-z-]+)`/g)].map((v) => v[1]!);
+      const values = [...cells[4]!.matchAll(/`([^`]+)`/g)].map((v) => v[1]!);
+      expect(values, cells[1]).toHaveLength(names.length);
+      names.forEach((name, i) => expect(dark[name], name).toBe(values[i]));
+    }
+  });
+
+  it('view の表示の根（.xs-viewer）は container の高さいっぱい', () => {
+    expect(rule('.xs-viewer')).toContain('height: 100%');
   });
 });
 

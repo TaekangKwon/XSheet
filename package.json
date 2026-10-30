@@ -1,6 +1,6 @@
 {
   "name": "xsheet",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "license": "UNLICENSED",
   "description": ".xlsx を Excel どおりに表示する JavaScript ライブラリ（読み取り専用）",
@@ -10,6 +10,10 @@
   ],
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./core": {
       "types": "./dist/core/index.d.ts",
       "import": "./dist/core/index.js"
     },
@@ -39,12 +43,17 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.core.json",
     "lint": "eslint .",
     "format:check": "prettier --check .",
-    "build": "vite build && tsc -p tsconfig.build.json",
+    "build": "vite build && tsc -p tsconfig.build.json && node tools/standalone/build.mjs",
     "check:consumer": "node tools/consumer-check.mjs",
+    "check:standalone": "node tools/standalone/check.mjs",
     "size": "node tools/size.mjs",
+    "release:zip": "node tools/release-zip.mjs",
+    "sync:status": "node tools/sync/sync.mjs status",
+    "sync:patch": "node tools/sync/sync.mjs patch",
     "geom:build": "node tools/geom/build-preset-geom.mjs",
     "geom:compare": "node fixtures/excel/compare-ref-geoms.mjs",
-    "examples": "vite --config examples/vite.config.ts"
+    "examples": "vite --config examples/vite.config.ts",
+    "examples:static": "vite preview --outDir . --host localhost --port 5174 --strictPort"
   },
   "dependencies": {
     "jszip": "3.10.2",

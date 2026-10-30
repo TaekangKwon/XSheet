@@ -80,6 +80,32 @@ export default tseslint.config(
     },
   },
   {
+    // 入口の層（M6-2・ADR-0003 §2）は core・render の公開の入口の上に作る（写したファイルの中の作りに直接つながない）。
+    // 文言の重ね方（resolveMessages）だけは render の messages から引く
+    files: ['src/facade/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../core/*', '!../core/index'],
+              message: '入口の層は core を ../core/index から引く',
+            },
+            {
+              group: ['../render/*', '!../render/index', '!../render/messages'],
+              message: '入口の層は render を ../render/index（と ../render/messages）から引く',
+            },
+            {
+              group: ['../geom', '../geom/*'],
+              message: '入口の層は geom を引かない（形の表は render が遅れて読む）',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',

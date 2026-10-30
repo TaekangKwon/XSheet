@@ -5,6 +5,8 @@ coverage/
 *.log
 # dist/ は非公開の間タグに含めて配る（D5・M4）。それまでは作業中の生成物として除外する
 dist/
+# 単独版の zip（npm run release:zip。GitHub Release に添付する）
+release/
 
 # Claude Code の個人設定・セッション引き継ぎ（progress.md はコミットする）
 CLAUDE.local.md

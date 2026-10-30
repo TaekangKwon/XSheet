@@ -160,7 +160,7 @@ viewer.destroy();
 
 | 段階 | 配り方 | 条件 |
 | --- | --- | --- |
-| 今（非公開） | タグに `dist/` を含める（ADR-0002）＋GitHub Release に単独版の zip（`xsheet.min.js`・`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet.css`・`xsheet.d.ts`・`viewer.html`・`NOTICE`）を添付 | リポジトリの権限がある人 |
+| 今（非公開） | タグに `dist/` を含める（ADR-0002）＋GitHub Release に単独版の zip（`xsheet.min.js`・`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet.css`・`xsheet.d.ts`・`xsheet.d.mts`・`xsheet.licenses.txt`・`viewer.html`・`NOTICE`。M6-3 で `xsheet.d.mts`（`xsheet.mjs` の型）と、束ねた依存のライセンスの全文 `xsheet.licenses.txt` を足した）を添付 | リポジトリの権限がある人 |
 | 公開後 | npm に公開（`provenance` 付き）。jsDelivr・unpkg からも自動で読める | D3（ライセンス）を決め、リポジトリを公開する |
 
 ## 決めたこと（2026-10-30 ユーザー。提案のとおり）

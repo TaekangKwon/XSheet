@@ -5,7 +5,7 @@
 | 種別 | 新しいプロジェクトの立ち上げ資料（このフォルダ一式を新リポジトリの `docs/` へ写して使う） |
 | 元の実装 | InterHub（`C:\GitHub\InterHub`）main `943e4f0` の `.xlsx` ビューア。xrag-Viewer の自前リーダー（ADR-0005）が起点 |
 | 最初の利用者 | xrag-Viewer・InterHub |
-| 更新日 | 2026-10-28 |
+| 更新日 | 2026-10-30 |
 | 担当 | kwon |
 
 ## TL;DR
@@ -25,6 +25,7 @@
 | 4 | [03_source-map.md](03_source-map.md) | InterHub のどのファイルをどこへ写し、何を直すか | 実装する人 |
 | 5 | [04_roadmap.md](04_roadmap.md) | マイルストーン M0〜M7 と Issue の切り方・完了条件 | 計画する人 |
 | 6 | [05_quality.md](05_quality.md) | テスト・Excel との照合・性能・既知の制限 | 実装・確認する人 |
+| — | [guide/](guide/README.md) | 使い方の手引き：単独版・React と Vue・Worker・CSP・テーマ（M6） | 使う人 |
 | — | [../CLAUDE.md](../CLAUDE.md) | Claude Code 向けのプロジェクト指示書（立ち上げ資料の雛形から作った） | 全員 |
 | — | [adr/](adr/) | 設計の判断の記録（ADR-0001＝ライブラリ化の決定と D1〜D8・0002＝ビルドと配り方・0003＝誰でも使える配り方と InterHub の取り込み） | 全員 |
 
