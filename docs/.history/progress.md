@@ -109,3 +109,8 @@
 - 単独版 `tools/standalone/build.mjs`：`xsheet.min.js`（gzip 110,818）・`xsheet.mjs`（80,520）＋`xsheet-geom.mjs`（30,588）・`xsheet.css`・`xsheet.d.ts`・`xsheet.d.mts`・`xsheet.licenses.txt`。jszip は lib から束ね、setimmediate を `new Function` の無い版に替えた。`npm run check:standalone`・上限を size に。
 - README の「3 行で始める」・`docs/guide/`（6 本）・02 の更新、`examples/standalone.html`・`esm.html`（http で目視 OK。file:// はプレビューで確かめられず未確認）。
 - `npm run release:zip`（release/xsheet-0.2.0-standalone.zip）・CHANGELOG 0.2.0（日付は未定）・版を 0.2.0 に。独立のレビューの指摘 7 件を直した。テスト 1,722 件・typecheck・lint・format・build・size・check:consumer・check:standalone が通る。
+
+## 2026-10-30 タグ v0.2.0・GitHub Release
+- PR #7 をマージ（main b9ae956）。main で test 1,722 件・typecheck・lint・format:check・build・check:consumer・check:standalone・size が通ることを確かめた。
+- CHANGELOG に日付（8752d96）。release/v0.2.0 に `git add -f dist` だけのコミット（5e12803）を作り、注釈付きのタグ v0.2.0 を打って push（タグだけ）。git archive でタグの中に exports の先・NOTICE・単独版があることを確かめた。
+- GitHub Release「XSheet 0.2.0」に xsheet-0.2.0-standalone.zip（275,196 B）を添付。zip の viewer.html を file:// で開く目視はユーザーに任せた。

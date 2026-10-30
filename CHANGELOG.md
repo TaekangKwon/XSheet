@@ -2,7 +2,7 @@
 
 この形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に倣う。版は [Semantic Versioning](https://semver.org/lang/ja/) に従う（1.0.0 までは小さい版の上げでも互換を崩すことがある）。
 
-## [0.2.0] - 未定
+## [0.2.0] - 2026-10-30
 
 誰でも軽く使える配り方にした（ADR-0003・M6）。`<script>` 1 つ・`import` 1 つ・1 行で表示できる。0.1.0 の公開物はすべて残る。
 
