@@ -73,8 +73,8 @@ flowchart LR
 
 | Issue | 内容 | 完了の条件 |
 | --- | --- | --- |
-| M5a | xrag-Viewer：依存に追加し、`src/viewers/xlsx.ts` の表の部分を `renderSheet` に置き換える。`src/lib/xlsx/` と `tests/lib/xlsx/` を消す。`source.css` で変数を対応づける（手順は InterHub `docs/guides/xlsx-library-plan.md` の L5・L6） | xrag のテスト・e2e（`network-csp`・`perf`）が通る。実機の目視 OK |
-| M5b | InterHub：`spreadsheet.ts` の .xlsx 部分と `lib/xlsx/`・`viewers/xlsx-*` をライブラリへ置き換える。`.xls`（SheetJS）・タブ・バナーは InterHub に残す | InterHub のテスト・ビルドが通る。実機の回帰 TV-36〜TV-44 が OK |
+| M5a | xrag-Viewer：依存に追加し、自前の .xlsx の表示を `renderSheet` に置き換える（細かい手順は xrag-Viewer 側で決める） | xrag-Viewer のテスト・e2e が通る。実機の目視 OK |
+| M5b | InterHub：.xlsx の読み取りと表示をライブラリへ置き換える。`.xls`（SheetJS）・タブ・バナーは InterHub に残す | InterHub のテスト・ビルドが通る。実機の回帰 TV-36〜TV-44 が OK |
 
 ## M6 誰でも使える配り方（v0.2.0）
 

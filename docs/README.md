@@ -3,7 +3,7 @@
 | 項目 | 値 |
 | --- | --- |
 | 種別 | 新しいプロジェクトの立ち上げ資料（このフォルダ一式を新リポジトリの `docs/` へ写して使う） |
-| 元の実装 | InterHub（`C:\GitHub\InterHub`）main `943e4f0` の `.xlsx` ビューア。xrag-Viewer の自前リーダー（ADR-0005）が起点 |
+| 元の実装 | InterHub（作者の非公開リポジトリ）main `943e4f0` の `.xlsx` ビューア。xrag-Viewer の自前リーダー（ADR-0005）が起点 |
 | 最初の利用者 | xrag-Viewer・InterHub |
 | 更新日 | 2026-10-30 |
 | 担当 | kwon |
@@ -27,7 +27,7 @@
 | 6 | [05_quality.md](05_quality.md) | テスト・Excel との照合・性能・既知の制限 | 実装・確認する人 |
 | — | [guide/](guide/README.md) | 使い方の手引き：単独版・React と Vue・Worker・CSP・テーマ（M6） | 使う人 |
 | — | [../CLAUDE.md](../CLAUDE.md) | Claude Code 向けのプロジェクト指示書（立ち上げ資料の雛形から作った） | 全員 |
-| — | [adr/](adr/) | 設計の判断の記録（ADR-0001＝ライブラリ化の決定と D1〜D8・0002＝ビルドと配り方・0003＝誰でも使える配り方と InterHub の取り込み） | 全員 |
+| — | [adr/](adr/) | 設計の判断の記録（ADR-0001＝ライブラリ化の決定と D1〜D8・0002＝ビルドと配り方・0003＝誰でも使える配り方と InterHub の取り込み・0004＝公開） | 全員 |
 
 ## 2. 先に決めること
 
@@ -36,10 +36,10 @@ M0 で決める項目は [ADR-0001](adr/0001-library-decision.md)、D5・D7 は 
 | # | 決めること | 推奨 | 決める時期 |
 | --- | --- | --- | --- |
 | D1 | 名前 | **決定**：`XSheet`（npm のパッケージ名は `xsheet`。2026-10-28 に npm で未使用を確認） | M0 |
-| D2 | リポジトリ | **決定**：`C:\GitHub\XSheet`、GitHub `TaekangKwon/XSheet`（非公開） | M0 |
-| D3 | ライセンス | 非公開の間は書かない。公開するなら MIT か Apache-2.0。いずれでも preset 定義の Ecma の著作権表示（`NOTICE`）を同梱。依存の jszip は MIT/GPLv3 の二重ライセンス（MIT を選ぶ）、ssf は Apache-2.0 | M0（公開は M4 以降） |
+| D2 | リポジトリ | **決定**：GitHub `TaekangKwon/XSheet`。公開は [ADR-0004](adr/0004-public-release.md) | M0 |
+| D3 | ライセンス | **決定**（[ADR-0004](adr/0004-public-release.md)）：MIT。preset 定義の Ecma の著作権表示（`NOTICE`）を同梱。依存の jszip は MIT/GPLv3 の二重ライセンス（MIT を選ぶ）、ssf は Apache-2.0 | M0（公開は M4 以降） |
 | D4 | パッケージの形 | npm パッケージ 1 つ＋サブパス（`xsheet`・`xsheet/render`・`xsheet/style.css`）。monorepo にはしない | M0 |
-| D5 | 配布 | **決定**（[ADR-0002](adr/0002-build-and-distribution.md)）：非公開の間は GitHub のタグに `dist/` を含めて git 依存で配る（使う側が `--ignore-scripts` でも動く）。npm 公開は D3 の後 | M4 |
+| D5 | 配布 | **決定**（[ADR-0002](adr/0002-build-and-distribution.md)）：GitHub のタグに `dist/` を含めて git 依存で配る（使う側が `--ignore-scripts` でも動く）。公開後も続け、npm は別に決める（[ADR-0004](adr/0004-public-release.md)） | M4 |
 | D6 | クラス名・CSS 変数の接頭辞 | `xs-`・`--xs-*`（XSheet に合わせる。旧仮称 xlsx-view 由来の `xv-` はやめた。2026-10-28 にユーザーが決定） | M2 |
 | D7 | 既定の文言 | **決定**（[ADR-0002](adr/0002-build-and-distribution.md)）：日本語と英語を同梱し、使う側が差し替えられる | M3 |
 | D8 | 対応環境 | 核：ES2022 のブラウザ・Web Worker・Node 20 以上。描画：Chrome/Edge/Firefox/Safari の最新 2 版 | M0 |
@@ -51,13 +51,8 @@ M0 で決める項目は [ADR-0001](adr/0001-library-decision.md)、D5・D7 は 
 3. [04_roadmap.md](04_roadmap.md) の M0 の Issue から始める。1 指示＝1 Issue で進める。
 4. Claude のセッションへの最初の指示の例：
 
-   > docs/README.md と docs/04_roadmap.md を読み、M0 の最初の Issue を始めて。InterHub（C:\GitHub\InterHub、コミット 943e4f0）は読むだけで変更しない。
+   > docs/README.md と docs/04_roadmap.md を読み、M0 の最初の Issue を始めて。InterHub（コミット 943e4f0）は読むだけで変更しない。
 
 ## 4. 関連する資料（InterHub 側）
 
-| 資料 | 内容 |
-| --- | --- |
-| `docs/plan/adr/0025`〜`0030` | 読み取り・寸法・画像・図形・色・罫線・書式の設計判断（理由・却下案・暫定項目） |
-| `docs/work/issues/82`〜`100` | 実装の作業指示書と結果（実測値・照合の結果） |
-| `docs/guides/xlsx-features-for-xrag-viewer.md` | 追加機能 U1〜U7 と、xrag-Viewer との差 |
-| `docs/guides/xlsx-library-plan.md` | xrag-Viewer の中で workspace として始める案。本プロジェクトで作る場合、その L0〜L4 は本書の M0〜M4 に置き換わり、xrag 側は L5・L6 だけになる |
+元の設計資料（InterHub の ADR-0025〜0031・作業指示書 ISSUE-82〜111）は作者の非公開リポジトリにある。公開されていないので、写したファイルの対応と直した点は [03_source-map.md](03_source-map.md)、判断の要点は各 ADR に写してある。

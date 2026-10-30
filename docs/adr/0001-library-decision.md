@@ -26,8 +26,8 @@ accepted（2026-10-28 起票・名前はユーザーが決定）
 | # | 項目 | 決定 | 状態 |
 | --- | --- | --- | --- |
 | D1 | 名前 | `XSheet`。npm のパッケージ名は `xsheet`（2026-10-28 に npm で未使用を確認） | 決定 |
-| D2 | リポジトリ | `C:\GitHub\XSheet`・GitHub `TaekangKwon/XSheet`（非公開）・既定ブランチ `main` | 決定 |
-| D3 | ライセンス | 非公開の間は書かない（`package.json` は `private: true`・`license: UNLICENSED`）。公開を決めるときに MIT か Apache-2.0 を選ぶ。Ecma の著作権表示（`NOTICE`）は M1-1 で置き、配布物に必ず含める | 決定（公開時に再決定） |
+| D2 | リポジトリ | GitHub `TaekangKwon/XSheet`（立ち上げ時は非公開）・既定ブランチ `main`。公開は [0004](0004-public-release.md) | 決定 |
+| D3 | ライセンス | 非公開の間は書かない（`package.json` は `private: true`・`license: UNLICENSED`）。公開を決めるときに MIT か Apache-2.0 を選ぶ。Ecma の著作権表示（`NOTICE`）は M1-1 で置き、配布物に必ず含める | 決定（公開時に再決定 → [0004](0004-public-release.md) で MIT） |
 | D4 | パッケージの形 | npm パッケージ 1 つ＋サブパス（`xsheet`・`xsheet/render`・`xsheet/style.css`、render が動的 import する `xsheet/geom`、半公開の `xsheet/internal`（M1-3 で追加。版の互換を約束しない））。monorepo にしない。`exports` は M0-1 で枠だけ置き、中身は M1〜M4 で埋める | 決定 |
 | D5 | 配布 | 推奨のまま（非公開の間はタグに `dist/` を含めて git 依存）。[0002](0002-build-and-distribution.md) | 決定（M4） |
 | D6 | 接頭辞 | `xs-`・`--xs-*`・`data-xs-*`。推奨の `xv-` は旧仮称 xlsx-view 由来なので、名前に合わせた（2026-10-28・ユーザーが決定。M2-1 で `ih-` を置き換えた） | 決定 |

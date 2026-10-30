@@ -8,7 +8,7 @@
   ],
   "interhub": {
     "baseCommit": "f035f68",
-    "defaultDir": "C:/GitHub/InterHub",
+    "defaultDir": "../InterHub",
     "envVar": "INTERHUB_DIR",
     "root": "src_V1/"
   },

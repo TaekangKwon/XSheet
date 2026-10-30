@@ -142,7 +142,7 @@ const licenseText = [...bundled].sort().map((name) => {
 writeFileSync(
   path.join(dist, 'xsheet.licenses.txt'),
   `XSheet の単独版（xsheet.min.js・xsheet.mjs・xsheet-*.mjs）が中に持つ依存のライセンス（tools/standalone/build.mjs が作る）。\n` +
-    `XSheet 自身の著作権表示は NOTICE。jszip は MIT と GPL-3.0-or-later の選択で、XSheet は MIT を選ぶ。\n\n${licenseText.join('\n')}`,
+    `XSheet 自身のライセンスは LICENSE（MIT）、形の表の元の著作権表示は NOTICE。jszip は MIT と GPL-3.0-or-later の選択で、XSheet は MIT を選ぶ。\n\n${licenseText.join('\n')}`,
 );
 
 // 型：dist の d.ts（tsc の出力）を、index から import を辿って 1 つのファイルの ambient module にまとめる。

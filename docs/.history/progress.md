@@ -125,3 +125,9 @@
 - PR #9（M7 のグラフ）を main に（5b42d04）。CHANGELOG の [Unreleased] を 0.3.0 に、package.json・README・guide・04 の版を合わせた（bd81712）。
 - release/v0.3.0 に `git add -f dist` だけのコミット（3844df6）を作り、注釈付きのタグ v0.3.0 を打って push（タグだけ）。git archive でタグの中に exports の先 11 個・NOTICE・単独版（xsheet-chart.mjs を含む）があることを確かめた。
 - GitHub Release「XSheet 0.3.0」に xsheet-0.3.0-standalone.zip（328,477 B・xsheet-chart.mjs を含む 10 ファイル）を添付。タグからの入れ方と zip の viewer.html の目視はユーザーに任せた。
+
+## 2026-10-30 公開の準備（ADR-0004）
+- ADR-0004：MIT・履歴を残す・英語の README＋ja／ko・配り方は変えず npm は後で。公開の切り替えは、InterHub 由来のコードの権利の確認とユーザーの指示が条件。
+- `LICENSE`（MIT）、`package.json`（`private` を外す・`license`・`repository` など）、`files` と単独版の zip に `LICENSE`。README を英語にし、`README.ja.md`・`README.ko.md`、`SECURITY.md`、CI（`.github/workflows/ci.yml`）を足した。
+- 作者の PC のパス（文書・`tools/sync/interhub.json` の `defaultDir` → `../InterHub`・`compare-ref-geoms.mjs`）と、非公開の InterHub の中のパスに頼る手順・無い資料の参照を外した。ESLint の対象から `release/` を外した。
+- テスト 2,161 件・typecheck・lint・format:check・build・size・check:consumer・check:standalone が通る。

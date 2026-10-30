@@ -1,9 +1,27 @@
 {
   "name": "xsheet",
   "version": "0.3.0",
-  "private": true,
-  "license": "UNLICENSED",
-  "description": ".xlsx を Excel どおりに表示する JavaScript ライブラリ（読み取り専用）",
+  "license": "MIT",
+  "description": "Render .xlsx files in the browser the way Excel shows them — read-only, no server, no network.",
+  "keywords": [
+    "xlsx",
+    "excel",
+    "spreadsheet",
+    "viewer",
+    "ooxml",
+    "worksheet",
+    "render",
+    "typescript"
+  ],
+  "homepage": "https://github.com/TaekangKwon/XSheet#readme",
+  "bugs": {
+    "url": "https://github.com/TaekangKwon/XSheet/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TaekangKwon/XSheet.git"
+  },
+  "author": "TaekangKwon",
   "type": "module",
   "sideEffects": [
     "*.css"
@@ -33,7 +51,8 @@
   },
   "files": [
     "dist",
-    "NOTICE"
+    "NOTICE",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=20"
