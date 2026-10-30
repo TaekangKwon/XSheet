@@ -2,7 +2,7 @@
 
 この形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に倣う。版は [Semantic Versioning](https://semver.org/lang/ja/) に従う（1.0.0 までは小さい版の上げでも互換を崩すことがある）。
 
-## [Unreleased]
+## [0.3.0] - 2026-10-30
 
 InterHub のグラフ（ADR-0031・ISSUE-101〜111）を取り込んだ（M7）。
 

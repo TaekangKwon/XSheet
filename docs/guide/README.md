@@ -9,7 +9,7 @@
 ## TL;DR
 - 最初は README の「3 行で始める」を読む。ここは、そこから先の場面ごとの説明。
 - 表示は `view`（`xsheet` か単独版の `XSheet.view`）、読み取りだけなら `xsheet/core` の `openXlsx` か `xsheet` の `read`。
-- コードの例は今の API（v0.2.0）に合わせてある。
+- コードの例は今の API（v0.3.0）に合わせてある。
 
 ---
 

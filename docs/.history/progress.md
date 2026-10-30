@@ -120,3 +120,8 @@
 - グラフの描画は遅れて読む部品（`render/chart-draw.ts`・B では別のチャンク・単独版は `xsheet-chart.mjs`）。`size` に遅れて読むチャンクの上限、`check:standalone` にグラフの描画を足した。上限は core 36,000・render 59,000・chart-draw 17,500・min.js 144,000・mjs 94,000・chart.mjs 28,000。
 - examples のサンプルに `ref-charts.xlsx`・`ref-charts2.xlsx` を足し、開発サーバーで明るい表示・ダークのグラフを目視（プレビュー）。zip の `file://` の目視はユーザーが OK（2026-10-30）。
 - テスト 2,161 件・typecheck・lint・format:check・build・size・check:consumer・check:standalone が通る。
+
+## 2026-10-30 タグ v0.3.0・GitHub Release
+- PR #9（M7 のグラフ）を main に（5b42d04）。CHANGELOG の [Unreleased] を 0.3.0 に、package.json・README・guide・04 の版を合わせた（bd81712）。
+- release/v0.3.0 に `git add -f dist` だけのコミット（3844df6）を作り、注釈付きのタグ v0.3.0 を打って push（タグだけ）。git archive でタグの中に exports の先 11 個・NOTICE・単独版（xsheet-chart.mjs を含む）があることを確かめた。
+- GitHub Release「XSheet 0.3.0」に xsheet-0.3.0-standalone.zip（328,477 B・xsheet-chart.mjs を含む 10 ファイル）を添付。タグからの入れ方と zip の viewer.html の目視はユーザーに任せた。
