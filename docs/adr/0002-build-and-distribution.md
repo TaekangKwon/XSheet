@@ -2,6 +2,7 @@
 
 > 版: 1.0 ・ 更新日: 2026-10-29 ・ 担当: kwon
 > 関連文書: [0001](0001-library-decision.md)（D1〜D8） / [../02_architecture.md](../02_architecture.md) §8 / [../04_roadmap.md](../04_roadmap.md)（M4）
+> 追記（2026-10-30）: 公開した後もタグに `dist/` を含める配り方を続ける。npm への公開は別に決める（[0004](0004-public-release.md)）。
 
 ## TL;DR
 - `npm run build` は Vite のライブラリモードで ESM だけを `dist/` に出す。入口ごとに別のファイル、形の表（geom）は動的 import の別のチャンク。圧縮しない。型は `tsc` が出す。

@@ -4,8 +4,8 @@ Claude Code 向けのプロジェクト指示書（XSheet）。
 
 ## TL;DR
 - XSheet は .xlsx を Excel どおりに表示する JavaScript ライブラリ（npm のパッケージ名は `xsheet`）。core（読み取り・DOM 非依存）／geom（図形の形）／render（DOM の表示）の 3 層。
-- 元の実装は InterHub（`C:\GitHub\InterHub` コミット `943e4f0`）。**InterHub は読むだけで変更しない**。
-- 文書・コメント・コミットメッセージは日本語。識別子は英語。ユーザーとの会話の言語は各自の個人設定に従う。
+- 元の実装は InterHub（作者の非公開リポジトリ。コミット `943e4f0`。取り込み済みの版は `tools/sync/interhub.json` の `baseCommit`）。**InterHub は読むだけで変更しない**。場所は環境変数 `INTERHUB_DIR`（無ければ隣のフォルダ `../InterHub`）。
+- 文書・コメント・コミットメッセージは日本語。識別子は英語。公開の入口（`README.md`・`SECURITY.md`）だけは英語で、`README.ja.md`・`README.ko.md` はその訳（ADR-0004）。3 つの README は同じ中身に保つ。ユーザーとの会話の言語は各自の個人設定に従う。
 
 ## 運用ルール
 - 計画と決定は `docs/`（README・01〜05）と `docs/adr/` にある。設計の判断は ADR に残す。
@@ -36,4 +36,4 @@ Claude Code 向けのプロジェクト指示書（XSheet）。
 - TypeScript strict・ESM・`verbatimModuleSyntax`。Vite（ライブラリモード）・vitest＋jsdom。
 - TypeScript は 6.0 に固定（typescript-eslint 8.71 が `<6.1` までのため。理由は ADR-0001）。
 - 対応環境：core は ES2022 のブラウザ・Worker・Node 20 以上。render は主要ブラウザの最新 2 版。開発には Node 22.12 以上が要る（vitest 5 の条件）。
-- リポジトリ：https://github.com/TaekangKwon/XSheet（非公開）・既定ブランチ `main`。GitHub CLI などの場所は各自の個人設定に従う。
+- リポジトリ：https://github.com/TaekangKwon/XSheet（MIT。公開の手順は ADR-0004）・既定ブランチ `main`。GitHub CLI などの場所は各自の個人設定に従う。

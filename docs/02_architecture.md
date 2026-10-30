@@ -57,6 +57,7 @@ XSheet/
 ├─ tools/standalone/  # 単独版のビルド・検査・遅れて読む部品の一覧（M6-3）
 ├─ tools/sync/      # InterHub の変更の取り込みの道具（M6-1）
 ├─ tests/  fixtures/excel/  examples/  docs/
+├─ LICENSE         # MIT（ADR-0004）
 └─ NOTICE
 ```
 
@@ -366,4 +367,4 @@ dist/
 3. `main` から作業用のブランチ（例 `release/v0.1.0`）を切り、`git add -f dist` だけのコミットを作る（`main` には入れない・ADR-0002）。
 4. そのコミットに注釈付きのタグ（`git tag -a v0.1.0`）を打ち、タグを push する。
 5. 使う側で `npm install github:TaekangKwon/XSheet#v0.1.0` を入れ、表示を確かめる（M5）。
-6. （M6 から）`npm run release:zip` で単独版の zip（`release/xsheet-<版>-standalone.zip`）を作り、タグの GitHub Release に添付する（ADR-0003 §6・M6-5）。中身は `xsheet.min.js`・`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet-chart.mjs`・`xsheet.css`・`xsheet.d.ts`・`xsheet.d.mts`・`xsheet.licenses.txt`・`NOTICE`・`viewer.html`（`examples/standalone.html` を `xsheet.min.js` と同じフォルダで動くようにしたもの）。zip を展開した `viewer.html` を `file://` で開いて表示を確かめる。
+6. （M6 から）`npm run release:zip` で単独版の zip（`release/xsheet-<版>-standalone.zip`）を作り、タグの GitHub Release に添付する（ADR-0003 §6・M6-5）。中身は `xsheet.min.js`・`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet-chart.mjs`・`xsheet.css`・`xsheet.d.ts`・`xsheet.d.mts`・`xsheet.licenses.txt`・`LICENSE`・`NOTICE`・`viewer.html`（`examples/standalone.html` を `xsheet.min.js` と同じフォルダで動くようにしたもの）。zip を展開した `viewer.html` を `file://` で開いて表示を確かめる。

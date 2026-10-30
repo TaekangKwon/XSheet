@@ -72,8 +72,8 @@ describe('依存のライセンス', () => {
 });
 
 describe('配る物の形', () => {
-  it('files は dist と NOTICE だけ（src・テストを配らない）', () => {
-    expect(pkg.files).toEqual(['dist', 'NOTICE']);
+  it('files は dist・NOTICE・LICENSE だけ（src・テストを配らない）', () => {
+    expect(pkg.files).toEqual(['dist', 'NOTICE', 'LICENSE']);
   });
 
   it('exports は dist の中を指し、JS の入口には型が付く', () => {

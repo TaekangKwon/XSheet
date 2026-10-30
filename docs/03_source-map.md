@@ -3,7 +3,7 @@
 | 項目 | 値 |
 | --- | --- |
 | 文書 | XSheet 立ち上げ資料 03 |
-| 元 | `C:\GitHub\InterHub` main `943e4f0`（以下のパスは `src_V1/src/` 基準。`tools/` だけ `src_V1/` 基準） |
+| 元 | InterHub（作者の非公開リポジトリ）main `943e4f0`（以下のパスは `src_V1/src/` 基準。`tools/` だけ `src_V1/` 基準） |
 | 更新日 | 2026-10-30 |
 | 関連 | [02_architecture.md](02_architecture.md)・[04_roadmap.md](04_roadmap.md)・[ADR-0003](adr/0003-universal-distribution.md) §4 |
 

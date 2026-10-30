@@ -3,7 +3,7 @@ node_modules/
 coverage/
 *.tsbuildinfo
 *.log
-# dist/ は非公開の間タグに含めて配る（D5・M4）。それまでは作業中の生成物として除外する
+# dist/ はタグにだけ含めて配る（D5・ADR-0002・0004）。main では作業中の生成物として除外する
 dist/
 # 単独版の zip（npm run release:zip。GitHub Release に添付する）
 release/
@@ -11,6 +11,8 @@ release/
 # Claude Code の個人設定・セッション引き継ぎ（progress.md はコミットする）
 CLAUDE.local.md
 docs/.history/handoff.md
+# InterHub（文書ビューアの拡張）の分類のファイル（各自の環境）
+.interhub/
 .claude/launch.json
 
 # エディタ・OS

@@ -9,7 +9,7 @@
 //   --only     指定した図形名だけ比べる（調査用）。--shots は合格した図形の重ね合わせ画像も書く（既定は許容超えのみ）
 // 出力（<dir>）：ref-geoms.compare.json・ref-flips.compare.json（--arc param は .arc-param.json）＝期待の要約。xs-png\（XSheet の写し）・diff\（重ね合わせ：Excel＝赤・XSheet＝青・両方＝黒）・harness\（バンドル）は置くだけで、リポジトリには入れない。
 // 実行後：ref-geoms.compare.json と ref-flips.compare.json を fixtures/excel へ写す（tests/core/ref-geoms.compare.test.ts が読む）。
-// 必要なもの：リポジトリの node_modules の vite（ライブラリをまとめる）、Playwright（playwright-core。環境変数 PLAYWRIGHT_CORE に package.json のパス、無ければ D:\tools\node の @playwright/cli）、Chrome。
+// 必要なもの：リポジトリの node_modules の vite（ライブラリをまとめる）、Playwright（playwright-core。環境変数 PLAYWRIGHT_CORE に package.json のパス、無ければリポジトリの node_modules）、Chrome。
 // 写しは deviceScaleFactor 1.25（Excel の画面 125%＝1pt が 1.667 画素と同じ）・ライトテーマ・グリッドと罫線を隠して白地。距離は 100% 換算（画素 ÷ 1.25）。
 // ページは 127.0.0.1 の使い捨てのサーバで配る（geom は動的 import の別チャンクのため、file:// では読めない）。外部とは通信しない。
 import fs from 'node:fs';
@@ -85,11 +85,7 @@ const suffix = arcMode === 'param' ? '.arc-param' : '';
 
 /** Playwright（playwright-core）を探す */
 function loadPlaywright() {
-  const cands = [
-    process.env.PLAYWRIGHT_CORE,
-    path.join(repo, 'package.json'),
-    'D:/tools/node/node_modules/@playwright/cli/package.json',
-  ];
+  const cands = [process.env.PLAYWRIGHT_CORE, path.join(repo, 'package.json')];
   for (const c of cands) {
     if (!c) continue;
     try {

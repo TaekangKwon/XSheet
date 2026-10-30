@@ -9,7 +9,7 @@
 ## TL;DR
 - 単独版は依存（jszip・ssf）を中に持つ配布物。ビルドの道具も `node_modules` も要らない。
 - `<script>` 1 つなら `xsheet.min.js`（大域の `XSheet`・`file://` でも動く）。バンドラ無しの `import` なら `xsheet.mjs`（http で配る）。
-- 配り直すときは `NOTICE` と `xsheet.licenses.txt` を一緒に置く。
+- 配り直すときは `LICENSE`・`NOTICE`・`xsheet.licenses.txt` を一緒に置く。
 
 ---
 
@@ -85,12 +85,13 @@ GitHub Release に添付する単独版の zip（[ADR-0003](../adr/0003-universa
 | `xsheet.min.js`・`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet-chart.mjs`・`xsheet.css` | 上の 1 のとおり |
 | `xsheet.d.ts`・`xsheet.d.mts` | 型 |
 | `viewer.html` | 出来上がりのビューア（`examples/standalone.html` を `xsheet.min.js` と同じフォルダで動くようにしたもの）。ダブルクリックで開ける |
-| `NOTICE` | XSheet の著作権表示（形の表の元の Ecma の表示） |
+| `LICENSE` | XSheet のライセンス（MIT） |
+| `NOTICE` | 形の表の元の Ecma の著作権表示 |
 | `xsheet.licenses.txt` | 中に持つ依存のライセンスの全文 |
 
 ## 5. ライセンスの文
 
-単独版は jszip・ssf などの中身をそのまま含む。これらのライセンス（MIT・Apache-2.0 など）は、配る物に著作権表示と許諾の文を含めることを求める。そのため単独版を自分のアプリと一緒に配るときは、`NOTICE` と `xsheet.licenses.txt` も一緒に置く。
+単独版は jszip・ssf などの中身をそのまま含む。これらのライセンス（MIT・Apache-2.0 など）は、配る物に著作権表示と許諾の文を含めることを求める。そのため単独版を自分のアプリと一緒に配るときは、`LICENSE`・`NOTICE`・`xsheet.licenses.txt` も一緒に置く。
 
 `xsheet.licenses.txt` に入るもの（ビルドが束ねたパッケージから作る。2026-10-30 の時点）：
 

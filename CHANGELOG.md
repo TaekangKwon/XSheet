@@ -2,6 +2,16 @@
 
 この形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に倣う。版は [Semantic Versioning](https://semver.org/lang/ja/) に従う（1.0.0 までは小さい版の上げでも互換を崩すことがある）。
 
+## [Unreleased]
+
+公開の準備（[ADR-0004](docs/adr/0004-public-release.md)）。
+
+### 変更
+
+- ライセンスを MIT にした（`LICENSE`。`package.json` の `private` を外し、`files` と単独版の zip に `LICENSE` を足した）。
+- README を英語にし、日本語（`README.ja.md`）・韓国語（`README.ko.md`）の訳を置いた。
+- `SECURITY.md` と CI（GitHub Actions）を足した。
+
 ## [0.3.0] - 2026-10-30
 
 InterHub のグラフ（ADR-0031・ISSUE-101〜111）を取り込んだ（M7）。

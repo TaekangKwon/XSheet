@@ -1,18 +1,39 @@
 # XSheet
 
-.xlsx を Excel どおりに表示する JavaScript ライブラリ（読み取り専用）。npm のパッケージ名は `xsheet`。
+> Show `.xlsx` files in the browser the way Excel shows them — read-only, with no server and no network access.
 
-- セルの値・表示形式・列幅と行高・結合・罫線・塗りと文字の装飾を、Excel 16 の表示に合わせて描く（寸法と図の位置は 1px 以内が目標）。
-- 画像・図形（プリセットの形 176 種・自由な形）・線・グループ・図形の文字を、セルの上の層に描く。
-- グラフ（縦棒・横棒の集合・積み上げ・100% 積み上げ、折れ線とマーカー、円・ドーナツ、タイトル・凡例・軸・目盛線）を、保存された値から SVG で描く。ほかの種類は位置だけを破線枠で示す。
-- 100 万セルのシートでも見えている範囲だけを描く（スクロールで描き足す）。
-- 外へ通信しない・`eval` を使わない・ファイルの中身は信頼しない入力として `textContent` でだけ DOM に入れる・読み取りの量に上限がある。
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-339933.svg)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/types-included-3178C6.svg)](https://www.typescriptlang.org/)
+[![CI](https://github.com/TaekangKwon/XSheet/actions/workflows/ci.yml/badge.svg)](https://github.com/TaekangKwon/XSheet/actions/workflows/ci.yml)
 
-> 非公開。設計と決定は [docs/](docs/README.md)、使い方の詳しい説明は [docs/guide/](docs/guide/README.md)、変更の記録は [CHANGELOG.md](CHANGELOG.md)。
+**English** · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-## 3 行で始める
+---
 
-### `<script>` 1 つ（ビルドの道具なし）
+## Why this exists
+
+In teams that write their specs and designs in Excel, the information lives in the *look* of the sheet: borders, fills, column widths, merged cells, the screenshots pasted on top, and the boxes and arrows drawn between them. A grid of raw values loses most of it.
+
+I had written an `.xlsx` viewer twice — once for **InterHub**, a Chrome extension that shows a project's documents in one screen (it ships with [InterHub-MCP](https://github.com/TaekangKwon/InterHub-MCP)), and once for another document viewer. Fixing the same rendering bug in two places got old, so the code became one library: **XSheet**.
+
+It deliberately does one thing. [SheetJS](https://sheetjs.com/) reads and writes many formats; XSheet only **reads `.xlsx` and draws it as Excel would**, and it is built to survive the files you did not make yourself.
+
+## What it draws
+
+| Area | Supported |
+| --- | --- |
+| Cells | Values with their number formats, column widths and row heights, merged cells, borders, fills, font styling — matched to Excel 16 (target: within 1 px for sizes and drawing positions) |
+| Drawings | Pictures, shapes (all 176 preset shapes and custom geometry), lines and connectors, groups, text in shapes — on a layer above the cells |
+| Charts | Column and bar (clustered, stacked, 100 % stacked), line with markers, pie, doughnut — with title, legend, category and value axes and gridlines, drawn as SVG from the values saved in the file |
+| Big sheets | A sheet with a million cells opens; only the visible part is drawn, and more is drawn as you scroll |
+| Sheets | A tab for every sheet; hidden sheets get a marked tab, and the first visible sheet opens first |
+| UI text | Japanese, English and Korean, replaceable key by key |
+| Themes | Light, dark, or follow the OS; colors are CSS variables |
+
+## Quick start
+
+### One `<script>` (no build tools)
 
 ```html
 <script src="xsheet.min.js"></script>
@@ -27,22 +48,22 @@
 </script>
 ```
 
-- `xsheet.min.js` は依存（jszip・ssf）と形の表を中に持つ 1 ファイル。大域の `XSheet` を作る。`file://` で開いたページでも動く。
-- CSS は自動で入る。container に高さが無いときは 480px で出し、`console.warn` を 1 回出す。
-- 出来上がりのビューア：[examples/standalone.html](examples/standalone.html)（ファイルを選ぶ・ドロップする）。
+- `xsheet.min.js` is a single file that bundles its dependencies (jszip, ssf), the shape table and the chart renderer. It defines the global `XSheet` and also works on a page opened from `file://`.
+- The CSS is inserted for you. If the container has no height, the viewer uses 480 px and logs one `console.warn`.
+- A finished viewer page (pick a file or drop it): [examples/standalone.html](examples/standalone.html).
 
-### バンドラ（Vite・webpack など）
+### With a bundler (Vite, webpack, …)
 
 ```ts
 import { view } from 'xsheet';
 
-const viewer = await view('#viewer', file, { theme: 'auto' }); // file は File・Blob・ArrayBuffer・Response など
-viewer.destroy(); // 片付け
+const viewer = await view('#viewer', file, { theme: 'auto' }); // File, Blob, ArrayBuffer, Response, …
+viewer.destroy(); // clean up
 ```
 
-React・Vue での置き方は [docs/guide/frameworks.md](docs/guide/frameworks.md)。
+React and Vue examples: [docs/guide/frameworks.md](docs/guide/frameworks.md).
 
-### Node・Worker（読み取りだけ・DOM なし）
+### Node or a Web Worker (read only, no DOM)
 
 ```ts
 import { openXlsx } from 'xsheet/core';
@@ -53,63 +74,89 @@ console.log(sheet.getRows(1, 10).map((row) => row.cells.map((c) => c?.text ?? ''
 book.close();
 ```
 
-- `xsheet/core` は DOM も Node 固有の API も使わない。ブラウザ・Web Worker・Node 20 以上で動く。
-- `xsheet` の `read(source)` も同じ（`File`・`Blob`・`Response` も受ける）。Worker で読む例は [docs/guide/worker.md](docs/guide/worker.md)。
+- `xsheet/core` uses no DOM and no Node-specific API. It runs in browsers, Web Workers and Node 20+.
+- `read(source)` from `xsheet` does the same and also accepts `File`, `Blob` and `Response`. Reading in a Worker: [docs/guide/worker.md](docs/guide/worker.md).
 
-## 入れ方
+## Installation
 
-| 使い方 | 入れ方 |
+| Use | How to get it |
 | --- | --- |
-| `<script>`・バンドラ無しの `import` | GitHub Release に添付した単独版の zip を展開して置く。中身は [docs/guide/standalone.md](docs/guide/standalone.md)。このリポジトリで `npm run build` すれば `dist/` にも出る |
-| バンドラ・Node | GitHub のタグから git 依存で入れる（下） |
+| `<script>`, or `import` without a bundler | Download `xsheet-<version>-standalone.zip` from [Releases](https://github.com/TaekangKwon/XSheet/releases) and unzip it next to your page. Contents: [docs/guide/standalone.md](docs/guide/standalone.md) |
+| Bundler or Node | Install from a Git tag (below) |
 
-非公開の間は GitHub のタグから git 依存で入れる（タグに `dist/` が入っている。ビルドのスクリプトは走らない。[ADR-0002](docs/adr/0002-build-and-distribution.md)）。
+> [!NOTE]
+> XSheet is **not published to npm yet**. Each Git tag contains a built `dist/`, so installing from a tag runs no build scripts ([ADR-0002](docs/adr/0002-build-and-distribution.md)).
 
 ```bash
 npm install github:TaekangKwon/XSheet#v0.3.0
 ```
 
-- 依存は `jszip` と `ssf` だけ（一緒に入る）。
-- `view`・`read`・`xsheet/core`・`MESSAGES_KO`・単独版は v0.2.0 から。v0.1.0 には無い。
-- グラフの表示・`readChart`・`xsheet-chart.mjs` は v0.3.0 から。
+- The only dependencies are `jszip` and `ssf`; they are installed with it.
+- `view`, `read`, `xsheet/core`, `MESSAGES_KO` and the standalone build arrived in v0.2.0. Charts, `readChart` and `xsheet-chart.mjs` arrived in v0.3.0.
 
-## `view(target, source, options?)`
+## How it works
 
-ブック全体をタブ付きで出す。戻り値は `Promise<Viewer>`。
+```mermaid
+graph LR
+    F[".xlsx bytes<br>File · Blob · ArrayBuffer · Response"] --> CORE
+    subgraph xsheet
+        CORE["core<br>unzip · parse · limits<br>(no DOM)"]
+        GEOM["geom<br>preset shape table<br>(loaded on demand)"]
+        RENDER["render<br>grid · tabs · drawing layer"]
+        CHART["chart-draw<br>SVG charts<br>(loaded on demand)"]
+        FACADE["view() · read()"]
+    end
+    CORE --> RENDER
+    RENDER -. "sheet has shapes" .-> GEOM
+    RENDER -. "sheet has charts" .-> CHART
+    FACADE --> CORE
+    FACADE --> RENDER
+    RENDER --> DOM["Your container element"]
+```
 
-| 引数 | 内容 |
+- **core** reads the zip and the XML lazily, sheet by sheet, and checks every size against a limit. It never touches the DOM, so it also runs in Node and in Workers.
+- **render** draws the visible rows and columns into a scrolling grid and puts pictures, shapes and charts on a layer above it.
+- **geom** (the shape table, about 30 KB gzipped) and **chart-draw** (about 16 KB) are separate chunks. They load only when a sheet actually has shapes or charts.
+
+## API
+
+### `view(target, source, options?)`
+
+Shows the whole workbook with sheet tabs. Returns `Promise<Viewer>`.
+
+| Argument | Meaning |
 | --- | --- |
-| `target` | 表示を置く要素か CSS セレクタ。子として `div.xs-viewer` を足す（container 自身は変えない） |
-| `source` | `File`・`Blob`・`ArrayBuffer`・型付き配列（`Uint8Array` など）・`DataView`・`Response`、またはそれらの Promise |
+| `target` | An element or a CSS selector. XSheet appends a `div.xs-viewer` child and leaves the container itself alone |
+| `source` | `File`, `Blob`, `ArrayBuffer`, a typed array (`Uint8Array`, …), `DataView`, `Response`, or a Promise of one of these |
 
-- URL の文字列は受けない（`TypeError`）。XSheet は通信しない。URL から出すなら `XSheet.view('#v', fetch(url))` と書く。失敗した `Response`（`ok` が false）も `TypeError`。
-- 開けないファイル（暗号化・壊れている・大きすぎる・対応しない形式）は例外にせず、表示の中に文言の帯（`div.xs-banner`）を出す。このとき `sheets` は空。
-- 同じ container にもう一度 `view` すると、前の表示を外してから出す（`destroy()` は要らない）。読み込み中に次の `view` が来たら、前の呼び出しは表示の無い `Viewer`（`sheets` が空）を返す。
+- A URL string is rejected with `TypeError` — XSheet never fetches anything itself. To show a file from a URL, write `XSheet.view('#v', fetch(url))`. A failed `Response` (`ok` is false) is also a `TypeError`.
+- Files that cannot be opened (encrypted, broken, too large, unsupported) do not throw. The viewer shows a message bar (`div.xs-banner`) instead, and `sheets` is empty.
+- Calling `view` again on the same container replaces the previous view; you do not need `destroy()` first. If a second call starts while the first is still loading, the first call resolves to an empty `Viewer`.
 
-### 指定（どれも省略できる）
+#### Options (all optional)
 
-| 指定 | 既定 | 内容 |
+| Option | Default | Meaning |
 | --- | --- | --- |
-| `lang` | `'auto'` | `'ja'`・`'en'`・`'ko'`・`'auto'`。`auto` は `<html lang>` → ブラウザの言語の順に見て、合うものが無ければ英語 |
-| `messages` | なし | 文言を一部だけ替える（`lang` で選んだ表の上に重ねる）。キーは [02](docs/02_architecture.md) §7 |
-| `theme` | `'light'` | `'light'`・`'dark'`・`'auto'`（OS の `prefers-color-scheme` に従う）。[docs/guide/theme.md](docs/guide/theme.md) |
-| `css` | `'auto'` | 表示の CSS を `<style>` で 1 回だけ入れる。`style.css`・`xsheet.css` を読み込み済みなら入れない。`'none'` なら入れない |
-| `height` | `'auto'` | container の高さが 0 のときだけ 480px にする。数値は px、文字列は CSS の長さ（`'70vh'` など） |
-| `drawings` | `true` | 図の層（画像・図形・線・グラフ）を出すか |
-| `nonce` | なし | 自動で入れる `<style>` と書式の `<style>` に付ける nonce（CSP 用。[docs/guide/csp.md](docs/guide/csp.md)） |
-| `limits` | `DEFAULT_LIMITS` | 読み取りの上限を一部だけ替える |
+| `lang` | `'auto'` | `'ja'`, `'en'`, `'ko'` or `'auto'`. `auto` looks at `<html lang>`, then the browser language, and falls back to English |
+| `messages` | — | Replace some of the UI text, on top of the table chosen by `lang`. Keys: [docs/02_architecture.md](docs/02_architecture.md) §7 |
+| `theme` | `'light'` | `'light'`, `'dark'` or `'auto'` (follows `prefers-color-scheme`). See [docs/guide/theme.md](docs/guide/theme.md) |
+| `css` | `'auto'` | Insert the CSS once as a `<style>`. Skipped if `style.css` / `xsheet.css` is already loaded. `'none'` never inserts it |
+| `height` | `'auto'` | Use 480 px only when the container's height is 0. A number means px; a string is a CSS length (`'70vh'`) |
+| `drawings` | `true` | Show the drawing layer (pictures, shapes, lines, charts) |
+| `nonce` | — | Nonce for the inserted `<style>` and the format `<style>` (for CSP; see [docs/guide/csp.md](docs/guide/csp.md)) |
+| `limits` | `DEFAULT_LIMITS` | Override some of the read limits |
 
-### `Viewer`
+#### `Viewer`
 
-| メンバ | 内容 |
+| Member | Meaning |
 | --- | --- |
-| `sheets` | シートの一覧（`SheetInfo[]`：`index`（1 始まり）・`name`・`hidden`）。タブの並びで、非表示のシートも入る |
-| `showSheet(index か name)` | シートを替える（タブを押したのと同じ）。無い番号・名前は `RangeError` |
-| `destroy()` | 表示を外し、ブック・リスナ・blob URL を放す。何度呼んでもよい |
+| `sheets` | The sheet list (`SheetInfo[]`: `index` (1-based), `name`, `hidden`), in tab order, hidden sheets included |
+| `showSheet(index or name)` | Switch sheets, like clicking a tab. Unknown index or name throws `RangeError` |
+| `destroy()` | Remove the view and release the workbook, listeners and blob URLs. Safe to call more than once |
 
-## `read(source, options?)`
+### `read(source, options?)`
 
-DOM なしで開く。`openXlsx` と同じで、受け取れる形を `view` と揃えたもの。戻り値は `Promise<XlsxBook>`（閉じるのは呼び出し側の `close()`）。
+Opens a workbook without any DOM. Same as `openXlsx`, but it accepts the same inputs as `view`. Returns `Promise<XlsxBook>`; the caller closes it with `close()`.
 
 ```ts
 import { read, XlsxError } from 'xsheet';
@@ -117,37 +164,37 @@ import { read, XlsxError } from 'xsheet';
 try {
   const book = await read(fetch('/files/book.xlsx'), { limits: { maxSheetXmlBytes: 32 * 1024 * 1024 } });
   const sheet = await book.openSheet(book.sheets[0].index);
-  const rows = sheet.getRows(1, 100); // 1〜100 行目（表示どおりの文字・書式・罫線の番号）
+  const rows = sheet.getRows(1, 100); // rows 1–100: display text, formats, border ids
   book.close();
 } catch (e) {
   if (e instanceof XlsxError) console.log(e.kind); // 'not-zip' | 'encrypted' | 'broken' | 'too-large' | 'unsupported'
 }
 ```
 
-## 細かく作る（`renderWorkbook`・`renderSheet`・`openXlsx`）
+### Lower-level building blocks (`renderWorkbook`, `renderSheet`, `openXlsx`)
 
-`view` の下にある道具。CSS の読み込み・高さ・文言の表を自分で決めたいときに使う。
+These sit underneath `view`. Use them when you want to control CSS loading, sizing and the UI text yourself.
 
-### ブック全体をタブ付きで表示する
+#### The whole workbook with tabs
 
 ```ts
 import { renderWorkbook } from 'xsheet/render';
 import 'xsheet/style.css';
 
-const container = document.getElementById('viewer')!; // 高さが決まっている要素
-const data = await file.arrayBuffer(); // .xlsx のバイト列（ArrayBuffer か Uint8Array）
+const container = document.getElementById('viewer')!; // an element with a definite height
+const data = await file.arrayBuffer(); // the .xlsx bytes (ArrayBuffer or Uint8Array)
 
 const wb = await renderWorkbook(container, data);
-wb.sheets; // SheetInfo[]（開けなかったときは空）
-await wb.showSheet(2); // SheetInfo.index（1 始まり）
-wb.destroy(); // リスナ・blob URL を放し、ブックを閉じ、表示を外す
+wb.sheets; // SheetInfo[] (empty if the file could not be opened)
+await wb.showSheet(2); // SheetInfo.index (1-based)
+wb.destroy(); // release listeners and blob URLs, close the workbook, remove the view
 ```
 
-- `container` は**高さが決まっていること**（`height: 100%` の祖先・flex の子など）。中のスクロール枠 `.xs-body` が、見えている範囲を決める窓になる。`view` と違い、既定の高さは付けない。
-- CSS は自動で入らない。`xsheet/style.css` を import するか `<link>` で読む。
-- 開けないファイルでも例外にせず、表示の中に文言を出す。
+- The container **must have a definite height** (an ancestor with `height: 100%`, a flex child, …). The inner scroller `.xs-body` is the window that decides what is visible. Unlike `view`, no default height is applied.
+- The CSS is not inserted. Import `xsheet/style.css` or load it with `<link>`.
+- A file that cannot be opened does not throw; a message is shown inside the view.
 
-### 1 シートだけ表示する
+#### A single sheet
 
 ```ts
 import { openXlsx } from 'xsheet';
@@ -158,94 +205,146 @@ const book = await openXlsx(data);
 const first = book.sheets.find((s) => !s.hidden) ?? book.sheets[0];
 const sheetView = await renderSheet(container, book, first.index);
 // …
-sheetView.destroy(); // ブックは閉じない
+sheetView.destroy(); // does not close the book
 book.close();
 ```
 
-### 指定（`renderWorkbook`・`renderSheet`）
+#### Options (`renderWorkbook`, `renderSheet`)
 
-| 指定 | 既定 | 内容 |
+| Option | Default | Meaning |
 | --- | --- | --- |
-| `messages` | 日本語（`MESSAGES_JA`） | 文言。一部のキーだけ渡してもよい。英語は `MESSAGES_EN`、韓国語は `MESSAGES_KO` を渡す |
-| `drawings` | `true` | 図の層（画像・図形・線・グラフ）を出すか。`false` なら図を読まない |
-| `nonce` | なし | 書式の `<style>` 要素に付ける nonce（CSP の `style-src 'nonce-…'` 用） |
-| `limits` | `DEFAULT_LIMITS` | 読み取りの上限（`renderWorkbook` だけ。`renderSheet` では `openXlsx` に渡す） |
+| `messages` | Japanese (`MESSAGES_JA`) | UI text; partial objects are fine. Pass `MESSAGES_EN` for English or `MESSAGES_KO` for Korean |
+| `drawings` | `true` | Show the drawing layer. With `false`, drawings are not even read |
+| `nonce` | — | Nonce for the format `<style>` element (for CSP `style-src 'nonce-…'`) |
+| `limits` | `DEFAULT_LIMITS` | Read limits (`renderWorkbook` only; for `renderSheet`, pass them to `openXlsx`) |
 
-API の全体は [docs/02_architecture.md](docs/02_architecture.md) §2（core）・§3（render と入口の層）。
+The full API is described in [docs/02_architecture.md](docs/02_architecture.md) §2 (core) and §3 (render and the `view` layer).
 
-## 入口（サブパス）
+### Entry points
 
-| import | 中身 |
+| Import | Contents |
 | --- | --- |
-| `xsheet` | 全部：`view`・`read` と、下の `xsheet/core`・`xsheet/render` の公開物（v0.1.0 の公開物はすべて残る） |
-| `xsheet/core` | 読み取りだけ（`openXlsx`・`XlsxError`・`DEFAULT_LIMITS`・寸法の換算など）と型。DOM・Node 固有の API を使わないことを約束する入口（Worker・Node 向け） |
-| `xsheet/render` | 表示（`renderWorkbook`・`renderSheet`・`MESSAGES_JA`・`MESSAGES_EN`・`MESSAGES_KO`） |
-| `xsheet/style.css` | 表示の CSS（明るい既定値と `data-xs-theme` のダーク） |
-| `xsheet/geom` | 図形の形の表と式の評価。render が図形を描くときに動的 import するので、ふつうは直接使わない |
-| `xsheet/internal` | render が使う半公開の部品。版の互換を約束しない |
+| `xsheet` | Everything: `view`, `read`, plus all public exports of `xsheet/core` and `xsheet/render` |
+| `xsheet/core` | Reading only (`openXlsx`, `XlsxError`, `DEFAULT_LIMITS`, unit conversions, …) and the types. Guaranteed to use no DOM and no Node-specific API (for Workers and Node) |
+| `xsheet/render` | Rendering (`renderWorkbook`, `renderSheet`, `MESSAGES_JA`, `MESSAGES_EN`, `MESSAGES_KO`) |
+| `xsheet/style.css` | The CSS (light defaults plus dark values under `data-xs-theme`) |
+| `xsheet/geom` | The shape table and its formula evaluator. `render` imports it dynamically; you normally do not use it directly |
+| `xsheet/internal` | Semi-public parts used by `render`. **No compatibility promise between versions** |
 
-- ESM だけ。型は同梱（TypeScript は `moduleResolution: "bundler"` が前提）。
-- `xsheet` を Node で import しても、読み込んだ時点では DOM に触れない。ただし DOM を使わないと約束するのは `xsheet/core` だけ。
-- 形の表（gzip 約 30 KB）は図形のあるシートを、グラフの描画（圧縮＋gzip 約 16 KB）はグラフのあるシートを開いたときだけ読まれる（使う側のビルドでも別のチャンクになる）。大きさは [02](docs/02_architecture.md) §8。
+- ESM only. Types are included (TypeScript with `moduleResolution: "bundler"` is assumed).
+- Importing `xsheet` in Node does not touch the DOM at load time, but only `xsheet/core` promises never to use it.
+- The shape table loads only for sheets with shapes, and the chart renderer only for sheets with charts; your bundler keeps them as separate chunks too. Sizes: [docs/02_architecture.md](docs/02_architecture.md) §8.
 
-## 見た目（テーマと CSS 変数）
+## Theming
 
-- ダーク表示は `view` の `theme: 'dark'`（OS に合わせるなら `'auto'`）。`renderWorkbook` などでは、表示の根か祖先（`<html>` など）に `data-xs-theme="dark"`（または `"auto"`）を付ける。値は `style.css` が持つので、使う側が写す必要はない。
-- 色は CSS 変数 `--xs-*`（14 個）で替えられる。既定値は詳細度 0（`:where(:root, :host)`）なので、どこで上書きしてもよい（Shadow DOM の中でも効く）。
+- For a dark view, pass `theme: 'dark'` to `view` (`'auto'` follows the OS). With `renderWorkbook` and friends, put `data-xs-theme="dark"` (or `"auto"`) on the view root or an ancestor such as `<html>`. The dark values ship in `style.css`; you do not need to copy them.
+- Colors are 14 CSS variables (`--xs-*`). Their defaults have zero specificity (`:where(:root, :host)`), so you can override them anywhere, including inside Shadow DOM.
 
 ```css
-/* 明るい表示の強調の色だけ替える */
+/* change only the accent color of the light theme */
 :root {
   --xs-accent: #0f766e;
 }
 ```
 
-ダークの値の替え方・Shadow DOM の注意は [docs/guide/theme.md](docs/guide/theme.md)、変数の役割と値は [02](docs/02_architecture.md) §6。Excel の色（塗り・文字の色・図形の色）は変数ではなく、ファイルの色のまま描く。
+Overriding the dark values and Shadow DOM notes: [docs/guide/theme.md](docs/guide/theme.md). What each variable does: [docs/02_architecture.md](docs/02_architecture.md) §6. Colors that come from the file (fills, font colors, shape colors) are drawn as-is, not through variables.
 
-## 文言
+## UI text
 
-- 同梱は日本語（`MESSAGES_JA`）・英語（`MESSAGES_EN`）・韓国語（`MESSAGES_KO`）。23 キー（[02](docs/02_architecture.md) §7）。
-- `view` は `lang` で選ぶ（既定 `auto`）。`renderWorkbook`・`renderSheet` の既定は日本語のまま。
-- 一部だけ替えるなら `messages: { noData: '（空）' }` のように渡す。
-- 使う側（開発者）向けの `view`・`read` の例外と警告は英語で、`XSheet:` で始まる。
+- Japanese (`MESSAGES_JA`), English (`MESSAGES_EN`) and Korean (`MESSAGES_KO`) are included — 23 keys ([docs/02_architecture.md](docs/02_architecture.md) §7).
+- `view` picks one with `lang` (default `auto`). `renderWorkbook` and `renderSheet` default to Japanese.
+- To change only a few strings, pass e.g. `messages: { noData: '(empty)' }`.
+- Developer-facing errors and warnings from `view` and `read` are in English and start with `XSheet:`.
 
-## CSP
+## Security model
 
-| 指定 | 理由 |
+XSheet assumes every `.xlsx` it opens may be hostile.
+
+- **No network.** The library never fetches, uploads or phones home. It only reads the bytes you hand it.
+- **No code generation.** No `eval`, no `new Function`, no string timers — the standalone build is checked for this.
+- **No HTML from the file.** Text from the file reaches the DOM only through `textContent`. Pictures are shown through `blob:` URLs.
+- **Limits everywhere.** Unzipped size, part sizes, counts, shape formulas, image sizes and chart points have 29 limits. Going over one gives `XlsxError('too-large')` (`view` and `renderWorkbook` show a message), or that one drawing is simplified and a notice is shown. Defaults are in `DEFAULT_LIMITS` (list: [docs/02_architecture.md](docs/02_architecture.md) §5); `limits` overrides some of them.
+- **No content in errors.** Exception messages never contain cell values or sheet names.
+
+### Content Security Policy
+
+| Directive | Why |
 | --- | --- |
-| `script-src 'self'` | ライブラリと形の表を同じ出所から読む（`'unsafe-eval'` は要らない。単独版も同じ） |
-| `style-src 'nonce-<値>'`（または `'unsafe-inline'`） | 書式の `<style>` と、`view` が自動で入れる `<style>`。どちらも `nonce` 指定で付く |
-| `img-src blob:` | 図の画像は blob URL で出す |
+| `script-src 'self'` | The library and the shape table load from your origin. `'unsafe-eval'` is not needed, not even for the standalone build |
+| `style-src 'nonce-<value>'` (or `'unsafe-inline'`) | The format `<style>` and the `<style>` that `view` inserts. Both get the `nonce` you pass |
+| `img-src blob:` | Pictures are shown through blob URLs |
 
-自動で入れる `<style>` を避けたいときは `css: 'none'` にして `xsheet.css`（`style.css`）を `<link>` で読む。詳しくは [docs/guide/csp.md](docs/guide/csp.md)。
+To avoid the inserted `<style>`, use `css: 'none'` and load `xsheet.css` (`style.css`) with `<link>`. Details: [docs/guide/csp.md](docs/guide/csp.md).
 
-## 上限
+To report a vulnerability, see [SECURITY.md](SECURITY.md).
 
-悪意のあるファイルで止まらないよう、zip の展開量・部品の大きさ・件数・図形の式・画像の大きさ・グラフの点の数に上限（29 項目）がある。超えたら `XlsxError('too-large')`（`view`・`renderWorkbook` は文言を出す）か、その図だけを簡略化して通知を出す。既定値は `DEFAULT_LIMITS`、一覧は [02](docs/02_architecture.md) §5。`limits` で一部だけ変えられる。
+## Limitations
 
-例外のメッセージにはセル値・シート名を入れない。
+- **Read-only.** No writing or editing.
+- **`.xlsx` only.** No `.xls` (BIFF), `.ods` or `.csv`. Route `.xls` to another library such as SheetJS.
+- **No formula evaluation.** The values Excel saved in the file are shown.
+- **Charts outside the supported set** (area, scatter, combo, secondary axis, 3-D, the Excel 2016+ chart types, …) show as a dashed frame with the chart type's name.
+- **Not yet drawn:** conditional formatting, table styles, alignment and wrapping, font names, partial rich-text formatting ([docs/04_roadmap.md](docs/04_roadmap.md) M7).
+- **Some rules are still provisional.** A few border and number-format cases are pending a check against Excel (known differences: [docs/05_quality.md](docs/05_quality.md)).
 
-## 対応環境
+## Browser and runtime support
 
-- `xsheet/core`：ES2022 のブラウザ・Web Worker・Node 20 以上。
-- `view`・`xsheet/render`・単独版での表示：Chrome・Edge・Firefox・Safari の最新 2 版。
+- `xsheet/core`: ES2022 browsers, Web Workers, Node 20+.
+- `view`, `xsheet/render` and the standalone build: the latest two versions of Chrome, Edge, Firefox and Safari.
 
-## 開発
+## Project layout
 
-開発には Node 22.12 以上が要る。
+```text
+XSheet/
+├── src/
+│   ├── core/          # Reading: zip, XML, cells, styles, drawings, charts, limits (no DOM)
+│   ├── geom/          # Preset shape table and formula evaluator (loaded on demand)
+│   ├── render/        # Grid, tabs, drawing layer, charts as SVG, UI text
+│   ├── facade/        # view() and read(): the one-line entry layer
+│   └── style.css      # The CSS (light + dark)
+├── examples/          # Example pages (dev server and standalone)
+├── fixtures/excel/    # Reference .xlsx files made in Excel, with the values Excel reports
+├── tests/             # Vitest + jsdom
+├── tools/             # Build of the standalone files, size check, shape-table generator
+└── docs/              # Design notes, ADRs and guides (Japanese)
+```
 
-| コマンド | 用途 |
+## Development
+
+Node 22.12 or later is required for development.
+
+| Command | Purpose |
 | --- | --- |
-| `npm run test` | テスト（vitest） |
-| `npm run typecheck`・`npm run lint`・`npm run format:check` | 型・ESLint・Prettier の確認 |
-| `npm run build` | `dist/` を作る（Vite のライブラリモード → d.ts → 単独版） |
-| `npm run check:consumer` | 別のプロジェクトから `dist/` を import して型検査とビルドが通るか・配る中身 |
-| `npm run check:standalone` | 単独版が jsdom・素の Node で動くか・型が通るか |
-| `npm run size` | 入口ごと・単独版の大きさと上限 |
-| `npm run examples` | 例のページ（http://localhost:5173/examples/）。ファイルの選択・明暗・文言の切り替え |
-| `npm run examples:static` | `npm run build` の後、単独版の例を http で開く（http://localhost:5174/examples/esm.html） |
-| `npm run sync:status`・`npm run sync:patch` | InterHub の変更の一覧・パッチ（[ADR-0003](docs/adr/0003-universal-distribution.md) §4） |
+| `npm run test` | Tests (Vitest) |
+| `npm run typecheck` · `npm run lint` · `npm run format:check` | Types, ESLint, Prettier |
+| `npm run build` | Build `dist/` (Vite library mode → d.ts → standalone files) |
+| `npm run check:consumer` | Import `dist/` from a scratch project and check that type-checking and a build pass; check the package contents |
+| `npm run check:standalone` | Check that the standalone files work in jsdom and in plain Node, and that their types compile |
+| `npm run size` | Size of each entry point and standalone file against its limit |
+| `npm run examples` | Example page at http://localhost:5173/examples/ (pick a file, switch theme and language) |
+| `npm run examples:static` | After `npm run build`, serve the standalone example over http (http://localhost:5174/examples/esm.html) |
 
-## ライセンス
+Conventions: `core` and `geom` use no DOM and no Node-specific API; no new dependencies without an ADR; test data is either synthesized (`src/testing/make-xlsx.ts`) or made in Excel by the authors. The rest is in [CLAUDE.md](CLAUDE.md).
 
-非公開（`UNLICENSED`）。図形の形の表は ECMA-376 の `presetShapeDefinitions.xml` から作っており、Ecma International の著作権表示を [NOTICE](NOTICE) に置く（配布物に同梱する）。単独版は依存を中に持つため、そのライセンスの全文を `xsheet.licenses.txt` として一緒に配る。依存のライセンスは [02](docs/02_architecture.md) §8。
+`npm run sync:status` and `npm run sync:patch` pull changes from InterHub, the private project XSheet was extracted from. Only the maintainer can use them ([ADR-0003](docs/adr/0003-universal-distribution.md) §4).
+
+## Documentation
+
+The design documents and guides are written in Japanese.
+
+| Document | Contents |
+| --- | --- |
+| [docs/guide/](docs/guide/README.md) | How-to guides: standalone build, React and Vue, Workers, CSP, theming |
+| [docs/](docs/README.md) | Requirements, architecture, roadmap and quality notes |
+| [docs/adr/](docs/adr/) | Architecture decision records |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes |
+
+## Acknowledgements
+
+- The preset shape table is generated from `presetShapeDefinitions.xml` in ECMA-376 (Ecma International). Its copyright notice is in [NOTICE](NOTICE) and ships with every build.
+- Reading the zip relies on [JSZip](https://stuk.github.io/jszip/); number formats rely on [SSF](https://github.com/SheetJS/ssf).
+- XSheet was extracted from the `.xlsx` viewer in InterHub.
+
+## License
+
+[MIT](LICENSE). The shape table carries Ecma International's copyright notice in [NOTICE](NOTICE), and the standalone files bundle their dependencies, whose licenses ship alongside as `xsheet.licenses.txt`. Keep `LICENSE`, `NOTICE` and `xsheet.licenses.txt` together when you redistribute.
