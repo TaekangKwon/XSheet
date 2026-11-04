@@ -7,6 +7,7 @@ import { MESSAGES_EN, MESSAGES_JA, renderWorkbook, type WorkbookView } from '../
 
 /** サンプル（fixtures/excel の自作ファイル。照合用に Excel で作ったもの） */
 const SAMPLES: readonly { file: string; label: string }[] = [
+  { file: 'showcase.xlsx', label: '見本（README の画面）' },
   { file: 'ref-drawings.xlsx', label: '画像・図形' },
   { file: 'ref-shapes.xlsx', label: '図形の種類' },
   { file: 'ref-geoms.xlsx', label: '図形の形' },
@@ -176,6 +177,13 @@ themeSelect.addEventListener('change', () => {
 
 langSelect.addEventListener('change', reshow);
 drawingsCheck.addEventListener('change', reshow);
+
+// ?sample=<ファイル名> で開いたら、そのサンプルを最初から表示する（README の画面を撮るため）。一覧に無い名前は無視する
+const initialSample = new URLSearchParams(location.search).get('sample');
+if (initialSample !== null && SAMPLES.some((s) => s.file === initialSample)) {
+  sampleSelect.value = initialSample;
+  sampleSelect.dispatchEvent(new Event('change'));
+}
 
 // ドロップで開く
 viewer.addEventListener('dragover', (e) => {
