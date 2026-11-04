@@ -345,6 +345,10 @@ XSheet/
 - zip 읽기는 [JSZip](https://stuk.github.io/jszip/), 표시 형식 처리는 [SSF](https://github.com/SheetJS/ssf)를 사용합니다.
 - XSheet는 InterHub의 `.xlsx` 뷰어를 떼어 내어 만든 라이브러리입니다.
 
+## 만든 곳
+
+XSheet는 일본 오카야마현 가사오카시의 작은 소프트웨어 회사 [주식회사 시스템 엠즈](https://msap2.jp/emuzu/)(SYSTEM EMUZU CO.,LTD., 2000년 설립)의 Kwon이 관리하고 있습니다. 시스템 엠즈는 이벤트 접수, 토목·건축 적산, 생산 관리 같은 업무용 웹 시스템을 설계부터 유지보수까지 맡고 있습니다. 모토는 "create rich time"으로, 실수와 수고를 줄여 쓰는 사람의 시간을 풍요롭게 하는 시스템을 지향합니다. 직접 만든 앱과 AI 활용 이야기는 [블로그](https://msap2.jp/emuzu/blog/)(일본어)에 씁니다.
+
 ## 라이선스
 
 [MIT](LICENSE). 도형 정의 테이블에는 Ecma International의 저작권 표시가 [NOTICE](NOTICE)로 붙어 있고, 스탠드얼론 파일은 의존 라이브러리를 포함하고 있어 그 라이선스를 `xsheet.licenses.txt`로 함께 배포합니다. 재배포할 때는 `LICENSE`, `NOTICE`, `xsheet.licenses.txt`를 함께 두세요.

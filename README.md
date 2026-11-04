@@ -345,6 +345,10 @@ The design documents and guides are written in Japanese.
 - Reading the zip relies on [JSZip](https://stuk.github.io/jszip/); number formats rely on [SSF](https://github.com/SheetJS/ssf).
 - XSheet was extracted from the `.xlsx` viewer in InterHub.
 
+## About us
+
+XSheet is maintained by Kwon at [SYSTEM EMUZU CO.,LTD.](https://msap2.jp/emuzu/) (株式会社システム・エムズ), a small software company in Kasaoka, Okayama, Japan, founded in 2000. We design, build and maintain web systems for businesses — event registration, cost estimation for construction, production management. Our motto is _create rich time_: software that cuts mistakes and busywork so people get their time back. We write about the apps we make and how we use AI on our [blog](https://msap2.jp/emuzu/blog/) (Japanese).
+
 ## License
 
 [MIT](LICENSE). The shape table carries Ecma International's copyright notice in [NOTICE](NOTICE), and the standalone files bundle their dependencies, whose licenses ship alongside as `xsheet.licenses.txt`. Keep `LICENSE`, `NOTICE` and `xsheet.licenses.txt` together when you redistribute.
