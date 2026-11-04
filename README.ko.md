@@ -9,6 +9,10 @@
 
 [English](README.md) · [日本語](README.ja.md) · **한국어**
 
+![XSheet로 Excel 통합 문서를 표시한 화면: 서식이 적용된 표, 세로 막대형 차트, 말풍선 도형](docs/images/screenshot.png)
+
+_Excel로 만든 통합 문서([`fixtures/excel/showcase.xlsx`](fixtures/excel/showcase.xlsx))를 XSheet로 브라우저에 표시한 화면._
+
 ---
 
 ## 만들게 된 계기

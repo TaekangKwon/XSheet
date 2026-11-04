@@ -9,6 +9,10 @@
 
 [English](README.md) · **日本語** · [한국어](README.ko.md)
 
+![XSheet で Excel のブックを表示した画面：書式付きの表・縦棒グラフ・吹き出しの図形](docs/images/screenshot.png)
+
+_Excel で作ったブック（[`fixtures/excel/showcase.xlsx`](fixtures/excel/showcase.xlsx)）を、XSheet でブラウザに表示したところ。_
+
 ---
 
 ## なぜ作ったか

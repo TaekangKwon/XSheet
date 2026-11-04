@@ -9,6 +9,10 @@
 
 **English** · [日本語](README.ja.md) · [한국어](README.ko.md)
 
+![XSheet showing an Excel workbook: a formatted table, a column chart and a callout shape](docs/images/screenshot.png)
+
+_A workbook made in Excel ([`fixtures/excel/showcase.xlsx`](fixtures/excel/showcase.xlsx)), drawn by XSheet in the browser._
+
 ---
 
 ## Why this exists
