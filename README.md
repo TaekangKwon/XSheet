@@ -347,7 +347,11 @@ The design documents and guides are written in Japanese.
 
 ## About us
 
-XSheet is maintained by Kwon at [SYSTEM EMUZU CO.,LTD.](https://msap2.jp/emuzu/) (株式会社システム・エムズ), a small software company in Kasaoka, Okayama, Japan, founded in 2000. We design, build and maintain web systems for businesses — event registration, cost estimation for construction, production management. Our motto is _create rich time_: software that cuts mistakes and busywork so people get their time back. We write about the apps we make and how we use AI on our [blog](https://msap2.jp/emuzu/blog/) (Japanese).
+This project is maintained by Kwon at **SYSTEM EMUZU CO.,LTD.** (株式会社システム・エムズ), a small software company in Kasaoka, Okayama, Japan, founded in 2000.\
+We are a team that designs, builds and maintains web systems for businesses — event registration, cost estimation for construction, production management — under the motto _create rich time_: software that cuts mistakes and busywork so people get their time back.
+
+- 🌐 [Website](https://msap2.jp/emuzu/)
+- ✍️ [Tech blog](https://msap2.jp/emuzu/blog/) — the apps we make and how we use AI (Japanese)
 
 ## License
 
