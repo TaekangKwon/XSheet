@@ -52,6 +52,7 @@ It deliberately does one thing. [SheetJS](https://sheetjs.com/) reads and writes
 </script>
 ```
 
+- Get `xsheet.min.js` from the standalone zip on Releases: see [Download the standalone zip](#download-the-standalone-zip).
 - `xsheet.min.js` is a single file that bundles its dependencies (jszip, ssf), the shape table and the chart renderer. It defines the global `XSheet` and also works on a page opened from `file://`.
 - The CSS is inserted for you. If the container has no height, the viewer uses 480 px and logs one `console.warn`.
 - A finished viewer page (pick a file or drop it): [examples/standalone.html](examples/standalone.html).
@@ -85,7 +86,7 @@ book.close();
 
 | Use | How to get it |
 | --- | --- |
-| `<script>`, or `import` without a bundler | Download `xsheet-<version>-standalone.zip` from [Releases](https://github.com/TaekangKwon/XSheet/releases) and unzip it next to your page. Contents: [docs/guide/standalone.md](docs/guide/standalone.md) |
+| `<script>`, or `import` without a bundler | Download `xsheet-<version>-standalone.zip` from [Releases](https://github.com/TaekangKwon/XSheet/releases) and unzip it next to your page ([steps](#download-the-standalone-zip)). Contents: [docs/guide/standalone.md](docs/guide/standalone.md) |
 | Bundler or Node | Install from a Git tag (below) |
 
 > [!NOTE]
@@ -97,6 +98,15 @@ npm install github:TaekangKwon/XSheet#v0.3.0
 
 - The only dependencies are `jszip` and `ssf`; they are installed with it.
 - `view`, `read`, `xsheet/core`, `MESSAGES_KO` and the standalone build arrived in v0.2.0. Charts, `readChart` and `xsheet-chart.mjs` arrived in v0.3.0.
+
+### Download the standalone zip
+
+1. Open the [latest release](https://github.com/TaekangKwon/XSheet/releases/latest) (older versions: [Releases](https://github.com/TaekangKwon/XSheet/releases)).
+2. Under **Assets**, download `xsheet-<version>-standalone.zip`. The "Source code" archives are the repository's source, not the built library.
+3. Unzip it. You get a folder `xsheet-<version>/`.
+   - To try it right away, double-click `viewer.html` (it works from `file://`) and pick or drop an `.xlsx` file. The file is read in the browser and never uploaded.
+   - To use it on your own page, copy `xsheet.min.js` next to the page and follow [One `<script>`](#one-script-no-build-tools). To `import` without a bundler, copy `xsheet.mjs`, `xsheet-geom.mjs` and `xsheet-chart.mjs` into the same folder.
+4. When you redistribute these files, keep `xsheet.licenses.txt`, `LICENSE` and `NOTICE` with them.
 
 ## How it works
 

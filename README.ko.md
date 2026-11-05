@@ -52,6 +52,7 @@ XSheet는 일부러 한 가지 일만 합니다. [SheetJS](https://sheetjs.com/)
 </script>
 ```
 
+- `xsheet.min.js`는 Releases의 스탠드얼론 zip에 들어 있습니다. 받는 방법은 「[스탠드얼론 zip 내려받기](#스탠드얼론-zip-내려받기)」를 참고하세요.
 - `xsheet.min.js`는 의존 라이브러리(jszip, ssf)와 도형 정의 테이블, 차트 렌더러를 모두 담은 파일 하나입니다. 전역 변수 `XSheet`를 만들며, `file://`로 연 페이지에서도 동작합니다.
 - CSS는 자동으로 삽입됩니다. 컨테이너에 높이가 없으면 480 px로 표시하고 `console.warn`을 한 번 출력합니다.
 - 바로 쓸 수 있는 뷰어 페이지(파일 선택 또는 끌어다 놓기): [examples/standalone.html](examples/standalone.html)
@@ -85,7 +86,7 @@ book.close();
 
 | 용도 | 설치 방법 |
 | --- | --- |
-| `<script>` 또는 번들러 없이 `import` | [Releases](https://github.com/TaekangKwon/XSheet/releases)에서 `xsheet-<version>-standalone.zip`을 내려받아 페이지와 같은 곳에 압축을 풉니다. 들어 있는 파일: [docs/guide/standalone.md](docs/guide/standalone.md) |
+| `<script>` 또는 번들러 없이 `import` | [Releases](https://github.com/TaekangKwon/XSheet/releases)에서 `xsheet-<version>-standalone.zip`을 내려받아 페이지와 같은 곳에 압축을 풉니다([순서](#스탠드얼론-zip-내려받기)). 들어 있는 파일: [docs/guide/standalone.md](docs/guide/standalone.md) |
 | 번들러 또는 Node | Git 태그로 설치합니다(아래 참고) |
 
 > [!NOTE]
@@ -97,6 +98,15 @@ npm install github:TaekangKwon/XSheet#v0.3.0
 
 - 의존 패키지는 `jszip`과 `ssf` 두 개뿐이며, 함께 설치됩니다.
 - `view`, `read`, `xsheet/core`, `MESSAGES_KO`, 스탠드얼론 빌드는 v0.2.0부터, 차트 표시와 `readChart`, `xsheet-chart.mjs`는 v0.3.0부터 쓸 수 있습니다.
+
+### 스탠드얼론 zip 내려받기
+
+1. [최신 릴리스](https://github.com/TaekangKwon/XSheet/releases/latest)를 엽니다(이전 버전은 [Releases](https://github.com/TaekangKwon/XSheet/releases)에 있습니다).
+2. **Assets**에서 `xsheet-<version>-standalone.zip`을 내려받습니다. "Source code" 압축 파일은 저장소의 소스이고, 빌드된 라이브러리가 아닙니다.
+3. 압축을 풀면 `xsheet-<version>/` 폴더가 생깁니다.
+   - 바로 써 보려면 `viewer.html`을 더블클릭하고(`file://`에서도 동작합니다) `.xlsx` 파일을 고르거나 끌어다 놓습니다. 파일은 브라우저 안에서만 읽으며 어디에도 전송하지 않습니다.
+   - 내 페이지에서 쓰려면 `xsheet.min.js`를 페이지와 같은 곳에 복사하고 [빠른 시작](#빠른-시작)의 예대로 작성합니다. 번들러 없이 `import`하려면 `xsheet.mjs`, `xsheet-geom.mjs`, `xsheet-chart.mjs`를 같은 폴더에 복사합니다.
+4. 이 파일들을 다시 배포할 때는 `xsheet.licenses.txt`, `LICENSE`, `NOTICE`를 함께 두세요.
 
 ## 동작 방식
 
