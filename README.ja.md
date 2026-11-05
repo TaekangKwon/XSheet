@@ -92,11 +92,11 @@ book.close();
 > XSheet は**まだ npm に公開していません**。Git のタグごとにビルド済みの `dist/` が入っているため、タグからインストールしてもビルドスクリプトは実行されません（[ADR-0002](docs/adr/0002-build-and-distribution.md)）。
 
 ```bash
-npm install github:TaekangKwon/XSheet#v0.3.0
+npm install github:TaekangKwon/XSheet#v0.4.0
 ```
 
 - 依存パッケージは `jszip` と `ssf` の 2 つだけで、一緒にインストールされます。
-- `view`、`read`、`xsheet/core`、`MESSAGES_KO`、スタンドアロン版は v0.2.0 から、グラフの表示、`readChart`、`xsheet-chart.mjs` は v0.3.0 から使えます。
+- `view`、`read`、`xsheet/core`、`MESSAGES_KO`、スタンドアロン版は v0.2.0 から、グラフの表示、`readChart`、`xsheet-chart.mjs` は v0.3.0 から、`tabPosition` は v0.4.0 から使えます。
 
 ## 仕組み
 
