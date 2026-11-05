@@ -13,6 +13,8 @@
 
 _Excel로 만든 통합 문서([`fixtures/excel/showcase.xlsx`](fixtures/excel/showcase.xlsx))를 XSheet로 브라우저에 표시한 화면._
 
+**[데모 사용해 보기](https://taekangkwon.github.io/XSheet/)** — 가지고 있는 `.xlsx`를 열거나 샘플을 고를 수 있습니다. 파일은 브라우저 안에서만 읽으며 어디에도 전송하지 않습니다.
+
 ---
 
 ## 만들게 된 계기

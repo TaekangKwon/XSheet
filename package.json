@@ -72,6 +72,7 @@
     "geom:build": "node tools/geom/build-preset-geom.mjs",
     "geom:compare": "node fixtures/excel/compare-ref-geoms.mjs",
     "examples": "vite --config examples/vite.config.ts",
+    "pages:build": "node tools/pages/build.mjs",
     "examples:static": "vite preview --outDir . --host localhost --port 5174 --strictPort"
   },
   "dependencies": {

@@ -13,6 +13,8 @@
 
 _Excel で作ったブック（[`fixtures/excel/showcase.xlsx`](fixtures/excel/showcase.xlsx)）を、XSheet でブラウザに表示したところ。_
 
+**[デモを試す](https://taekangkwon.github.io/XSheet/)** — 手元の `.xlsx` を開くか、サンプルを選べます。ファイルはブラウザの中で読み込むだけで、どこにも送信しません。
+
 ---
 
 ## なぜ作ったか

@@ -116,6 +116,11 @@ describe('examples/main.ts', () => {
       expect(existsSync(join(process.cwd(), 'fixtures/excel', f)), f).toBe(true);
     }
   });
+
+  it('サンプルはページからの相対で読む（Pages の <サイト>/examples/ でも動く・ADR-0005）', () => {
+    expect(mainTs).toContain('fetch(`../fixtures/excel/${file}`)');
+    expect(mainTs).not.toMatch(/fetch\(`\//);
+  });
 });
 
 describe('examples/standalone.html・esm.html（M6-4・単独版）', () => {
