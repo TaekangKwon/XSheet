@@ -1,6 +1,6 @@
 {
   "name": "xsheet",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "license": "MIT",
   "description": "Render .xlsx files in the browser the way Excel shows them — read-only, no server, no network.",
   "keywords": [
@@ -72,6 +72,7 @@
     "geom:build": "node tools/geom/build-preset-geom.mjs",
     "geom:compare": "node fixtures/excel/compare-ref-geoms.mjs",
     "examples": "vite --config examples/vite.config.ts",
+    "pages:build": "node tools/pages/build.mjs",
     "examples:static": "vite preview --outDir . --host localhost --port 5174 --strictPort"
   },
   "dependencies": {

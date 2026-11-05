@@ -13,6 +13,8 @@
 
 _Excel로 만든 통합 문서([`fixtures/excel/showcase.xlsx`](fixtures/excel/showcase.xlsx))를 XSheet로 브라우저에 표시한 화면._
 
+**[데모 사용해 보기](https://taekangkwon.github.io/XSheet/)** — 가지고 있는 `.xlsx`를 열거나 샘플을 고를 수 있습니다. 파일은 브라우저 안에서만 읽으며 어디에도 전송하지 않습니다.
+
 ---
 
 ## 만들게 된 계기
@@ -93,11 +95,11 @@ book.close();
 > XSheet는 **아직 npm에 올리지 않았습니다.** Git 태그마다 빌드된 `dist/`가 들어 있어서, 태그로 설치해도 빌드 스크립트가 실행되지 않습니다([ADR-0002](docs/adr/0002-build-and-distribution.md)).
 
 ```bash
-npm install github:TaekangKwon/XSheet#v0.3.0
+npm install github:TaekangKwon/XSheet#v0.4.0
 ```
 
 - 의존 패키지는 `jszip`과 `ssf` 두 개뿐이며, 함께 설치됩니다.
-- `view`, `read`, `xsheet/core`, `MESSAGES_KO`, 스탠드얼론 빌드는 v0.2.0부터, 차트 표시와 `readChart`, `xsheet-chart.mjs`는 v0.3.0부터 쓸 수 있습니다.
+- `view`, `read`, `xsheet/core`, `MESSAGES_KO`, 스탠드얼론 빌드는 v0.2.0부터, 차트 표시와 `readChart`, `xsheet-chart.mjs`는 v0.3.0부터, `tabPosition`은 v0.4.0부터 쓸 수 있습니다.
 
 ### 스탠드얼론 zip 내려받기
 
