@@ -161,7 +161,8 @@ sampleSelect.addEventListener('change', () => {
   }
   fileInput.value = '';
   void load(file, async () => {
-    const res = await fetch(`/fixtures/excel/${file}`);
+    // ページからの相対（開発サーバーの /examples/ でも、Pages の <サイト>/examples/ でも同じ場所を指す）
+    const res = await fetch(`../fixtures/excel/${file}`);
     if (!res.ok) {
       throw new Error(`${file} を読めない（${res.status}）`);
     }

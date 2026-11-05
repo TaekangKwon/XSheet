@@ -157,3 +157,6 @@
 ## 2026-11-05 シートタブの位置を選ぶ（#17）
 - `renderWorkbook`・`view` に `tabPosition`（`'top'`・`'bottom'`。既定 `'top'`）を足した。`'bottom'` ではタブ列を DOM でもシートの表示の後ろへ動かし、根に `xs-tabs-bottom` を付けて余白を上へ回す（style.css）。写したファイル `render-workbook.ts` の変更なので `XSheet:` の印を付けた。
 - テスト（DOM の順・既定値・知らない値・入口の層からの受け渡し・CSS）、README 3 言語・02 §3・CHANGELOG・例のページ（タブの上・下の切り替え）を足した。例のページで上・下・ダークを目で確かめた。
+## 2026-11-05 v0.4.0・GitHub Pages のデモ（ADR-0005）
+- PR #19（版を 0.4.0・CHANGELOG の日付）をマージ（3efbc15）。main で build・check:consumer・check:standalone・size が通ることを確かめ、release/v0.4.0 に dist だけのコミット（3026b59）を作って注釈付きのタグ v0.4.0 を push（タグだけ）。タグの中に exports の先 11 個・NOTICE・LICENSE・単独版があることを確かめた。GitHub Release「XSheet 0.4.0」に xsheet-0.4.0-standalone.zip（329,629 B・11 ファイル）を添付。
+- 例のページを Pages のデモにした：`npm run pages:build`（相対の base・見本のサンプル 10 個を写す）・`pages.yml`（main への push で出す）・CI に pages:build。サンプルの読み込みをページからの相対にした。`vite preview --base /XSheet/` で表・グラフ・図形と CSP の違反が無いことを確かめた。

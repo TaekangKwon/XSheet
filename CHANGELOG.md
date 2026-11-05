@@ -4,7 +4,13 @@
 
 ## [Unreleased]
 
-公開の準備（[ADR-0004](docs/adr/0004-public-release.md)）。
+### 追加
+
+- GitHub Pages のデモ（https://taekangkwon.github.io/XSheet/。[ADR-0005](docs/adr/0005-pages-demo.md)）。例のページを `npm run pages:build` でビルドし、`main` への push で Actions が出す。例のページのサンプルはページからの相対で読むようにした。
+
+## [0.4.0] - 2026-11-05
+
+リポジトリを公開して最初の版（[ADR-0004](docs/adr/0004-public-release.md)）。シートタブの位置を選べるようにした。0.3.0 の公開物はすべて残る。
 
 ### 追加
 
@@ -71,5 +77,8 @@ InterHub のグラフ（ADR-0031・ISSUE-101〜111）を取り込んだ（M7）�
 - 表示の状態をモジュール変数ではなく表示ごとのインスタンスに持ち、同じページに複数の表示を置けるようにした。
 - 形の評価器を描画側から独立させ（`xsheet/geom`）、core が描画に依存する逆転をなくした。
 
+[Unreleased]: https://github.com/TaekangKwon/XSheet/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.4.0
+[0.3.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.3.0
 [0.2.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.2.0
 [0.1.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.1.0
