@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### 追加
+
+- GitHub Pages のデモ（https://taekangkwon.github.io/XSheet/。[ADR-0005](docs/adr/0005-pages-demo.md)）。例のページを `npm run pages:build` でビルドし、`main` への push で Actions が出す。例のページのサンプルはページからの相対で読むようにした。
+
 ## [0.4.0] - 2026-11-05
 
 リポジトリを公開して最初の版（[ADR-0004](docs/adr/0004-public-release.md)）。シートタブの位置を選べるようにした。0.3.0 の公開物はすべて残る。
