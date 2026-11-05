@@ -10,7 +10,7 @@ import tseslint from 'typescript-eslint';
 export default tseslint.config(
   {
     // 生成物・文書は対象外
-    ignores: ['dist/**', 'release/**', 'node_modules/**', 'coverage/**', 'docs/**'],
+    ignores: ['dist/**', 'release/**', 'pages/**', 'node_modules/**', 'coverage/**', 'docs/**'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

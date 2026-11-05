@@ -13,6 +13,8 @@
 
 _A workbook made in Excel ([`fixtures/excel/showcase.xlsx`](fixtures/excel/showcase.xlsx)), drawn by XSheet in the browser._
 
+**[Try the live demo](https://taekangkwon.github.io/XSheet/)** — open your own `.xlsx` or pick a sample. Files are read in your browser and never uploaded.
+
 ---
 
 ## Why this exists

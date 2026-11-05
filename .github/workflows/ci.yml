@@ -49,3 +49,6 @@ jobs:
 
       - name: Standalone check
         run: npm run check:standalone
+
+      - name: Pages build
+        run: npm run pages:build

@@ -7,6 +7,8 @@ coverage/
 dist/
 # 単独版の zip（npm run release:zip。GitHub Release に添付する）
 release/
+# GitHub Pages のデモ（npm run pages:build。Actions が作って出す・ADR-0005）
+/pages/
 
 # Claude Code の個人設定・セッション引き継ぎ（progress.md はコミットする）
 CLAUDE.local.md
