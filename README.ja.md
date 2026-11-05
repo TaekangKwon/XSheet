@@ -54,6 +54,7 @@ XSheet はあえて 1 つのことしかしません。[SheetJS](https://sheetjs
 </script>
 ```
 
+- `xsheet.min.js` は Releases のスタンドアロン版の zip に入っています。入手方法は「[スタンドアロン版の zip をダウンロードする](#スタンドアロン版の-zip-をダウンロードする)」を参照してください。
 - `xsheet.min.js` は、依存ライブラリ（jszip、ssf）、図形の定義表、グラフの描画をすべて含んだ 1 つのファイルです。グローバル変数 `XSheet` を定義し、`file://` で開いたページでも動きます。
 - CSS は自動で挿入されます。コンテナに高さがない場合は 480 px で表示し、`console.warn` を 1 回出します。
 - そのまま使えるビューアのページ（ファイルを選択、またはドロップ）：[examples/standalone.html](examples/standalone.html)
@@ -87,7 +88,7 @@ book.close();
 
 | 使い方 | 入手方法 |
 | --- | --- |
-| `<script>`、またはバンドラなしの `import` | [Releases](https://github.com/TaekangKwon/XSheet/releases) から `xsheet-<version>-standalone.zip` をダウンロードし、ページと同じ場所に展開します。中身：[docs/guide/standalone.md](docs/guide/standalone.md) |
+| `<script>`、またはバンドラなしの `import` | [Releases](https://github.com/TaekangKwon/XSheet/releases) から `xsheet-<version>-standalone.zip` をダウンロードし、ページと同じ場所に展開します（[手順](#スタンドアロン版の-zip-をダウンロードする)）。中身：[docs/guide/standalone.md](docs/guide/standalone.md) |
 | バンドラ、または Node | Git のタグからインストールします（下記） |
 
 > [!NOTE]
@@ -99,6 +100,15 @@ npm install github:TaekangKwon/XSheet#v0.4.0
 
 - 依存パッケージは `jszip` と `ssf` の 2 つだけで、一緒にインストールされます。
 - `view`、`read`、`xsheet/core`、`MESSAGES_KO`、スタンドアロン版は v0.2.0 から、グラフの表示、`readChart`、`xsheet-chart.mjs` は v0.3.0 から、`tabPosition` は v0.4.0 から使えます。
+
+### スタンドアロン版の zip をダウンロードする
+
+1. [最新のリリース](https://github.com/TaekangKwon/XSheet/releases/latest)を開きます（以前の版は [Releases](https://github.com/TaekangKwon/XSheet/releases) にあります）。
+2. **Assets** から `xsheet-<version>-standalone.zip` をダウンロードします。「Source code」のアーカイブはリポジトリのソースで、ビルド済みのライブラリではありません。
+3. 展開すると `xsheet-<version>/` フォルダができます。
+   - すぐに試すなら、`viewer.html` をダブルクリックして（`file://` で動きます）、`.xlsx` ファイルを選ぶかドロップします。ファイルはブラウザの中で読み込むだけで、どこにも送信しません。
+   - 自分のページで使うなら、`xsheet.min.js` をページと同じ場所にコピーし、[クイックスタート](#クイックスタート)の例のとおりに書きます。バンドラなしで `import` するなら、`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet-chart.mjs` を同じフォルダにコピーします。
+4. これらのファイルを再配布するときは、`xsheet.licenses.txt`・`LICENSE`・`NOTICE` を一緒に置いてください。
 
 ## 仕組み
 
