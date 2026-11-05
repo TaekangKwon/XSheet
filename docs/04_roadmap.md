@@ -99,4 +99,4 @@ flowchart LR
 | Excel との照合 | 罫線 E1〜E5・書式 F1〜F10 の暫定項目を Excel 16 で確かめる（[05_quality.md](05_quality.md) §3） |
 | 表示の追加 | 揃えと折り返し・条件付き書式・テーブルのスタイル・フォント名・リッチテキストの部分書式・グラフの G2（面・散布図・データラベル・第 2 軸・組み合わせ） |
 | 操作 | `scrollToCell`・セルの選択とコピー・検索 |
-| 公開 | npm 公開（ライセンスの決定・名前の確認・`provenance`） |
+| 公開 | npm 公開：**名前・入口は決定**（2026-11-05・[ADR-0006](adr/0006-npm-publish.md)。`@taekangkwon/xsheet`・`xsheet/internal` を外す）。残りは ADR-0006 §4（アカウントと Trusted Publisher の用意・名前の付け替え・`publish.yml`・0.5.0） |

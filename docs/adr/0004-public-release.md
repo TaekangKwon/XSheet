@@ -44,7 +44,7 @@ accepted（2026-10-30。ユーザーが推奨案「MIT・履歴を残す・英�
 ### 4. 配り方（D5）と npm
 
 - 変えない。タグに `dist/` を含め（ADR-0002）、GitHub Release に単独版の zip を添付する（ADR-0003 §6）。公開すれば `npm install github:TaekangKwon/XSheet#v<版>` と zip が権限なしで使える。
-- npm への公開は、名前 `xsheet` が空いているかの確認と、半公開の入口 `xsheet/internal` の扱い（版の互換を約束しない）を決めてから別に決める。
+- npm への公開は、名前 `xsheet` が空いているかの確認と、半公開の入口 `xsheet/internal` の扱い（版の互換を約束しない）を決めてから別に決める。→ [ADR-0006](0006-npm-publish.md) で決めた（2026-11-05）。
 
 ### 5. 外に出さないもの
 
