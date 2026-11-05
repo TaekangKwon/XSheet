@@ -18,6 +18,13 @@ import { createSheetView, xlsxErrorMessage } from './sheet-view';
 export interface WorkbookOptions extends RenderOptions {
   /** 読み取りの上限を替える（`openXlsx` の `limits`。既定は `DEFAULT_LIMITS`） */
   limits?: Partial<XlsxLimits>;
+  /**
+   * シートタブの列を置く場所（既定 `'top'`＝表の上。`'bottom'` は Excel と同じく表の下）。
+   * `'bottom'` ではタブ列を DOM でもシートの表示の後ろに置き、根に `xs-tabs-bottom` を付ける。
+   * 知らない値は `'top'` と同じ。
+   * XSheet: タブの位置を選べるように足した（Issue #17）
+   */
+  tabPosition?: 'top' | 'bottom';
 }
 
 /** タブ付きのブックの表示 */
@@ -58,6 +65,7 @@ function messageView(root: HTMLElement): WorkbookView {
 /**
  * xlsx を開き、シートタブ付きで `container` の中に表示する。
  * 最初に出すシートは、最初の表示（非表示でない）シート。全部非表示なら先頭。
+ * タブ列は既定で表の上、`tabPosition: 'bottom'` なら表の下。
  * `container` は高さが決まっていること（タブ列の下のスクロール枠 `.xs-body` が仮想化の窓になる）。
  *
  * @param container 表示を置く要素（子として `div.xs-workbook` を足す。`container` 自身には何も付けない）
@@ -92,6 +100,8 @@ export async function renderWorkbook(
   let closed = false;
   const buttons = sheets.map((info) => makeSheetTab(info.name, info.hidden, messages));
   const strip = buildSheetTabStrip(buttons, messages);
+  // XSheet: タブ列を下に置くときは、DOM の順も見た目と同じ（シートの表示 → タブ列）にする（Issue #17）
+  const tabsBottom = options.tabPosition === 'bottom';
   root.append(strip.element);
   // シートの表示は 1 冊に 1 つ（タブ列の後ろに `div.xs-sheet` を足す）
   const view = createSheetView(root, book, {
@@ -99,6 +109,10 @@ export async function renderWorkbook(
     drawings: options.drawings !== false,
     nonce: options.nonce,
   });
+  if (tabsBottom) {
+    root.classList.add('xs-tabs-bottom');
+    root.append(strip.element); // 足し直すと末尾へ動く
+  }
 
   /** 指定のシートを開いて表示する（タブ操作・初期表示）。 */
   const showSheet = async (index: number): Promise<void> => {

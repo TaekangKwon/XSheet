@@ -147,6 +147,7 @@ Shows the whole workbook with sheet tabs. Returns `Promise<Viewer>`.
 | `css` | `'auto'` | Insert the CSS once as a `<style>`. Skipped if `style.css` / `xsheet.css` is already loaded. `'none'` never inserts it |
 | `height` | `'auto'` | Use 480 px only when the container's height is 0. A number means px; a string is a CSS length (`'70vh'`) |
 | `drawings` | `true` | Show the drawing layer (pictures, shapes, lines, charts) |
+| `tabPosition` | `'top'` | Where to put the sheet tabs: `'top'` (above the grid) or `'bottom'` (below it, as in Excel) |
 | `nonce` | — | Nonce for the inserted `<style>` and the format `<style>` (for CSP; see [docs/guide/csp.md](docs/guide/csp.md)) |
 | `limits` | `DEFAULT_LIMITS` | Override some of the read limits |
 
@@ -219,6 +220,7 @@ book.close();
 | --- | --- | --- |
 | `messages` | Japanese (`MESSAGES_JA`) | UI text; partial objects are fine. Pass `MESSAGES_EN` for English or `MESSAGES_KO` for Korean |
 | `drawings` | `true` | Show the drawing layer. With `false`, drawings are not even read |
+| `tabPosition` | `'top'` | `'top'` or `'bottom'`: where to put the sheet tabs (`renderWorkbook` only) |
 | `nonce` | — | Nonce for the format `<style>` element (for CSP `style-src 'nonce-…'`) |
 | `limits` | `DEFAULT_LIMITS` | Read limits (`renderWorkbook` only; for `renderSheet`, pass them to `openXlsx`) |
 
