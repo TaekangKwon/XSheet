@@ -94,11 +94,11 @@ book.close();
 > XSheet is **not published to npm yet**. Each Git tag contains a built `dist/`, so installing from a tag runs no build scripts ([ADR-0002](docs/adr/0002-build-and-distribution.md)).
 
 ```bash
-npm install github:TaekangKwon/XSheet#v0.3.0
+npm install github:TaekangKwon/XSheet#v0.4.0
 ```
 
 - The only dependencies are `jszip` and `ssf`; they are installed with it.
-- `view`, `read`, `xsheet/core`, `MESSAGES_KO` and the standalone build arrived in v0.2.0. Charts, `readChart` and `xsheet-chart.mjs` arrived in v0.3.0.
+- `view`, `read`, `xsheet/core`, `MESSAGES_KO` and the standalone build arrived in v0.2.0. Charts, `readChart` and `xsheet-chart.mjs` arrived in v0.3.0, and `tabPosition` in v0.4.0.
 
 ## How it works
 
