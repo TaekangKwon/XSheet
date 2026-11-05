@@ -160,3 +160,8 @@
 ## 2026-11-05 v0.4.0・GitHub Pages のデモ（ADR-0005）
 - PR #19（版を 0.4.0・CHANGELOG の日付）をマージ（3efbc15）。main で build・check:consumer・check:standalone・size が通ることを確かめ、release/v0.4.0 に dist だけのコミット（3026b59）を作って注釈付きのタグ v0.4.0 を push（タグだけ）。タグの中に exports の先 11 個・NOTICE・LICENSE・単独版があることを確かめた。GitHub Release「XSheet 0.4.0」に xsheet-0.4.0-standalone.zip（329,629 B・11 ファイル）を添付。
 - 例のページを Pages のデモにした：`npm run pages:build`（相対の base・見本のサンプル 10 個を写す）・`pages.yml`（main への push で出す）・CI に pages:build。サンプルの読み込みをページからの相対にした。`vite preview --base /XSheet/` で表・グラフ・図形と CSP の違反が無いことを確かめた。
+- PR #20 をマージ（e616adc）。リポジトリの Pages の設定を「GitHub Actions から出す」にし（`gh api -X POST …/pages -f build_type=workflow`）、最初の配備が通った。https://taekangkwon.github.io/XSheet/ から見本の例のページへ移り、表・グラフ・図形（path 335 個）が出てコンソールのエラーが無いことを確かめた。
+
+## 2026-11-05 README の zip の手順・ADR-0006（npm の名前と入口）
+- README（英・日・韓）のインストールの節に、Releases からスタンドアロン版の zip を落として使う手順（最新のリリース → Assets → 展開して viewer.html／xsheet.min.js → 再配布ではライセンスのファイルも）を足し、クイックスタートと表からリンクした（PR #21）。
+- npm の名前を確かめた：`xsheet` は無いが `x-sheet`（0.0.0）があり、記号だけが違う名前は断られるおそれが高い。ユーザーが推奨案で決め、ADR-0006 にした（`@taekangkwon/xsheet`・`xsheet/internal` を exports から外す・Release の公開で Actions から信頼された公開と provenance）。付け替えと公開は §4 の別の作業（PR #22）。
