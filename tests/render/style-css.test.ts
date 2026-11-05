@@ -98,6 +98,13 @@ describe('スクロール枠と固定の見出し', () => {
     expect(tabs).toContain('min-width: 0');
     expect(rule('.xs-sheet-tab')).toContain('flex-shrink: 0');
   });
+
+  it('タブ列を下に置くとき（xs-tabs-bottom）は、表との間の余白を上へ回す', () => {
+    expect(rule('.xs-sheet-strip')).toContain('margin-bottom: 16px');
+    const bottom = rule('.xs-workbook.xs-tabs-bottom > .xs-sheet-strip');
+    expect(bottom).toContain('margin-top: 16px');
+    expect(bottom).toContain('margin-bottom: 0');
+  });
 });
 
 describe('ダーク表示（M6-2・ADR-0003 §2）', () => {

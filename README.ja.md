@@ -147,6 +147,7 @@ graph LR
 | `css` | `'auto'` | CSS を `<style>` として 1 回だけ挿入します。`style.css` や `xsheet.css` を読み込み済みなら挿入しません。`'none'` なら常に挿入しません |
 | `height` | `'auto'` | コンテナの高さが 0 のときだけ 480 px で表示します。数値は px、文字列は CSS の長さ（`'70vh'` など） |
 | `drawings` | `true` | 図のレイヤー（画像、図形、線、グラフ）を表示するかどうか |
+| `tabPosition` | `'top'` | シートタブを置く場所。`'top'`（表の上）か `'bottom'`（Excel と同じく表の下） |
 | `nonce` | — | 自動で挿入する `<style>` と書式用の `<style>` に付ける nonce（CSP 用。[docs/guide/csp.md](docs/guide/csp.md) を参照） |
 | `limits` | `DEFAULT_LIMITS` | 読み取りの上限の一部を変更します |
 
@@ -219,6 +220,7 @@ book.close();
 | --- | --- | --- |
 | `messages` | 日本語（`MESSAGES_JA`） | 画面の文言。一部のキーだけを渡しても構いません。英語なら `MESSAGES_EN`、韓国語なら `MESSAGES_KO` を渡します |
 | `drawings` | `true` | 図のレイヤーを表示するかどうか。`false` なら図をそもそも読み込みません |
+| `tabPosition` | `'top'` | シートタブを置く場所。`'top'` か `'bottom'`（`renderWorkbook` のみ） |
 | `nonce` | — | 書式用の `<style>` 要素に付ける nonce（CSP の `style-src 'nonce-…'` 用） |
 | `limits` | `DEFAULT_LIMITS` | 読み取りの上限（`renderWorkbook` のみ。`renderSheet` を使うときは `openXlsx` に渡します） |
 

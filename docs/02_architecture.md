@@ -115,6 +115,7 @@ export function renderSheet(container: HTMLElement, book: XlsxBook, sheetIndex: 
 
 export interface WorkbookOptions extends RenderOptions {
   limits?: Partial<XlsxLimits>;         // openXlsx に渡す上限
+  tabPosition?: 'top' | 'bottom';       // タブ列の場所（既定 top。Issue #17）
 }
 export interface WorkbookView extends SheetView {
   readonly sheets: readonly SheetInfo[];   // タブの並び。開けなかったブック・シート 0 枚では空（M6-2）
@@ -136,7 +137,7 @@ export function renderWorkbook(container: HTMLElement, data: ArrayBuffer | Uint8
   5. スクロールごとに `getRows` → 表（`buildGridTable`）→ 罫線（`buildBorderPaths`）。
   6. `destroy` で層（blob URL を revoke）・罫線・シートを放し、根を `container` から外す。ブックは閉じない。
 - `renderWorkbook`（M2-4）：
-  - DOM：`container` の子に `div.xs-workbook` ＞ [`div.xs-sheet-strip`（タブ列）・`div.xs-sheet`（上のシートの表示）]。タブ列は `button.xs-sheet-nav`（◀）・`div.xs-sheet-tabs`（横スクロール）＞ `button.xs-sheet-tab`…・`button.xs-sheet-nav`（▶）。タブは `is-active`・`is-hidden-sheet`（名前に ` ⌀`、title に名前と `hiddenSheet`）。
+  - DOM：`container` の子に `div.xs-workbook` ＞ [`div.xs-sheet-strip`（タブ列）・`div.xs-sheet`（上のシートの表示）]。タブ列は `button.xs-sheet-nav`（◀）・`div.xs-sheet-tabs`（横スクロール）＞ `button.xs-sheet-tab`…・`button.xs-sheet-nav`（▶）。タブは `is-active`・`is-hidden-sheet`（名前に ` ⌀`、title に名前と `hiddenSheet`）。`tabPosition: 'bottom'` では子の順が [`div.xs-sheet`・`div.xs-sheet-strip`] になり、根に `xs-tabs-bottom` を付ける（タブ列と表の間の余白を上へ回す。知らない値は `top`。Issue #17）。
   - シートの表示は 1 冊に 1 つ（`createSheetView`）で、タブは同じインスタンスの `showSheet` でシートを替える（書式の `<style>` はブックで 1 つのまま）。最初に出すのは最初の表示（非表示でない）シート、全部非表示なら先頭。
   - 開けない（`openXlsx` の例外）ときは例外にせず `div.xs-workbook` ＞ `div.xs-banner`（種類ごとの文言）、シートが 0 枚なら `div.xs-empty`（`noSheets`。ブックは閉じる）で解決する。どちらも `showSheet` は `RangeError`。
   - `destroy`：タブ列（リスナ・ResizeObserver・rAF）→ シートの表示 → `book.close()` → 根を外す。何度呼んでもよい。
@@ -156,6 +157,7 @@ export interface ViewOptions extends ReadOptions {
   css?: 'auto' | 'none';                // 既定 auto
   height?: number | string;             // 既定 'auto'。数値は px、文字列は CSS の長さ
   drawings?: boolean;                   // 既定 true
+  tabPosition?: 'top' | 'bottom';       // 既定 top。renderWorkbook にそのまま渡す
   nonce?: string;                       // 自動の <style> と書式の <style> に付ける
 }
 export interface Viewer {

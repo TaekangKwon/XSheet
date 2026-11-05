@@ -147,6 +147,7 @@ graph LR
 | `css` | `'auto'` | CSS를 `<style>`로 한 번만 삽입. `style.css`나 `xsheet.css`가 이미 로드되어 있으면 삽입하지 않음. `'none'`이면 항상 삽입하지 않음 |
 | `height` | `'auto'` | 컨테이너 높이가 0일 때만 480 px로 표시. 숫자는 px, 문자열은 CSS 길이(`'70vh'` 등) |
 | `drawings` | `true` | 드로잉 레이어(그림, 도형, 선, 차트)를 표시할지 여부 |
+| `tabPosition` | `'top'` | 시트 탭을 놓을 위치. `'top'`(표 위) 또는 `'bottom'`(Excel처럼 표 아래) |
 | `nonce` | — | 자동으로 삽입하는 `<style>`과 서식용 `<style>`에 붙일 nonce(CSP용. [docs/guide/csp.md](docs/guide/csp.md) 참고) |
 | `limits` | `DEFAULT_LIMITS` | 읽기 상한값 중 일부를 바꿈 |
 
@@ -219,6 +220,7 @@ book.close();
 | --- | --- | --- |
 | `messages` | 일본어(`MESSAGES_JA`) | UI 문구. 일부 키만 넘겨도 됨. 영어는 `MESSAGES_EN`, 한국어는 `MESSAGES_KO`를 넘김 |
 | `drawings` | `true` | 드로잉 레이어를 표시할지 여부. `false`이면 그림·도형을 아예 읽지 않음 |
+| `tabPosition` | `'top'` | 시트 탭을 놓을 위치. `'top'` 또는 `'bottom'`(`renderWorkbook`에만 해당) |
 | `nonce` | — | 서식용 `<style>` 요소에 붙일 nonce(CSP의 `style-src 'nonce-…'`용) |
 | `limits` | `DEFAULT_LIMITS` | 읽기 상한값(`renderWorkbook`에만 해당. `renderSheet`를 쓸 때는 `openXlsx`에 넘김) |
 

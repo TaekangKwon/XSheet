@@ -73,6 +73,16 @@ describe('view：表示と Viewer', () => {
     ]);
   });
 
+  it('tabPosition を renderWorkbook へ渡す（bottom ならタブ列が表の下。既定は上）', async () => {
+    const el = container();
+    await open(el, book, { tabPosition: 'bottom' });
+    const kids = (): string[] =>
+      [...el.querySelector('.xs-workbook')!.children].map((c) => c.className);
+    expect(kids()).toEqual(['xs-sheet', 'xs-sheet-strip']);
+    await open(el, book);
+    expect(kids()).toEqual(['xs-sheet-strip', 'xs-sheet']);
+  });
+
   it('showSheet は番号でも名前でも替えられ、無い名前・番号は RangeError', async () => {
     const el = container();
     const v = await open(el, book);

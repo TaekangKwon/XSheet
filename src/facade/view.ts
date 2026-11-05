@@ -41,6 +41,8 @@ export interface ViewOptions extends ReadOptions {
   height?: number | string;
   /** 図の層（画像・図形・線）を出すか（既定 true） */
   drawings?: boolean;
+  /** シートタブの列を置く場所（既定 `'top'`＝表の上。`'bottom'` は表の下） */
+  tabPosition?: 'top' | 'bottom';
   /** 自動で入れる `<style>`・書式の `<style>` に付ける nonce（CSP の `style-src 'nonce-…'` 用） */
   nonce?: string;
 }
@@ -150,6 +152,7 @@ export async function view(
     workbook = await renderWorkbook(root, bytes, {
       messages: pickMessages(container.ownerDocument, options),
       drawings: options.drawings,
+      tabPosition: options.tabPosition,
       nonce: options.nonce,
       limits: options.limits,
     });

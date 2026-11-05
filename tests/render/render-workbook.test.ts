@@ -63,6 +63,36 @@ describe('renderWorkbook（タブ）', () => {
     expect([...root.children].map((c) => c.className)).toEqual(['xs-sheet-strip', 'xs-sheet']);
   });
 
+  it('tabPosition: bottom ならタブ列はシートの表示の後ろで、根に xs-tabs-bottom が付く。タブはそのまま使える', async () => {
+    const { root } = await mountWorkbook(
+      {
+        sheets: [
+          { name: 'One', rows: [['first']] },
+          { name: 'Two', rows: [['second']] },
+        ],
+      },
+      { tabPosition: 'bottom' },
+    );
+    expect(root.className).toBe('xs-workbook xs-tabs-bottom');
+    expect([...root.children].map((c) => c.className)).toEqual(['xs-sheet', 'xs-sheet-strip']);
+    sheetTabs(root)[1]!.click();
+    await wait();
+    expect(a1(root)).toBe('second');
+    // シートを替えてもタブ列は末尾のまま
+    expect(root.lastElementChild?.className).toBe('xs-sheet-strip');
+  });
+
+  it('tabPosition: top・省略・知らない値はタブ列が先頭で、xs-tabs-bottom を付けない', async () => {
+    const spec = { sheets: [{ name: 'S', rows: [['a']] }] };
+    for (const tabPosition of ['top', undefined, 'left'] as const) {
+      const { root } = await mountWorkbook(spec, {
+        tabPosition: tabPosition as 'top' | undefined,
+      });
+      expect(root.className).toBe('xs-workbook');
+      expect([...root.children].map((c) => c.className)).toEqual(['xs-sheet-strip', 'xs-sheet']);
+    }
+  });
+
   it('シートタブ列は ◀ ▶ ボタンとスクロール領域を持ち、シート数ぶんのタブがスクロール領域の中に並ぶ', async () => {
     const { root, view } = await mountWorkbook({
       sheets: Array.from({ length: 10 }, (_, i) => ({ name: `S${i + 1}`, rows: [[`v${i + 1}`]] })),

@@ -435,6 +435,12 @@
   margin-bottom: 16px;
 }
 
+/* タブ列を表の下に置くとき（renderWorkbook の tabPosition: 'bottom'。DOM でもシートの後ろ）は、表との間の余白を上へ回す。 */
+.xs-workbook.xs-tabs-bottom > .xs-sheet-strip {
+  margin-top: 16px;
+  margin-bottom: 0;
+}
+
 .xs-sheet-tabs {
   position: relative; /* タブの offsetLeft をスクロール領域の中の座標にする */
   display: flex;

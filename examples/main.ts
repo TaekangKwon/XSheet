@@ -37,6 +37,7 @@ const sampleSelect = byId<HTMLSelectElement>('sample');
 const themeSelect = byId<HTMLSelectElement>('theme');
 const langSelect = byId<HTMLSelectElement>('lang');
 const drawingsCheck = byId<HTMLInputElement>('drawings');
+const tabPositionSelect = byId<HTMLSelectElement>('tab-position');
 const statusOut = byId<HTMLOutputElement>('status');
 const viewer = byId<HTMLElement>('viewer');
 
@@ -97,6 +98,7 @@ async function show(): Promise<void> {
   const next = await renderWorkbook(viewer, current.data, {
     messages: langSelect.value === 'en' ? MESSAGES_EN : MESSAGES_JA,
     drawings: drawingsCheck.checked,
+    tabPosition: tabPositionSelect.value === 'bottom' ? 'bottom' : 'top',
     nonce,
   });
   if (mySeq !== seq) {
@@ -177,6 +179,7 @@ themeSelect.addEventListener('change', () => {
 
 langSelect.addEventListener('change', reshow);
 drawingsCheck.addEventListener('change', reshow);
+tabPositionSelect.addEventListener('change', reshow);
 
 // ?sample=<ファイル名> で開いたら、そのサンプルを最初から表示する（README の画面を撮るため）。一覧に無い名前は無視する
 const initialSample = new URLSearchParams(location.search).get('sample');

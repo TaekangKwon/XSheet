@@ -153,3 +153,7 @@
 - ユーザーが InterHub 由来のコードの権利の確認を済ませ、公開を指示した。直前に `git grep` でパス・メールアドレス・秘密の値が無いことを確かめ（ADR-0004 の本文の例だけ）、main の CI が通っていることを確かめた。
 - `gh repo edit --visibility public` で公開した。続けて、非公開の脆弱性報告を有効にし、説明（英語）と topics 8 個を付けた。
 - main を保護した：PR を通す（承認 0 件）・CI の `check` が必須・管理者にも適用・force push と削除は不可。
+
+## 2026-11-05 シートタブの位置を選ぶ（#17）
+- `renderWorkbook`・`view` に `tabPosition`（`'top'`・`'bottom'`。既定 `'top'`）を足した。`'bottom'` ではタブ列を DOM でもシートの表示の後ろへ動かし、根に `xs-tabs-bottom` を付けて余白を上へ回す（style.css）。写したファイル `render-workbook.ts` の変更なので `XSheet:` の印を付けた。
+- テスト（DOM の順・既定値・知らない値・入口の層からの受け渡し・CSS）、README 3 言語・02 §3・CHANGELOG・例のページ（タブの上・下の切り替え）を足した。例のページで上・下・ダークを目で確かめた。

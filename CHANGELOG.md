@@ -6,6 +6,10 @@
 
 公開の準備（[ADR-0004](docs/adr/0004-public-release.md)）。
 
+### 追加
+
+- シートタブの位置を選ぶ指定 `tabPosition`（`'top'`・`'bottom'`。既定 `'top'`）を `renderWorkbook`・`view` に足した（[#17](https://github.com/TaekangKwon/XSheet/issues/17)）。`'bottom'` ではタブ列を表の下（DOM でもシートの表示の後ろ）に置き、根に `xs-tabs-bottom` を付ける。
+
 ### 変更
 
 - ライセンスを MIT にした（`LICENSE`。`package.json` の `private` を外し、`files` と単独版の zip に `LICENSE` を足した）。
