@@ -130,6 +130,7 @@ function cellBox(text: string, height: number): HTMLDivElement {
  * @param range 描く列の範囲（`first`〜`last`・1 始まり）。表の全列を描くときは 1〜`cols`
  * @param formats 書式の表（`XlsxSheet.formats`。`rows[i].formats` の値が指す）
  * @param hits 検索の一致のハイライト（XSheet: ADR-0007 §2。無ければ null）
+ * @param headers 行番号の列と列見出しを出すか（XSheet: ADR-0007 §7。false なら列見出しの行を作らず、行番号の列を幅 0 で畳む）
  */
 export function buildGridTable(
   colName: (c: number) => string,
@@ -141,11 +142,12 @@ export function buildGridTable(
   range: Pick<ColRange, 'first' | 'last'>,
   formats: readonly CellFormat[],
   hits: GridHits | null = null,
+  headers = true,
 ): HTMLTableElement {
   const table = document.createElement('table');
   table.className = 'xs-grid';
   table.setAttribute('aria-rowcount', String(rowCount + 1));
-  const numWidth = rowNumWidth(rowCount);
+  const numWidth = headers ? rowNumWidth(rowCount) : 0; // XSheet: 見出しを隠す（ADR-0007 §7）
   table.style.width = `${numWidth + geo.totalWidth}px`;
 
   const { first, last } = range;
@@ -164,6 +166,9 @@ export function buildGridTable(
   const group = document.createElement('colgroup');
   const numCol = document.createElement('col');
   numCol.style.width = `${numWidth}px`;
+  if (!headers) {
+    numCol.className = 'xs-collapsed'; // XSheet: 行番号の列を畳む（ADR-0007 §7）
+  }
   group.append(numCol);
   if (leftPad > 0) {
     group.append(padCol(leftPad));
@@ -196,6 +201,9 @@ export function buildGridTable(
   }
   if (rightPad > 0) {
     head.append(document.createElement('th'));
+  }
+  if (!headers) {
+    table.tHead?.remove(); // XSheet: 列見出しの行を出さない（ADR-0007 §7）
   }
 
   const rowPad = spacerHeights(geo, rows[0]?.r ?? 1, rows[rows.length - 1]?.r ?? 0);

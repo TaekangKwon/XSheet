@@ -91,6 +91,8 @@ export interface SheetViewOptions {
   nonce?: string;
   /** XSheet: 最初の倍率（既定 1。ADR-0007 §5） */
   zoom?: Zoom;
+  /** XSheet: 行番号の列と列見出しを出すか（既定 true。ADR-0007 §7） */
+  headers?: boolean;
 }
 
 /** 1 シートの表示（`renderSheet`・`renderWorkbook` の中身） */
@@ -224,6 +226,10 @@ export function createSheetView(
   let contentW = 0;
   /** 倍率を替えている間（中の draw で幅に合わせ直さない） */
   let zooming = false;
+  // XSheet: 見出しを隠すときは、行番号の列の幅・列見出しの高さを 0 として計算する（ADR-0007 §7）
+  const showHeaders = options.headers !== false;
+  const headY = showHeaders ? GRID_HEADER_HEIGHT : 0;
+  const headX = (rows: number): number => (showHeaders ? rowNumWidth(rows) : 0);
   root.style.setProperty('--xs-zoom', String(zoom));
 
   // --- 図の層（ISSUE-86・ADR-0026 §決定 8）---
@@ -322,7 +328,7 @@ export function createSheetView(
     }
     const range = visibleRowRange(g, body.scrollTop, body.clientHeight, extent.rows, OVERSCAN);
     const d = drawn;
-    const originX = rowNumWidth(extent.rows);
+    const originX = headX(extent.rows); // XSheet: ADR-0007 §7
     // 列も仮想化する：描く列は可視範囲の左右 1 画面分。見える列がその外へ出たら描き直す
     const cols = visibleColRange(g, body.scrollLeft, body.clientWidth, originX, extent.cols);
     if (
@@ -360,6 +366,7 @@ export function createSheetView(
         cols,
         sh.formats,
         hits, // XSheet: ADR-0007 §2
+        showHeaders, // XSheet: ADR-0007 §7
       );
       if (wrapper.parentNode !== body) {
         body.replaceChildren(wrapper);
@@ -374,14 +381,14 @@ export function createSheetView(
       drawn = { first: range.first, last: range.last, firstCol: cols.first, lastCol: cols.last };
       // 図の層の原点は A1 の左上（行番号の列の幅・見出し行の高さだけ表の左上からずらす）
       // XSheet: 図の層は中を 100% で描き、層に倍率を掛ける（ADR-0007 §5）
-      layer.place(originX, GRID_HEADER_HEIGHT, g.totalWidth / zoom, g.totalHeight / zoom);
+      layer.place(originX, headY, g.totalWidth / zoom, g.totalHeight / zoom);
       layer.element.style.transform = zoom === 1 ? '' : `scale(${zoom})`;
       // 罫線の層も、表を作り直す時だけ同じ行・列の範囲から作り直す（スクロール・テーマ切替では触らない）
       if (sh.borders.length > 0) {
         borderLayer.render(
           buildBorderPaths(rows, sh.borders, g, { first: cols.first, last: cols.last }),
           originX,
-          GRID_HEADER_HEIGHT,
+          headY, // XSheet: ADR-0007 §7
         );
       } else {
         borderLayer.clear();
@@ -396,7 +403,7 @@ export function createSheetView(
           body.clientWidth,
           body.clientHeight,
           originX,
-          GRID_HEADER_HEIGHT,
+          headY, // XSheet: ADR-0007 §7
         ),
         zoom, // XSheet: 図の層の中の座標（100%）で判定する（ADR-0007 §5）
       ),
@@ -408,7 +415,7 @@ export function createSheetView(
   const fitTarget = (): number | null => {
     if (!('fit' in zoomSpec) || !sheet || zooming) return null;
     const bar = body.offsetWidth - body.clientWidth > 0 ? 0 : scrollbarWidth();
-    const available = body.clientWidth - bar - rowNumWidth(extent.rows || sheet.rowCount);
+    const available = body.clientWidth - bar - headX(extent.rows || sheet.rowCount);
     return fitZoom(available, contentW, zoomSpec.fit, zoom);
   };
   /** 倍率を z にして描き直し、左上に見ていたセルを左上に残す */
@@ -610,7 +617,7 @@ export function createSheetView(
     root,
     sheet: () => sheet,
     geometry: () => geo,
-    origin: () => ({ x: rowNumWidth(extent.rows), y: GRID_HEADER_HEIGHT }),
+    origin: () => ({ x: headX(extent.rows), y: headY }),
     cols: () => extent.cols,
     drawn: () => ({ rows: drawnRows, firstCol: drawn?.firstCol ?? 1 }),
     hits: () => hits,

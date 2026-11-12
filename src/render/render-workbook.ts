@@ -131,6 +131,7 @@ export async function renderWorkbook(
     drawings: options.drawings !== false,
     nonce: options.nonce,
     zoom: options.zoom,
+    headers: options.headers,
   });
   if (tabsBottom) {
     root.classList.add('xs-tabs-bottom');
