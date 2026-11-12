@@ -38,6 +38,9 @@ import {
   visibleRowRange,
 } from './grid';
 import { buildGridTable } from './grid-table';
+// XSheet: 検索の一致のハイライト（ADR-0007 §2）
+import { createGridHits, type GridHits } from './highlight';
+import type { TextMatch } from '../core/index';
 import { createImageLayer } from './image-layer';
 import { formatMessage, type XSheetMessages } from './messages';
 import { loadGeom } from './shapes';
@@ -84,6 +87,11 @@ export interface SheetViewInstance {
    * @throws RangeError ブックに無い番号
    */
   showSheet(index: number): Promise<void>;
+  /**
+   * 検索の一致を光らせる（null・空の配列で消す）。描き直しても残り、シートを替えると消える。
+   * XSheet: ADR-0007 §2
+   */
+  setHighlights(matches: readonly TextMatch[] | null): void;
   /** リスナ・ResizeObserver・rAF・blob URL・シートを放し、根を `container` から外す。何度呼んでもよい。ブックは閉じない */
   destroy(): void;
 }
@@ -176,6 +184,8 @@ export function createSheetView(
   let frame = 0;
   let initFrame = 0;
   let closed = false;
+  // XSheet: 検索の一致のハイライト（描くたびに付け直す。シートを替えると消す。ADR-0007 §2）
+  let hits: GridHits | null = null;
 
   // --- 図の層（ISSUE-86・ADR-0026 §決定 8）---
   // スクロール枠の中の常駐の wrapper（position: relative）に、表（描き直しのたびに差し替える）と図の層（position: absolute）を並べる。
@@ -304,6 +314,7 @@ export function createSheetView(
         sh.layout.mdw,
         cols,
         sh.formats,
+        hits, // XSheet: ADR-0007 §2
       );
       if (wrapper.parentNode !== body) {
         body.replaceChildren(wrapper);
@@ -408,6 +419,7 @@ export function createSheetView(
     }
     activeIndex = index;
     drawn = null;
+    hits = null; // XSheet: 一致の一覧はシートごと（ADR-0007 §7）
     body.scrollTop = 0;
     body.scrollLeft = 0;
     notices.clear();
@@ -484,6 +496,7 @@ export function createSheetView(
     boxes = [];
     tableEl = null;
     notices.clear();
+    hits = null; // XSheet: ADR-0007 §2
     wrapper.replaceChildren();
     body.replaceChildren();
     root.replaceChildren();
@@ -502,6 +515,13 @@ export function createSheetView(
       return activeIndex;
     },
     showSheet,
+    // XSheet: ADR-0007 §2
+    setHighlights(matches) {
+      hits = createGridHits(matches);
+      if (!closed && sheet) {
+        draw(true);
+      }
+    },
     destroy,
   };
 }

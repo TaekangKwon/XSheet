@@ -111,6 +111,7 @@ export interface RenderOptions {
   nonce?: string;                       // 書式の <style> に付ける（CSP 用。§3「CSP」）
 }
 export interface SheetView {
+  setHighlights(matches: readonly TextMatch[] | null): void; // 検索の一致を光らせる（M7-5・ADR-0007 §2。null・空で消す）
   destroy(): void;                      // blob URL・リスナ・シートを放す（book は閉じない）
   scrollToCell?(r: number, c: number): void; // M7 の候補
 }
@@ -248,14 +249,15 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
 | `--xs-warn`・`--xs-warn-bg` | 通知・エラーの帯（`xs-notice`・`xs-banner`）の文字と地 | `#b45309`・`#fef3c7` | `#fbbf24`・`rgba(251, 191, 36, 0.14)` | `--ih-warn`・`--ih-warn-bg` |
 | `--xs-border-ink` | 自動・黒の罫線（墨色） | `#000000` | `#d4d4d4` | `--ih-xlsx-border-ink` |
 | `--xs-backdrop`・`--xs-backdrop-display` | ダーク時の図の白い下地 | `transparent`・`none` | `#ffffff`・`block` | `--ih-xlsx-backdrop*` |
+| `--xs-hit-bg`・`--xs-hit-current-bg` | 検索の一致のハイライト（`xs-hit`）と今のヒット（`is-current`）の地（M7-5・ADR-0007 §2） | `rgba(255, 255, 0, 0.4)`・`#ffa500` | `rgba(255, 255, 0, 0.3)`・`#b45309` | なし（XSheet で足した） |
 
 - `style.css`（`src/style.css`・M3-1）の明るい既定値は詳細度 0 の `:where(:root, :host)` に置くため、使う側が `:root`・テーマの属性・`container` のどこで上書きしても勝つ（Shadow DOM の中に置いても効く）。
 - ダークの値（この表の「ダークの例」の列）は、M6-2 から `style.css` が持つ（ADR-0003 §2。それまでは使う側が 14 個を写して上書きしていた）：
   - `[data-xs-theme='dark']`：表示の根か、その祖先（`<html>` など）に付ける。`view` の `theme: 'dark'` は表示の根 `div.xs-viewer` に付ける。`renderWorkbook`・`renderSheet` の使う側も同じ属性を使える。
   - `@media (prefers-color-scheme: dark) { [data-xs-theme='auto'] }`：OS・ブラウザの設定に従う（`theme: 'auto'`）。
-  - どちらも 14 個すべてと `color-scheme: dark` を持つ。値を替えるときは、属性の付いた要素より内側で `--xs-*` を上書きする（[guide/theme.md](guide/theme.md)）。
+  - どちらも 16 個すべてと `color-scheme: dark` を持つ。値を替えるときは、属性の付いた要素より内側で `--xs-*` を上書きする（[guide/theme.md](guide/theme.md)）。
   - 2 つのブロックとこの表の「ダークの例」の列が同じことを `tests/render/style-css.test.ts` が突き合わせる。
-- 自前のテーマの属性で 14 個を上書きする形も使える。例は `examples/example.css`（M3-2。`npm run examples` で http://localhost:5173/examples/ を開く）。この表の「ダークの例」の列と同じ値で、`tests/render/examples.test.ts` が突き合わせる。
+- 自前のテーマの属性で 16 個を上書きする形も使える。例は `examples/example.css`（M3-2。`npm run examples` で http://localhost:5173/examples/ を開く）。この表の「ダークの例」の列と同じ値で、`tests/render/examples.test.ts` が突き合わせる。
 - Excel の色（塗り・文字の色・図形の色）は変数ではなく、書式の CSS とインラインの値で入る。ダーク表示の描き分けの規則（塗りのあるセルは Excel の色のまま、白の塗りは「紙」など）は InterHub ADR-0030 のとおり。
 - 変数の表は M3-1 で、InterHub の実際の規則に合わせて直した：グリッド線は `--ih-border` ではなく `--ih-border-soft`（`.ih-data-view th, td` の線）だったため `--xs-grid` の値を替え、見出し行の下の線・タブの枠の `--ih-border` を `--xs-border` に分けた。タブ（`--ih-accent`）と通知の帯（`--ih-warn*`）の変数を足した。この表と `style.css` の既定値は `tests/render/style-css.test.ts` が突き合わせる。
 - Excel に寄せた見た目（Issue #23）：明るい既定値のうち `--xs-cell-bg`（白）・`--xs-grid`・`--xs-border`（少し濃く）を InterHub の値から変えた。ダークの値は変えていない。

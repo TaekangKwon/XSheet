@@ -7,6 +7,7 @@
 ### 追加
 
 - `findText(sheet, query, options?)`：シートの中の文字を探す（[#28](https://github.com/TaekangKwon/XSheet/issues/28)。[ADR-0007](docs/adr/0007-moobius-viewer-api.md) §1。`xsheet/core`・`xsheet`・単独版の `XSheet.findText`）。表示形式を当てた後の文字（`CellView.text`）で照らし、`{ matches, truncated }` を返す。一致は行・列（1 始まり）と文字の中の位置。大文字と小文字・改行は既定で区別せず（位置は元の文字で返す）、全角と半角は区別する。結合は左上のセルだけ、非表示の行・列は既定で探さない。約 10ms ごとに休むので大きなシートでも画面を止めない。`signal` で中断（`AbortError`）、`maxMatches`（既定 10,000・上限 100,000）で打ち切る。
+- `SheetView`・`WorkbookView` の `setHighlights(matches)`：`findText` の一致を表の上で光らせる（[#29](https://github.com/TaekangKwon/XSheet/issues/29)。[ADR-0007](docs/adr/0007-moobius-viewer-api.md) §2）。`null`・空の配列で消す。スクロールで描き直しても残り、シートを替えると消える。一致の片は `span.xs-hit`（`data-xs-hit` に配列の番号）で、セルの文字全体を `span.xs-hits` 1 つで包む（空白を保つ）。色は新しい CSS 変数 `--xs-hit-bg`（既定 `rgba(255, 255, 0, 0.4)`）・`--xs-hit-current-bg`（既定 `#ffa500`。ダークの値もある）。背景だけで、行の高さ・列の幅は変えない。`###` で出す数値のセルはセル全体を光らせる。
 
 ## [0.4.1] - 2026-11-12
 

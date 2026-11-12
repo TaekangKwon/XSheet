@@ -55,6 +55,7 @@ function messageView(root: HTMLElement): WorkbookView {
   return {
     sheets: [],
     showSheet: () => Promise.reject(new RangeError('シートの番号が範囲外')),
+    setHighlights: () => undefined, // XSheet: 表が無いので何もしない（ADR-0007 §2）
     destroy: () => {
       root.replaceChildren();
       root.remove();
@@ -161,5 +162,6 @@ export async function renderWorkbook(
     destroy();
     throw e;
   }
-  return { sheets, showSheet, destroy };
+  // XSheet: setHighlights は中のシートの表示に渡す（ADR-0007 §2）
+  return { sheets, showSheet, setHighlights: (matches) => view.setHighlights(matches), destroy };
 }
