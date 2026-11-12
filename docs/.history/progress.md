@@ -183,3 +183,13 @@
 - 正解は Excel 16（ja-JP）の COM で作った（`make-ref-weekday.ps1`・`ref-weekday(-1904).xlsx`・88 書式・1026 セル）。大文字の `AAA` も曜日、a 5 個以上は長い形、ja-JP の COM は `\` を円記号として読む（逃がしは `!`）。照合で除くのは ssf の受け持ち 171 セル（埋め・負の値の「-」・小文字の am/pm・1904 の上限の先）。
 - 参考に見た SekisanHistoryTest の docs/_archive の Excel に曜日の書式は無かった（和暦 `[$-411]gge"年"m"月"d"日"` は .xls にあり、M7-8 で使える）。
 - 02 §4・05 §2・CHANGELOG を更新。examples に「曜日の書式」を足し目視した。
+
+## 2026-11-12 M7-3 v0.4.1 を出した（#27）
+- PR #37（版 0.4.1・CHANGELOG・README 3 つ・guide）をマージし、main からビルドした `dist` だけのコミット（d80f306・`release/v0.4.1`）に注釈付きのタグ `v0.4.1` を打って push した（ブランチは push しない）。
+- GitHub Release「XSheet 0.4.1」に `xsheet-0.4.1-standalone.zip`（11 ファイル・333,439 B）を添付。zip の `xsheet.mjs` と `viewer.html` で曜日の表示を確かめた（`viewer.html` は開発サーバー経由。`file://` は内蔵ブラウザで動かせなかった）。
+- PR のマージは自動承認に一度止められ、ユーザーの承認の後にマージした。Moobius への知らせの下書きをユーザーに渡した。
+
+## 2026-11-12 M7-2 0.5.0 の型の先出し（#26・ブランチ docs/v0.5.0-api-types）
+- ADR-0007 §1〜§7 の型を `docs/guide/xsheet-0.5.0-preview.d.ts` にまとめた。単独版 0.4.1 の `xsheet.d.ts` の中の名前（`xsheet/_/…`）に重ねる形で、並べて置くと大域の `XSheet` と `'xsheet'` に 0.5.0 の追加が出る。
+- 説明は `docs/guide/xsheet-0.5.0-preview.md`（置き方・依頼の案との違い・使い方の例・型で決めた既定・未決）。ADR に無かった `WorkbookOptions.builtinDates` を足し、ADR-0007 §6 にも書いた。
+- 0.4.1 の `xsheet.d.ts` と並べて tsc（strict・skipLibCheck なし）が通ることと、使う側の例（誤りは `@ts-expect-error`）・文書の例が通ることを確かめた。先出しを外すと 18 件の型エラーになり、重なっていることも確かめた。
