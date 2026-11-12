@@ -17,6 +17,7 @@ const SAMPLES: readonly { file: string; label: string }[] = [
   { file: 'ref-calibri.xlsx', label: '列幅（Calibri）' },
   { file: 'ref-yugothic.xlsx', label: '列幅（游ゴシック）' },
   { file: 'ref-malgun.xlsx', label: '列幅（Malgun Gothic）' },
+  { file: 'ref-weekday.xlsx', label: '曜日の書式' },
 ];
 
 const THEME_KEY = 'xsheet-example-theme';

@@ -3,7 +3,7 @@
 | 項目 | 値 |
 | --- | --- |
 | 文書 | XSheet 立ち上げ資料 05 |
-| 更新日 | 2026-10-28 |
+| 更新日 | 2026-11-12 |
 | 関連 | [01_requirements.md](01_requirements.md)・[04_roadmap.md](04_roadmap.md) |
 
 ## TL;DR
@@ -39,9 +39,10 @@
 | `ref-shapes.xlsx`＋`.expected.json` | 図形の種類・件数・回転と反転（133 図形） |
 | `ref-geoms.xlsx`＋`.expected.json` | 図形の形と枠線（225 図形） |
 | `ref-colors.xlsx`＋`.expected.json` | 図形・線・文字の色（128 図形） |
+| `ref-weekday.xlsx`・`ref-weekday-1904.xlsx`＋`.expected.json`＋`make-ref-weekday.ps1` | 曜日の書式（`aaa`・`aaaa`）の表示文字と `WEEKDAY`（1900・1904 年基準、88 書式・1026 セル。#25）。Excel 16 ja-JP の COM は `\` を円記号の文字として読むので、逃がしは `!` で作る。照合で除く所は [02](02_architecture.md) §4 |
 | `ref-geoms.compare.json`・`ref-flips.compare.json` | 画像の輪郭の比較の基準値 |
 | `showcase.xlsx`＋`make-showcase.ps1` | README の画面（`docs/images/screenshot.png`）と例のページの見本。照合の基準ではない。XSheet がまだ描かないもの（セルの配置など）は使わない。画面の撮り方：`npm run examples` を動かし、Edge のヘッドレス（`--window-size=1280,720 --force-device-scale-factor=2 --screenshot`）で `http://localhost:5173/examples/?sample=showcase.xlsx` を撮って、上の操作の帯と空の行を切り落とす |
-| `make-ref-*.ps1`（4 本）・`make-ref-*.extract.mjs`（3 本） | Excel 16 の COM でファイルと基準値を作る（Windows＋Excel が要る・手動） |
+| `make-ref-*.ps1`（8 本）・`make-ref-*.extract.mjs`（6 本） | Excel 16 の COM でファイルと基準値を作る（Windows＋Excel が要る・手動） |
 | `geom-compare.mjs`・`.d.mts`・`compare-ref-geoms.mjs` | 輪郭の比較器と、Playwright で描画を撮って比べる道具（手動）。描画の組み立て（ハーネス）は XSheet の `renderWorkbook` を Vite で束ねる。手順：① `make-ref-geom-pngs.ps1 -Dir <dir>`（Excel が要る）② `npm run geom:compare -- <dir> [--only p108,p142]` ③ 出た `ref-*.compare.json` を `fixtures/excel/` へ写して `ref-geoms.compare.test.ts` |
 
 - 照合の結果（InterHub）：
