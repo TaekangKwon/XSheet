@@ -7,6 +7,7 @@
 import type { TextMatch, XlsxBook } from '../core/index';
 import { resolveMessages, type XSheetMessages } from './messages';
 import { createSheetView } from './sheet-view';
+import type { Zoom } from './zoom';
 
 /** 表示の指定 */
 export interface RenderOptions {
@@ -16,6 +17,12 @@ export interface RenderOptions {
   drawings?: boolean;
   /** 書式の `<style>` に付ける nonce（CSP の `style-src 'nonce-…'` 用） */
   nonce?: string;
+  /**
+   * 最初の倍率（既定 1）。最初から指定すると、1 で描いてから替えるちらつきが無い。
+   * XSheet: ADR-0007 §5（M7-7）
+   * @throws RangeError（`renderSheet`・`renderWorkbook` が投げる）数でない倍率・正しくない指定
+   */
+  zoom?: Zoom;
 }
 
 /** `focusHighlight` の指定（XSheet: ADR-0007 §3） */
@@ -70,6 +77,17 @@ export interface SheetView {
   cellAt(clientX: number, clientY: number): CellPosition | null;
   /** 画面の座標にあるハイライトの番号（`setHighlights` の配列の番号）。無ければ -1 */
   highlightAt(clientX: number, clientY: number): number;
+  /**
+   * 倍率を替える。数は 0.5〜2.0（範囲の外は端の値）。`{ fit: 'width' }` はデータのある列と図の右端までを表示枠の幅に合わせ、
+   * 枠の大きさが変わると合わせ直す（`min`・`max` の既定は 0.5・2.0）。セルの寸法と文字に倍率を掛けて描き直し、
+   * 左上に見ていたセルを左上に残す。見出し（列記号・行番号の列の幅）には倍率を掛けない。線の太さは変わらない。
+   * 表示の外側に `transform: scale()` を掛けないこと（`cellAt`・`highlightAt` の位置がずれる）。
+   * @throws RangeError 数でない倍率（`NaN` など）・`{ fit: 'width' }` でない指定
+   * XSheet: ADR-0007 §5（M7-7）
+   */
+  setZoom(zoom: Zoom): void;
+  /** 今の倍率（fit のときは計算した値） */
+  readonly zoom: number;
   /** リスナ・ResizeObserver・blob URL・シートを放し、表示を `container` から外す。何度呼んでもよい。ブックは閉じない */
   destroy(): void;
 }
@@ -97,6 +115,7 @@ export async function renderSheet(
     messages: resolveMessages(options.messages),
     drawings: options.drawings !== false,
     nonce: options.nonce,
+    zoom: options.zoom,
   });
   try {
     await view.showSheet(sheetIndex);
@@ -110,6 +129,10 @@ export async function renderSheet(
     scrollToCell: (r, c, opts) => view.scrollToCell(r, c, opts),
     cellAt: (x, y) => view.cellAt(x, y),
     highlightAt: (x, y) => view.highlightAt(x, y),
+    setZoom: (zoom) => view.setZoom(zoom),
+    get zoom() {
+      return view.zoom;
+    },
     destroy: () => view.destroy(),
   };
 }

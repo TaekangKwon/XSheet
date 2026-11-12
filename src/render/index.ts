@@ -13,3 +13,4 @@ export {
   type SheetView,
 } from './render-sheet';
 export { renderWorkbook, type WorkbookOptions, type WorkbookView } from './render-workbook';
+export type { Zoom } from './zoom';

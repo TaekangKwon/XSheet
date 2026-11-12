@@ -40,6 +40,9 @@ describe('style.css と render の DOM', () => {
       renderSources.flatMap((src) => [...src.matchAll(/var\((--xs-[a-z-]+)/g)].map((m) => m[1]!)),
     );
     expect(usedInJs).toEqual(new Set(['--xs-cell-bg', '--xs-fg']));
+    // 倍率（--xs-zoom）はテーマの変数ではなく、表示の根に JS が入れる値（ADR-0007 §5）。既定値のブロックには書かない
+    expect(renderSources.some((src) => src.includes("setProperty('--xs-zoom'"))).toBe(true);
+    usedInCss.delete('--xs-zoom');
     const used = new Set([...usedInCss, ...usedInJs]);
     expect([...used].filter((v) => !defined.includes(v))).toEqual([]);
     expect(defined.filter((v) => !used.has(v))).toEqual([]);

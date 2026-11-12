@@ -13,6 +13,8 @@ import { resolveMessages, type XSheetMessages } from './messages';
 import type { RenderOptions, SheetView } from './render-sheet';
 import { buildSheetTabStrip, makeSheetTab } from './sheet-tabs';
 import { createSheetView, xlsxErrorMessage } from './sheet-view';
+// XSheet: ADR-0007 §5
+import { resolveZoom } from './zoom';
 
 /** `renderWorkbook` の指定 */
 export interface WorkbookOptions extends RenderOptions {
@@ -67,6 +69,11 @@ function messageView(root: HTMLElement): WorkbookView {
     },
     cellAt: () => null,
     highlightAt: () => -1,
+    // XSheet: 表が無いので倍率は 1 のまま（指定の確かめだけ。ADR-0007 §5）
+    setZoom: (zoom) => {
+      resolveZoom(zoom);
+    },
+    zoom: 1,
     destroy: () => {
       root.replaceChildren();
       root.remove();
@@ -89,6 +96,9 @@ export async function renderWorkbook(
   options: WorkbookOptions = {},
 ): Promise<WorkbookView> {
   const messages: Readonly<XSheetMessages> = resolveMessages(options.messages);
+  if (options.zoom !== undefined) {
+    resolveZoom(options.zoom); // XSheet: 正しくない倍率は、DOM を足す前・ブックを開く前に RangeError（ADR-0007 §5）
+  }
   const root = document.createElement('div');
   root.className = 'xs-workbook';
   container.append(root);
@@ -120,6 +130,7 @@ export async function renderWorkbook(
     messages,
     drawings: options.drawings !== false,
     nonce: options.nonce,
+    zoom: options.zoom,
   });
   if (tabsBottom) {
     root.classList.add('xs-tabs-bottom');
@@ -182,6 +193,10 @@ export async function renderWorkbook(
     scrollToCell: (r, c, opts) => view.scrollToCell(r, c, opts),
     cellAt: (x, y) => view.cellAt(x, y),
     highlightAt: (x, y) => view.highlightAt(x, y),
+    setZoom: (zoom) => view.setZoom(zoom),
+    get zoom() {
+      return view.zoom;
+    },
     destroy,
   };
 }
