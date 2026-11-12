@@ -3,7 +3,7 @@
 | 項目 | 値 |
 | --- | --- |
 | 文書 | XSheet 立ち上げ資料 04 |
-| 更新日 | 2026-10-30 |
+| 更新日 | 2026-11-12 |
 | 関連 | [03_source-map.md](03_source-map.md)・[05_quality.md](05_quality.md) |
 
 ## TL;DR
@@ -98,5 +98,22 @@ flowchart LR
 | Worker | 解析を Worker で動かす補助（core は DOM 非依存なのでそのまま動く。転送の型を用意する） |
 | Excel との照合 | 罫線 E1〜E5・書式 F1〜F10 の暫定項目を Excel 16 で確かめる（[05_quality.md](05_quality.md) §3） |
 | 表示の追加 | 揃えと折り返し・条件付き書式・テーブルのスタイル・フォント名・リッチテキストの部分書式・グラフの G2（面・散布図・データラベル・第 2 軸・組み合わせ） |
-| 操作 | `scrollToCell`・セルの選択とコピー・検索 |
+| 操作 | 検索・ハイライト・移動（`scrollToCell`）・位置の判定・拡大縮小・見出しを隠す：**API は決定**（2026-11-12・[ADR-0007](adr/0007-moobius-viewer-api.md)。Moobius の依頼 R1〜R7）。作業は下の「M7 Moobius の依頼」。残りはセルの選択とコピー |
 | 公開 | npm 公開：**名前・入口は決定**（2026-11-05・[ADR-0006](adr/0006-npm-publish.md)。`@taekangkwon/xsheet`・`xsheet/internal` を外す）。残りは ADR-0006 §4（アカウントと Trusted Publisher の用意・名前の付け替え・`publish.yml`・0.5.0） |
+
+### M7 Moobius の依頼（v0.4.1・v0.5.0・[ADR-0007](adr/0007-moobius-viewer-api.md)）
+
+順は M7-1 → M7-3（v0.4.1）、M7-2 は実装より先、M7-4 → M7-5 → M7-6 → M7-7 → M7-9 の順に積み上げ、M7-8 は M7-1 の後ならいつでもよい。最後に M7-10（v0.5.0）。GitHub のマイルストーン `v0.4.1`・`v0.5.0` に入れた。
+
+| Issue | GitHub | 内容 | 依存 | 完了の条件 |
+| --- | --- | --- | --- | --- |
+| M7-1 | [#25](https://github.com/TaekangKwon/XSheet/issues/25) | 曜日の書式（`aaa`・`aaaa`）。書式の字句の分解（`format-ja.ts`）・通し番号からの曜日 | — | テストが通る。Excel の `WEEKDAY` と同じ |
+| M7-2 | [#26](https://github.com/TaekangKwon/XSheet/issues/26) | ADR-0007 の公開 API の型定義（`.d.ts`）を先に作る（Moobius に渡す） | — | `.d.ts` が型検査を通る |
+| M7-3 | [#27](https://github.com/TaekangKwon/XSheet/issues/27) | v0.4.1 を出す（曜日・#23 の見た目） | M7-1 | タグと Release（ユーザーの指示で） |
+| M7-4 | [#28](https://github.com/TaekangKwon/XSheet/issues/28) | 検索 `findText`（非同期・中断・上限） | — | テストが通る。実機で検索中もスクロールが止まらない |
+| M7-5 | [#29](https://github.com/TaekangKwon/XSheet/issues/29) | ハイライト `setHighlights`（`span.xs-hits`・色の変数） | M7-4 | テストが通る。描き直しで残ることを目視 |
+| M7-6 | [#30](https://github.com/TaekangKwon/XSheet/issues/30) | 今のヒットと移動・位置の判定（`focusHighlight`・`scrollToCell`・`cellAt`・`highlightAt`） | M7-5 | テストが通る。実機で遠い行・列への移動と判定 |
+| M7-7 | [#31](https://github.com/TaekangKwon/XSheet/issues/31) | 拡大縮小 `setZoom`（寸法に倍率・見出しは掛けない・fit） | M7-6 | テストが通る。実機で 50%・75%・150% の罫線と判定 |
+| M7-8 | [#32](https://github.com/TaekangKwon/XSheet/issues/32) | 和暦の書式と組み込みの書式の指定 `builtinDates`（先に日本語版 Excel で 27〜36・50〜58 の見え方を確かめる） | M7-1 | テストが通る。Excel で作ったファイルと同じ表示 |
+| M7-9 | [#33](https://github.com/TaekangKwon/XSheet/issues/33) | 見出しを隠す `headers`・`SheetView.showSheet` | M7-7 | テストが通る。examples で目視 |
+| M7-10 | [#34](https://github.com/TaekangKwon/XSheet/issues/34) | v0.5.0 を出す（examples・README・受け入れの確認） | M7-2・M7-4〜M7-9 | タグと Release（ユーザーの指示で） |
