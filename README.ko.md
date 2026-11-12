@@ -243,7 +243,7 @@ book.close();
 | import | 내용 |
 | --- | --- |
 | `xsheet` | 전부: `view`, `read`, 그리고 `xsheet/core`와 `xsheet/render`의 공개 API 전체 |
-| `xsheet/core` | 읽기 기능(`openXlsx`, `XlsxError`, `DEFAULT_LIMITS`, 단위 변환 등)과 타입. DOM과 Node 전용 API를 쓰지 않음을 보장(Worker와 Node용) |
+| `xsheet/core` | 읽기 기능(`openXlsx`, `findText`(문자 검색, v0.5.0), `XlsxError`, `DEFAULT_LIMITS`, 단위 변환 등)과 타입. DOM과 Node 전용 API를 쓰지 않음을 보장(Worker와 Node용) |
 | `xsheet/render` | 표시 기능(`renderWorkbook`, `renderSheet`, `MESSAGES_JA`, `MESSAGES_EN`, `MESSAGES_KO`) |
 | `xsheet/style.css` | CSS(라이트 기본값과 `data-xs-theme`용 다크 값) |
 | `xsheet/geom` | 도형 정의 테이블과 수식 계산기. `render`가 동적으로 import하므로 보통은 직접 쓸 일이 없음 |

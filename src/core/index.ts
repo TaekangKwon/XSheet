@@ -100,6 +100,8 @@ export type { XlsxLimits } from './limits';
 export { DEFAULT_LIMITS } from './limits';
 export { colName } from './xml';
 export { isPaperFill } from './cell-format';
+export { findText } from './find-text';
+export type { FindTextOptions, FindTextResult, TextMatch } from './find-text';
 
 /** styles.xml から読むもの：表示形式の整形器と、寸法の換算に使う最大桁幅 MDW・フォントの既定の行高・罫線の表・書式（塗り・文字の装飾）の表 */
 interface StyleInfo {

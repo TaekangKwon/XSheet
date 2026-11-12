@@ -193,3 +193,9 @@
 - ADR-0007 §1〜§7 の型を `docs/guide/xsheet-0.5.0-preview.d.ts` にまとめた。単独版 0.4.1 の `xsheet.d.ts` の中の名前（`xsheet/_/…`）に重ねる形で、並べて置くと大域の `XSheet` と `'xsheet'` に 0.5.0 の追加が出る。
 - 説明は `docs/guide/xsheet-0.5.0-preview.md`（置き方・依頼の案との違い・使い方の例・型で決めた既定・未決）。ADR に無かった `WorkbookOptions.builtinDates` を足し、ADR-0007 §6 にも書いた。
 - 0.4.1 の `xsheet.d.ts` と並べて tsc（strict・skipLibCheck なし）が通ることと、使う側の例（誤りは `@ts-expect-error`）・文書の例が通ることを確かめた。先出しを外すと 18 件の型エラーになり、重なっていることも確かめた。
+
+## 2026-11-12 M7-4 検索 findText（#28・ブランチ feat/find-text）
+- `src/core/find-text.ts` を足し、`xsheet/core`・`xsheet`・単独版の `XSheet.findText` に出した（公開の値は 12 個）。照合は `CellView.text`。大文字と小文字は 1 文字ずつ小文字にして比べ（`İ` で長さが変わる・語末の `ς` は `σ` にそろえる）、改行を除くときと長さが変わるときだけ元の位置への対応表を作る。
+- `getRows` は範囲の上で切れた結合の左上を範囲の最初の行に置くので、2 回目からは 1 行上から読んでその行は数えない（区切りをまたぐ結合を 2 回数えない）。
+- 実機（Chrome・60 万セル）で、1 回の連続は約 9ms・全体で約 1.4 秒（一致なし）。初めは「10ms を超えたら休む」で 20〜25ms 握っていたので、次の区切りで超えそうなら先に休み、1 区切りが 10ms を超えたら行数を半分にするようにした。core は DOM の型を持たないので `setTimeout`・`DOMException` は大域から引き、`signal` は `{ aborted }` の形で受ける。
+- テスト 17 件（ルール・位置の対応・結合・非表示・上限・中断・遅い区切り・5000×30）。02 §2・README 3 つ・CHANGELOG を更新。

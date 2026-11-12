@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### 追加
+
+- `findText(sheet, query, options?)`：シートの中の文字を探す（[#28](https://github.com/TaekangKwon/XSheet/issues/28)。[ADR-0007](docs/adr/0007-moobius-viewer-api.md) §1。`xsheet/core`・`xsheet`・単独版の `XSheet.findText`）。表示形式を当てた後の文字（`CellView.text`）で照らし、`{ matches, truncated }` を返す。一致は行・列（1 始まり）と文字の中の位置。大文字と小文字・改行は既定で区別せず（位置は元の文字で返す）、全角と半角は区別する。結合は左上のセルだけ、非表示の行・列は既定で探さない。約 10ms ごとに休むので大きなシートでも画面を止めない。`signal` で中断（`AbortError`）、`maxMatches`（既定 10,000・上限 100,000）で打ち切る。
+
 ## [0.4.1] - 2026-11-12
 
 曜日の書式（`aaa`・`aaaa`）の修正を先に出す版（[ADR-0007](docs/adr/0007-moobius-viewer-api.md) §9）。表とシートタブの見た目を Excel に近づけた。公開 API は変えていない。
