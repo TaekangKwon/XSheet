@@ -137,7 +137,8 @@ export function renderWorkbook(container: HTMLElement, data: ArrayBuffer | Uint8
   5. スクロールごとに `getRows` → 表（`buildGridTable`）→ 罫線（`buildBorderPaths`）。
   6. `destroy` で層（blob URL を revoke）・罫線・シートを放し、根を `container` から外す。ブックは閉じない。
 - `renderWorkbook`（M2-4）：
-  - DOM：`container` の子に `div.xs-workbook` ＞ [`div.xs-sheet-strip`（タブ列）・`div.xs-sheet`（上のシートの表示）]。タブ列は `button.xs-sheet-nav`（◀）・`div.xs-sheet-tabs`（横スクロール）＞ `button.xs-sheet-tab`…・`button.xs-sheet-nav`（▶）。タブは `is-active`・`is-hidden-sheet`（名前に ` ⌀`、title に名前と `hiddenSheet`）。`tabPosition: 'bottom'` では子の順が [`div.xs-sheet`・`div.xs-sheet-strip`] になり、根に `xs-tabs-bottom` を付ける（タブ列と表の間の余白を上へ回す。知らない値は `top`。Issue #17）。
+  - DOM：`container` の子に `div.xs-workbook` ＞ [`div.xs-sheet-strip`（タブ列）・`div.xs-sheet`（上のシートの表示）]。タブ列は `button.xs-sheet-nav`（◀）・`div.xs-sheet-tabs`（横スクロール）＞ `button.xs-sheet-tab`…・`button.xs-sheet-nav`（▶）。タブは `is-active`・`is-hidden-sheet`（名前に ` ⌀`、title に名前と `hiddenSheet`）。`tabPosition: 'bottom'` では子の順が [`div.xs-sheet`・`div.xs-sheet-strip`] になり、根に `xs-tabs-bottom` を付ける（知らない値は `top`。Issue #17）。
+  - 見た目（Issue #23・CSS だけ）：タブ列は表に付け、境に線を引く。タブは角の無い枠を縦線で区切り、選んだタブは表と同じ地・`--xs-accent` の太字で、表と反対側の端に棒を出す（上なら上端、下なら下端）。◀ ▶ は CSS の `order` で左にまとめる（DOM の並びは ◀・タブ・▶ のまま）。非表示のシートは斜体・破線ではなく薄い文字（`--xs-faint`）。見出し（列記号・行番号）は太字にせず、行番号は中央に置く。
   - シートの表示は 1 冊に 1 つ（`createSheetView`）で、タブは同じインスタンスの `showSheet` でシートを替える（書式の `<style>` はブックで 1 つのまま）。最初に出すのは最初の表示（非表示でない）シート、全部非表示なら先頭。
   - 開けない（`openXlsx` の例外）ときは例外にせず `div.xs-workbook` ＞ `div.xs-banner`（種類ごとの文言）、シートが 0 枚なら `div.xs-empty`（`noSheets`。ブックは閉じる）で解決する。どちらも `showSheet` は `RangeError`。
   - `destroy`：タブ列（リスナ・ResizeObserver・rAF）→ シートの表示 → `book.close()` → 根を外す。何度呼んでもよい。
@@ -231,12 +232,12 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
 | --- | --- | --- | --- | --- |
 | `--xs-fg` | 文字の色（塗りの無いセル・自動の文字・図形の色の省略） | `#1a1a1a` | `#e6e6e6` | `--ih-fg` |
 | `--xs-bg` | 面の地（タブ・ボタン。図形の「明るく」の膜） | `#ffffff` | `#1e1e1e` | `--ih-bg` |
-| `--xs-cell-bg` | セルの地（白の塗り＝「紙」・はみ出す文字の下・二重線の隙間もこれ） | `#f5f6f8` | `#0f1115` | `--ih-xlsx-cell-bg`（＝`--ih-canvas`） |
+| `--xs-cell-bg` | セルの地（白の塗り＝「紙」・はみ出す文字の下・二重線の隙間もこれ） | `#ffffff` | `#0f1115` | `--ih-xlsx-cell-bg`（＝`--ih-canvas`。元は `#f5f6f8`。Issue #23） |
 | `--xs-head-bg` | 列記号・行番号の地（破線枠・図形の塗りの省略の色の元） | `#eef0f4` | `#1f232c` | `--ih-bg-elev2` |
-| `--xs-grid` | グリッド線（セルの右と下） | `#e5e8ee` | `#232733` | `--ih-border-soft`（`.ih-data-view td`） |
-| `--xs-border` | 見出し行の下の線・タブとボタンの枠 | `#d0d0d0` | `#3a3a3a` | `--ih-border` |
-| `--xs-muted`・`--xs-faint` | 破線枠の線・行番号と空の表示の文字 | `#6b7280`・`#8a92a2` | `#9ca3af`・`#6b7386` | `--ih-muted`・`--ih-faint` |
-| `--xs-accent` | 選ばれているタブ・ボタンの強調 | `#3b82f6` | `#60a5fa` | `--ih-accent` |
+| `--xs-grid` | グリッド線（セルの右と下） | `#dcdfe4` | `#232733` | `--ih-border-soft`（`.ih-data-view td`。元は `#e5e8ee`。Issue #23） |
+| `--xs-border` | 見出しの区切り・タブ列と表の境・タブの区切り | `#c4c8cf` | `#3a3a3a` | `--ih-border`（元は `#d0d0d0`。Issue #23） |
+| `--xs-muted`・`--xs-faint` | 破線枠の線・見出し（列記号・行番号）と ◀ ▶ の文字 ／ 空の表示・非表示のシートのタブの文字 | `#6b7280`・`#8a92a2` | `#9ca3af`・`#6b7386` | `--ih-muted`・`--ih-faint` |
+| `--xs-accent` | 選んだタブの文字と棒・フォーカスの枠 | `#3b82f6` | `#60a5fa` | `--ih-accent` |
 | `--xs-warn`・`--xs-warn-bg` | 通知・エラーの帯（`xs-notice`・`xs-banner`）の文字と地 | `#b45309`・`#fef3c7` | `#fbbf24`・`rgba(251, 191, 36, 0.14)` | `--ih-warn`・`--ih-warn-bg` |
 | `--xs-border-ink` | 自動・黒の罫線（墨色） | `#000000` | `#d4d4d4` | `--ih-xlsx-border-ink` |
 | `--xs-backdrop`・`--xs-backdrop-display` | ダーク時の図の白い下地 | `transparent`・`none` | `#ffffff`・`block` | `--ih-xlsx-backdrop*` |
@@ -250,6 +251,9 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
 - 自前のテーマの属性で 14 個を上書きする形も使える。例は `examples/example.css`（M3-2。`npm run examples` で http://localhost:5173/examples/ を開く）。この表の「ダークの例」の列と同じ値で、`tests/render/examples.test.ts` が突き合わせる。
 - Excel の色（塗り・文字の色・図形の色）は変数ではなく、書式の CSS とインラインの値で入る。ダーク表示の描き分けの規則（塗りのあるセルは Excel の色のまま、白の塗りは「紙」など）は InterHub ADR-0030 のとおり。
 - 変数の表は M3-1 で、InterHub の実際の規則に合わせて直した：グリッド線は `--ih-border` ではなく `--ih-border-soft`（`.ih-data-view th, td` の線）だったため `--xs-grid` の値を替え、見出し行の下の線・タブの枠の `--ih-border` を `--xs-border` に分けた。タブ（`--ih-accent`）と通知の帯（`--ih-warn*`）の変数を足した。この表と `style.css` の既定値は `tests/render/style-css.test.ts` が突き合わせる。
+- Excel に寄せた見た目（Issue #23）：明るい既定値のうち `--xs-cell-bg`（白）・`--xs-grid`・`--xs-border`（少し濃く）を InterHub の値から変えた。ダークの値は変えていない。
+  - 置き場所：変数の既定値は詳細度 0 のブロックに 1 つだけ置く決まりなので、その 3 行を直して `XSheet:` の印を付けた。規則の上書き（見出し・タブ列）は `style.css` の末尾の `XSheet:` のブロック 1 つにまとめ、写した規則は InterHub の形のまま残す（ADR-0003 §4-1 の 3）。
+  - 表の色は `renderSheet` だけを使う側の画面も変える。昔の色に戻したい側は、3 つの変数を元の値（表の「InterHub の元」の列）で上書きすればよい。
 - クラス名は InterHub の `ih-xlsx-*`・`ih-xf-N`・`data-ih-xlsx-fmt` を `xs-*`・`xs-xf-N`・`data-xs-fmt` にする（D6）。表の根の `.ih-spreadsheet` は `.xs-sheet`。InterHub 共用のクラス（`ih-data-view`・`ih-data-banner`・`ih-dv-rownum`・`ih-sheet-tabs` など）は、render が要るものだけ `xs-` で作り直す。
 
 ## 7. 文言（`XSheetMessages`・23 キー）

@@ -165,3 +165,8 @@
 ## 2026-11-05 README の zip の手順・ADR-0006（npm の名前と入口）
 - README（英・日・韓）のインストールの節に、Releases からスタンドアロン版の zip を落として使う手順（最新のリリース → Assets → 展開して viewer.html／xsheet.min.js → 再配布ではライセンスのファイルも）を足し、クイックスタートと表からリンクした（PR #21）。
 - npm の名前を確かめた：`xsheet` は無いが `x-sheet`（0.0.0）があり、記号だけが違う名前は断られるおそれが高い。ユーザーが推奨案で決め、ADR-0006 にした（`@taekangkwon/xsheet`・`xsheet/internal` を exports から外す・Release の公開で Actions から信頼された公開と provenance）。付け替えと公開は §4 の別の作業（PR #22）。
+
+## 2026-11-12 表とシートタブを Excel に近い見た目に（Issue #23）
+- Moobius の依頼の検討（docs/research・Git 管理外）の中でユーザーが見た目の変更を指示。Issue #23 を立て、ブランチ feat/excel-like-look で CSS だけ直した。
+- 明るい既定値 3 つ（`--xs-cell-bg` 白・`--xs-grid`・`--xs-border`）を既定値のブロックで直し（`XSheet:` の印）、見出し・タブ列の上書きは `style.css` 末尾の `XSheet:` ブロック 1 つにまとめた。ダークの値・DOM・公開 API は変えない。
+- 02 §3・§6、CHANGELOG（Unreleased「変更」）、`format-css-static.test.ts` の既定値を直した。examples で明るい・ダーク、タブの上・下、◀ ▶ が出る幅を目視した。

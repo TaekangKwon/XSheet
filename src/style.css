@@ -15,14 +15,15 @@
   --xs-fg: #1a1a1a;
   /* 面の地（タブ・ボタン） */
   --xs-bg: #ffffff;
-  /* セルの地。白の塗り（「紙」）と、はみ出す文字が罫線を覆う色・二重線の隙間もこれ。書式のために別の変数を増やさない */
-  --xs-cell-bg: #f5f6f8;
+  /* セルの地。白の塗り（「紙」）と、はみ出す文字が罫線を覆う色・二重線の隙間もこれ。書式のために別の変数を増やさない
+     XSheet: この値と --xs-grid・--xs-border は Excel に寄せて InterHub の値（#f5f6f8・#e5e8ee・#d0d0d0）から変えた（Issue #23） */
+  --xs-cell-bg: #ffffff;
   /* 列記号・行番号の地。図の破線枠・図形の塗りの省略の色の元 */
   --xs-head-bg: #eef0f4;
   /* グリッド線（セルの右と下） */
-  --xs-grid: #e5e8ee;
+  --xs-grid: #dcdfe4;
   /* 見出し行の下の線・タブとボタンの枠 */
-  --xs-border: #d0d0d0;
+  --xs-border: #c4c8cf;
   /* 破線枠・文字の枠の線 */
   --xs-muted: #6b7280;
   /* 行番号・空の表示の文字 */
@@ -557,4 +558,112 @@
   box-sizing: border-box;
   height: 100%;
   min-height: 0;
+}
+
+/* --- XSheet: Excel に寄せた見た目（Issue #23）---
+   写した規則（上）は InterHub の形のまま残し、ここで後から上書きする（ADR-0003 §4-1 の 3）。
+   変数の明るい既定値（--xs-cell-bg・--xs-grid・--xs-border）だけは既定値のブロックで直した。DOM は変えない。 */
+
+/* 見出し（列記号・行番号）は太字にせず、行番号は中央に置く。見出しの区切りは表の線より濃い --xs-border。 */
+.xs-grid thead th,
+.xs-grid .xs-rownum {
+  border-right-color: var(--xs-border);
+  border-bottom-color: var(--xs-border);
+  color: var(--xs-muted);
+  font-weight: 400;
+}
+
+.xs-grid .xs-rownum {
+  text-align: center;
+}
+
+/* タブ列は表に付けて置き、表との境に線を引く（線は列の地の内側の影。選んだタブの地が覆って表とつなげる）。
+   ◀ ▶ は order で左にまとめる（DOM の並びは ◀・タブ・▶ のまま）。 */
+.xs-sheet-strip {
+  gap: 0;
+  min-height: 28px;
+  margin-bottom: 0;
+  background: var(--xs-head-bg);
+  box-shadow: inset 0 -1px 0 var(--xs-border);
+}
+
+.xs-workbook.xs-tabs-bottom > .xs-sheet-strip {
+  margin-top: 0;
+  box-shadow: inset 0 1px 0 var(--xs-border);
+}
+
+.xs-sheet-tabs {
+  order: 1;
+  gap: 0;
+}
+
+.xs-sheet-nav:not([hidden]) + .xs-sheet-tabs {
+  border-left: 1px solid var(--xs-border);
+}
+
+.xs-sheet-tab {
+  position: relative;
+  padding: 4px 14px;
+  border: 0;
+  border-right: 1px solid var(--xs-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+/* 指したタブは列の地と面の地の中間。選んだタブ（表と同じ地）と見分ける */
+.xs-sheet-tab:hover:not(.is-active) {
+  background: color-mix(in srgb, var(--xs-head-bg) 50%, var(--xs-bg));
+}
+
+.xs-sheet-tab:focus-visible {
+  outline: 2px solid var(--xs-accent);
+  outline-offset: -2px;
+}
+
+/* 選んだタブ：表と同じ地・強調色の太字・表と反対側の端に棒（タブが上なら上端、下なら下端） */
+.xs-sheet-tab.is-active {
+  border-color: var(--xs-border);
+  background: var(--xs-cell-bg);
+  color: var(--xs-accent);
+  font-weight: 600;
+}
+
+.xs-sheet-tab.is-active::after {
+  position: absolute;
+  top: 3px;
+  right: 8px;
+  left: 8px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--xs-accent);
+  content: '';
+}
+
+.xs-workbook.xs-tabs-bottom .xs-sheet-tab.is-active::after {
+  top: auto;
+  bottom: 3px;
+}
+
+/* 非表示のシート（⌀ 付き）は斜体・破線をやめ、薄い文字で区別する */
+.xs-sheet-tab.is-hidden-sheet {
+  border-style: solid;
+  color: var(--xs-faint);
+  font-style: normal;
+}
+
+.xs-sheet-tab.is-hidden-sheet.is-active {
+  color: var(--xs-accent);
+}
+
+.xs-sheet-nav {
+  width: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--xs-muted);
+}
+
+.xs-sheet-nav:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--xs-head-bg) 50%, var(--xs-bg));
 }

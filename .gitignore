@@ -13,6 +13,8 @@ release/
 # Claude Code の個人設定・セッション引き継ぎ（progress.md はコミットする）
 CLAUDE.local.md
 docs/.history/handoff.md
+# 検討・調査のメモ（各自の手元で使う。コミットしない）
+docs/research/
 # InterHub（文書ビューアの拡張）の分類のファイル（各自の環境）
 .interhub/
 .claude/launch.json

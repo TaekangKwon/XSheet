@@ -8,6 +8,12 @@
 
 - GitHub Pages のデモ（https://taekangkwon.github.io/XSheet/。[ADR-0005](docs/adr/0005-pages-demo.md)）。例のページを `npm run pages:build` でビルドし、`main` への push で Actions が出す。例のページのサンプルはページからの相対で読むようにした。
 
+### 変更
+
+- 表とシートタブを Excel に近い見た目にした（[#23](https://github.com/TaekangKwon/XSheet/issues/23)。CSS だけで、DOM・公開 API は変えない）。
+  - 表：セルの地を白（`--xs-cell-bg` `#ffffff`）にし、グリッド線（`--xs-grid` `#dcdfe4`）と見出しの区切り（`--xs-border` `#c4c8cf`）を少し濃くした。見出しは太字にせず、行番号は中央に置く。**`renderSheet` だけを使う画面も色が変わる。** 元の色に戻すには 3 つの変数を `#f5f6f8`・`#e5e8ee`・`#d0d0d0` で上書きする。ダークの値は変えていない。
+  - タブ列：表に付けて境に線を引く。タブは角の無い枠を縦線で区切り、選んだタブは表と同じ地・強調色の太字と棒で示す。◀ ▶ は左にまとめる。非表示のシートは斜体・破線ではなく薄い文字にした。
+
 ## [0.4.0] - 2026-11-05
 
 リポジトリを公開して最初の版（[ADR-0004](docs/adr/0004-public-release.md)）。シートタブの位置を選べるようにした。0.3.0 の公開物はすべて残る。
