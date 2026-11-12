@@ -5,6 +5,7 @@
  * 和暦（`ggge`）は ssf にも無いので、1 次では対応しない（ADR-0025「悪い点」）。
  */
 import * as ssfModule from 'ssf';
+import { withJaTokens } from './format-ja'; // XSheet: 曜日の口（ADR-0007 §6）
 import { MAX_FORMAT_CODE_LENGTH } from './limits';
 import type { Styles } from './styles';
 
@@ -13,8 +14,10 @@ interface SsfApi {
   format(fmt: string | number, val: unknown, opts?: object): string;
   is_date(fmt: string): boolean;
 }
-const ssf: SsfApi =
-  (ssfModule as unknown as { default?: SsfApi }).default ?? (ssfModule as unknown as SsfApi);
+// XSheet: 曜日（aaa・aaaa）を ssf の手前で置き換える口（format-ja.ts・ADR-0007 §6）
+const ssf: SsfApi = withJaTokens(
+  (ssfModule as unknown as { default?: SsfApi }).default ?? (ssfModule as unknown as SsfApi),
+);
 
 /**
  * 組み込みの表示形式（numFmtId → 書式コード）。

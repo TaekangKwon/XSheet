@@ -8,6 +8,10 @@
 
 - GitHub Pages のデモ（https://taekangkwon.github.io/XSheet/。[ADR-0005](docs/adr/0005-pages-demo.md)）。例のページを `npm run pages:build` でビルドし、`main` への push で Actions が出す。例のページのサンプルはページからの相対で読むようにした。
 
+### 修正
+
+- 曜日の書式（`aaa`＝「月」・`aaaa`＝「月曜日」）を Excel と同じに出すようにした（[#25](https://github.com/TaekangKwon/XSheet/issues/25)。[ADR-0007](docs/adr/0007-moobius-viewer-api.md) §6）。今までは `m/d(aaa)` が `11/11(aaa)` と文字のまま出ていた。曜日は日付の通し番号から計算する（1900 年基準・1904 年基準。時間帯のずれは入らない）。Excel と同じく、a が 5 個以上なら長い形、大文字の `AAA` も曜日、引用符・`\`・`[...]` の中と `AM/PM`・`A/P` の a は曜日にしない。日付の範囲の外（Excel が #### にする値）は空にする。セルの文字（`CellView.text`）とグラフの軸の文字の両方に効く。Excel 16 で作った `fixtures/excel/ref-weekday.xlsx` と照合した。
+
 ### 変更
 
 - 表とシートタブを Excel に近い見た目にした（[#23](https://github.com/TaekangKwon/XSheet/issues/23)。CSS だけで、DOM・公開 API は変えない）。

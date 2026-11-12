@@ -3,7 +3,7 @@
 | 項目 | 値 |
 | --- | --- |
 | 文書 | XSheet 立ち上げ資料 02 |
-| 更新日 | 2026-10-30 |
+| 更新日 | 2026-11-12 |
 | 関連 | [01_requirements.md](01_requirements.md)・[03_source-map.md](03_source-map.md)・[ADR-0003](adr/0003-universal-distribution.md)（M6）・[guide/](guide/README.md) |
 
 ## TL;DR
@@ -211,6 +211,10 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
 | `SheetDrawings.notices` | `part-too-large`・`broken`・`too-many`・`text-truncated`・`shape-simplified` |
 
 - 全体は InterHub `src_V1/src/lib/xlsx/types.ts`（599 行）。行の番号・列の番号・アンカーの数え始め（0 か 1 か）は型の doc コメントに従う。
+- `CellView.text` の表示形式は ssf が当てる。ssf が知らない曜日（`aaa`＝「月」・`aaaa` 以上＝「月曜日」。大文字の `AAA` も同じ）は、`src/core/format-ja.ts` が ssf の手前で書式を字句に分け、日付の通し番号から計算した曜日を引用符で包んだ形に置き換える（`format.ts` は ssf を包む `// XSheet:` の口 1 つ。[ADR-0007](adr/0007-moobius-viewer-api.md) §6・#25）。
+  - 引用符・`\`・`_`・`*` の後・`[...]` の中と `AM/PM`・`A/P` の a は曜日にしない。a が 1・2 個なら文字のまま。
+  - 日付の範囲の外（1900 年基準の負の値・9999/12/31 の先。Excel は ####）は、使う区画に曜日があればセルを空にする。
+  - Excel 16（ja-JP）で作った `fixtures/excel/ref-weekday.xlsx`・`ref-weekday-1904.xlsx` と照合する（`tests/core/ref-weekday.test.ts`）。合わないのは ssf の受け持ちの所だけ：列幅いっぱいの埋め `*x`、文字だけの書式・1904 年基準の負の値の「-」、小文字の `am/pm` を大文字にすること、1904 年基準の 9999/12/31 の先。
 
 ## 5. 上限（`XlsxLimits`・既定値）
 
@@ -336,7 +340,7 @@ dist/
 | `xsheet-geom.mjs`（図形を描くときだけ） | 176,674 | 30,588 | 34,000 |
 | `xsheet-chart.mjs`（グラフを描くときだけ） | 67,545 | 25,031 | 28,000 |
 
-- `xsheet-chart.mjs` は部品ごとに別に束ねるため、軸の文字の書式（`formatNumberByCode`・ssf）と色の変換を `xsheet.mjs` と重ねて持つ（約 10 KB）。ssf の `format` は状態を持たないので、写しが 2 つでも結果は同じ。グラフの無いブックでは読まないので、最初に読む分を軽くするほうを採った（ADR-0003 §1）。
+- `xsheet-chart.mjs` は部品ごとに別に束ねるため、軸の文字の書式（`formatNumberByCode`・ssf）と色の変換を `xsheet.mjs` と重ねて持つ（約 10 KB）。ssf の `format` は状態を持たないので、写しが 2 つでも結果は同じ（曜日の置き換え `format-ja.ts` も 2 つ持つ。覚えておくのは書式の字句の分解だけで、結果は変わらない）。グラフの無いブックでは読まないので、最初に読む分を軽くするほうを採った（ADR-0003 §1）。
 
 - ADR-0003 §1 の見込み（約 110 KB）どおり。B を使う側のビルド（最初の JS が gzip 78,051・形の表 30,477）より、単独版は依存を丸ごと持つぶん少し大きい。
 - `dist/index.js`（`xsheet`）は CSS の自動挿入のため `style.css` の文面（約 18 KB・圧縮前）を文字列で持つ。
