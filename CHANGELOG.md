@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-12
+
+曜日の書式（`aaa`・`aaaa`）の修正を先に出す版（[ADR-0007](docs/adr/0007-moobius-viewer-api.md) §9）。表とシートタブの見た目を Excel に近づけた。公開 API は変えていない。
+
 ### 追加
 
 - GitHub Pages のデモ（https://taekangkwon.github.io/XSheet/。[ADR-0005](docs/adr/0005-pages-demo.md)）。例のページを `npm run pages:build` でビルドし、`main` への push で Actions が出す。例のページのサンプルはページからの相対で読むようにした。
@@ -87,7 +91,8 @@ InterHub のグラフ（ADR-0031・ISSUE-101〜111）を取り込んだ（M7）�
 - 表示の状態をモジュール変数ではなく表示ごとのインスタンスに持ち、同じページに複数の表示を置けるようにした。
 - 形の評価器を描画側から独立させ（`xsheet/geom`）、core が描画に依存する逆転をなくした。
 
-[Unreleased]: https://github.com/TaekangKwon/XSheet/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/TaekangKwon/XSheet/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.4.1
 [0.4.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.4.0
 [0.3.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.3.0
 [0.2.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.2.0

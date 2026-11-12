@@ -95,7 +95,7 @@ book.close();
 > XSheet is **not published to npm yet**. Each Git tag contains a built `dist/`, so installing from a tag runs no build scripts ([ADR-0002](docs/adr/0002-build-and-distribution.md)).
 
 ```bash
-npm install github:TaekangKwon/XSheet#v0.4.0
+npm install github:TaekangKwon/XSheet#v0.4.1
 ```
 
 - The only dependencies are `jszip` and `ssf`; they are installed with it.
