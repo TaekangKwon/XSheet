@@ -18,6 +18,26 @@ export interface RenderOptions {
   nonce?: string;
 }
 
+/** `focusHighlight` の指定（XSheet: ADR-0007 §3） */
+export interface FocusHighlightOptions {
+  /** そのヒットが見える所までスクロールする（既定 true） */
+  scroll?: boolean;
+  /** なめらかにスクロールする（既定 false） */
+  smooth?: boolean;
+}
+
+/** `scrollToCell` の指定（XSheet: ADR-0007 §3） */
+export interface ScrollToCellOptions {
+  /** なめらかにスクロールする（既定 false） */
+  smooth?: boolean;
+}
+
+/** 画面の位置にあるセル（1 始まり） */
+export interface CellPosition {
+  r: number;
+  c: number;
+}
+
 /** 表示 1 つ */
 export interface SheetView {
   /**
@@ -27,6 +47,29 @@ export interface SheetView {
    * XSheet: ADR-0007 §2（M7-5）
    */
   setHighlights(matches: readonly TextMatch[] | null): void;
+  /**
+   * 今のヒットを替え、そのヒットが見える所までスクロールする。描いている範囲の中なら表を描き直さず、印（`is-current`）だけを替える。
+   * スクロール先は縦が表示枠の上から約 1/3、横はヒットが見えていないときだけ見える所まで（はみ出す文字の中のヒットにも届く）。
+   * @param index `setHighlights` に渡した配列の番号（0 始まり）。-1 で外す
+   * @throws RangeError 整数でない・-1 より小さい・配列の長さ以上の番号
+   * XSheet: ADR-0007 §3（M7-6）
+   */
+  focusHighlight(index: number, options?: FocusHighlightOptions): void;
+  /**
+   * セルが見える所までスクロールする（縦は表示枠の上から約 1/3。横は見えていないときだけ動かす）。
+   * @param r 行（1 始まり）
+   * @param c 列（1 始まり）
+   * @throws RangeError 1 以上の整数でない番号
+   */
+  scrollToCell(r: number, c: number, options?: ScrollToCellOptions): void;
+  /**
+   * 画面の座標（`MouseEvent.clientX`・`clientY`）にあるセル。見出し・スクロールバー・表の外は null。
+   * 結合したセルは左上、はみ出した文字の範囲（文字の届かない右の空セルを含む）ははみ出し元のセルを返す。
+   * XSheet: ADR-0007 §4（M7-6）
+   */
+  cellAt(clientX: number, clientY: number): CellPosition | null;
+  /** 画面の座標にあるハイライトの番号（`setHighlights` の配列の番号）。無ければ -1 */
+  highlightAt(clientX: number, clientY: number): number;
   /** リスナ・ResizeObserver・blob URL・シートを放し、表示を `container` から外す。何度呼んでもよい。ブックは閉じない */
   destroy(): void;
 }
@@ -63,6 +106,10 @@ export async function renderSheet(
   }
   return {
     setHighlights: (matches) => view.setHighlights(matches),
+    focusHighlight: (index, opts) => view.focusHighlight(index, opts),
+    scrollToCell: (r, c, opts) => view.scrollToCell(r, c, opts),
+    cellAt: (x, y) => view.cellAt(x, y),
+    highlightAt: (x, y) => view.highlightAt(x, y),
     destroy: () => view.destroy(),
   };
 }

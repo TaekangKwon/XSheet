@@ -56,6 +56,17 @@ function messageView(root: HTMLElement): WorkbookView {
     sheets: [],
     showSheet: () => Promise.reject(new RangeError('シートの番号が範囲外')),
     setHighlights: () => undefined, // XSheet: 表が無いので何もしない（ADR-0007 §2）
+    // XSheet: 一致もセルも無い（番号の確かめだけは表のある表示と同じ。ADR-0007 §3・§4）
+    focusHighlight: (index) => {
+      if (index !== -1) throw new RangeError('ヒットの番号が範囲外');
+    },
+    scrollToCell: (r, c) => {
+      if (!Number.isInteger(r) || !Number.isInteger(c) || r < 1 || c < 1) {
+        throw new RangeError('セルの番号が範囲外');
+      }
+    },
+    cellAt: () => null,
+    highlightAt: () => -1,
     destroy: () => {
       root.replaceChildren();
       root.remove();
@@ -163,5 +174,14 @@ export async function renderWorkbook(
     throw e;
   }
   // XSheet: setHighlights は中のシートの表示に渡す（ADR-0007 §2）
-  return { sheets, showSheet, setHighlights: (matches) => view.setHighlights(matches), destroy };
+  return {
+    sheets,
+    showSheet,
+    setHighlights: (matches) => view.setHighlights(matches),
+    focusHighlight: (index, opts) => view.focusHighlight(index, opts),
+    scrollToCell: (r, c, opts) => view.scrollToCell(r, c, opts),
+    cellAt: (x, y) => view.cellAt(x, y),
+    highlightAt: (x, y) => view.highlightAt(x, y),
+    destroy,
+  };
 }

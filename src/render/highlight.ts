@@ -26,8 +26,12 @@ export interface CellHit {
 
 /** 表を描くときに引くハイライト */
 export interface GridHits {
-  /** 今のヒットの番号（無ければ -1） */
-  readonly current: number;
+  /** 今のヒットの番号（無ければ -1）。`focusHighlight` が替える（M7-6） */
+  current: number;
+  /** 一致の一覧の数（`setHighlights` に渡した配列の長さ） */
+  readonly count: number;
+  /** 番号 index の一致（番号の正しくない一致・範囲外は undefined） */
+  match(index: number): TextMatch | undefined;
   /** 行 r・列 c（1 始まり）の一致（無ければ undefined） */
   at(r: number, c: number): readonly CellHit[] | undefined;
 }
@@ -44,6 +48,7 @@ export function createGridHits(
     return null;
   }
   const rows = new Map<number, Map<number, CellHit[]>>();
+  const valid = new Array<TextMatch | undefined>(matches.length);
   matches.forEach((m, index) => {
     if (
       !Number.isInteger(m.r) ||
@@ -57,6 +62,7 @@ export function createGridHits(
     ) {
       return;
     }
+    valid[index] = { r: m.r, c: m.c, start: m.start, end: m.end };
     let cols = rows.get(m.r);
     if (!cols) {
       cols = new Map();
@@ -74,16 +80,49 @@ export function createGridHits(
       list.sort((a, b) => a.start - b.start || a.index - b.index);
     }
   }
-  return { current, at: (r, c) => rows.get(r)?.get(c) };
+  return {
+    current,
+    count: matches.length,
+    match: (index) => valid[index],
+    at: (r, c) => rows.get(r)?.get(c),
+  };
 }
+
+/** 片にまとめた一致の番号（重なる一致は 1 つの片になるので、今のヒットの印を替えるときに引く） */
+const pieceHits = new WeakMap<Element, readonly number[]>();
 
 /** 一致の片を付ける（番号と今のヒットの印） */
 function markHit(el: HTMLElement, hits: readonly CellHit[], current: number): void {
   el.classList.add('xs-hit');
   el.dataset.xsHit = String(hits[0]!.index);
+  pieceHits.set(
+    el,
+    hits.map((h) => h.index),
+  );
   if (current >= 0 && hits.some((h) => h.index === current)) {
     el.classList.add('is-current');
   }
+}
+
+/**
+ * 描いた表の中の片の `is-current` を、今のヒットに合わせて付け替える（表を描き直さない。ADR-0007 §3）。
+ * @returns 今のヒットの片が描いた表の中にあったか
+ */
+export function markCurrent(table: ParentNode, current: number): boolean {
+  let found = false;
+  table.querySelectorAll<HTMLElement>('.xs-hit').forEach((el) => {
+    const on = current >= 0 && (pieceHits.get(el)?.includes(current) ?? false);
+    el.classList.toggle('is-current', on);
+    found ||= on;
+  });
+  return found;
+}
+
+/** 片の番号（`data-xs-hit`）。片でなければ -1 */
+export function hitIndexOf(el: Element | null): number {
+  const piece = el?.closest<HTMLElement>('.xs-hit');
+  const n = Number(piece?.dataset.xsHit);
+  return piece && Number.isInteger(n) && n >= 0 ? n : -1;
 }
 
 /**

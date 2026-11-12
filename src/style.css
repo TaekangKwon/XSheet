@@ -695,3 +695,13 @@
 .xs-hit.is-ink {
   color: var(--xs-fg);
 }
+
+/* XSheet: 文字の幅を測る入れ物（navigate.ts。はみ出す文字の中のヒットへ横にスクロールする位置を出す。ADR-0007 §3）。
+   画面の外に置き、見せない。書式の規則（td.xs-xf-<番号>）が効くよう、表と同じ形にする。 */
+.xs-grid.xs-measure {
+  position: absolute;
+  top: 0;
+  left: -100000px;
+  visibility: hidden;
+  pointer-events: none;
+}
