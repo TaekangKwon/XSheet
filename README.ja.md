@@ -95,7 +95,7 @@ book.close();
 > XSheet は**まだ npm に公開していません**。Git のタグごとにビルド済みの `dist/` が入っているため、タグからインストールしてもビルドスクリプトは実行されません（[ADR-0002](docs/adr/0002-build-and-distribution.md)）。
 
 ```bash
-npm install github:TaekangKwon/XSheet#v0.4.1
+npm install github:TaekangKwon/XSheet#v0.5.0
 ```
 
 - 依存パッケージは `jszip` と `ssf` の 2 つだけで、一緒にインストールされます。

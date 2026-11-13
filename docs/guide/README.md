@@ -9,7 +9,7 @@
 ## TL;DR
 - 最初は README の「3 行で始める」を読む。ここは、そこから先の場面ごとの説明。
 - 表示は `view`（`xsheet` か単独版の `XSheet.view`）、読み取りだけなら `xsheet/core` の `openXlsx` か `xsheet` の `read`。
-- コードの例は今の API（v0.4.1）に合わせてある。
+- コードの例は今の API（v0.5.0）に合わせてある。
 
 ---
 
@@ -20,4 +20,4 @@
 | [worker.md](worker.md) | Web Worker で読む（`xsheet/core`・`ArrayBuffer` の転送）。表示は main thread |
 | [csp.md](csp.md) | CSP の指定（`script-src`・`style-src` の nonce・`img-src blob:`）と、`css: 'none'` で `<link>` にする形 |
 | [theme.md](theme.md) | ダーク表示（`theme`・`data-xs-theme`）・変数の上書き・Shadow DOM |
-| [xsheet-0.5.0-preview.md](xsheet-0.5.0-preview.md) | 0.5.0 で足す公開 API の型の先出し（[xsheet-0.5.0-preview.d.ts](xsheet-0.5.0-preview.d.ts)）：置き方・依頼の案との違い・使い方の例 |
+| [xsheet-0.5.0-preview.md](xsheet-0.5.0-preview.md) | （0.4.1 用・0.5.0 では不要）0.5.0 で足した公開 API の型の先出し（[xsheet-0.5.0-preview.d.ts](xsheet-0.5.0-preview.d.ts)）。0.5.0 の単独版は zip の `xsheet.d.ts` を使う |

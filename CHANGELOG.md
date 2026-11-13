@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-13
+
+Moobius の依頼 R1〜R7 をまとめた版（[ADR-0007](docs/adr/0007-moobius-viewer-api.md)）。検索・ハイライト・移動と位置の判定・拡大縮小・見出しを隠す・今のシート・和暦を足した。今までの API の形は変えていない（`builtinDates` の既定は今までの表のまま）。
+
 ### 追加
 
 - `findText(sheet, query, options?)`：シートの中の文字を探す（[#28](https://github.com/TaekangKwon/XSheet/issues/28)。[ADR-0007](docs/adr/0007-moobius-viewer-api.md) §1。`xsheet/core`・`xsheet`・単独版の `XSheet.findText`）。表示形式を当てた後の文字（`CellView.text`）で照らし、`{ matches, truncated }` を返す。一致は行・列（1 始まり）と文字の中の位置。大文字と小文字・改行は既定で区別せず（位置は元の文字で返す）、全角と半角は区別する。結合は左上のセルだけ、非表示の行・列は既定で探さない。約 10ms ごとに休むので大きなシートでも画面を止めない。`signal` で中断（`AbortError`）、`maxMatches`（既定 10,000・上限 100,000）で打ち切る。
@@ -108,7 +112,8 @@ InterHub のグラフ（ADR-0031・ISSUE-101〜111）を取り込んだ（M7）�
 - 表示の状態をモジュール変数ではなく表示ごとのインスタンスに持ち、同じページに複数の表示を置けるようにした。
 - 形の評価器を描画側から独立させ（`xsheet/geom`）、core が描画に依存する逆転をなくした。
 
-[Unreleased]: https://github.com/TaekangKwon/XSheet/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/TaekangKwon/XSheet/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.5.0
 [0.4.1]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.4.1
 [0.4.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.4.0
 [0.3.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.3.0
