@@ -235,6 +235,48 @@ book.close();
 | `tabPosition` | `'top'` | 시트 탭을 놓을 위치. `'top'` 또는 `'bottom'`(`renderWorkbook`에만 해당) |
 | `nonce` | — | 서식용 `<style>` 요소에 붙일 nonce(CSP의 `style-src 'nonce-…'`용) |
 | `limits` | `DEFAULT_LIMITS` | 읽기 상한값(`renderWorkbook`에만 해당. `renderSheet`를 쓸 때는 `openXlsx`에 넘김) |
+| `zoom` | `1` | 처음 배율(v0.5.0). 0.5~2.0의 숫자, 또는 사용 중인 열을 표시 영역의 너비에 맞추는 `{ fit: 'width' }`(`min`·`max` 기본값은 0.5·2.0). 범위 밖의 숫자는 끝값으로 맞추고, `NaN`이나 그 밖의 값은 `RangeError` |
+| `headers` | `true` | `false`이면 행 번호와 열 머리글을 표시하지 않고, 셀을 왼쪽 위 모서리부터 그림(v0.5.0) |
+| `onSheetChange` | — | 탭이나 `showSheet`로 시트가 바뀌고 그 시트를 다 그린 뒤, 시트 번호를 넘겨 호출. 처음 시트에서는 호출하지 않음(`renderWorkbook`에만 해당, v0.5.0). 시트를 바꾸면 하이라이트가 지워지므로 새 시트를 다시 검색할 때 씀 |
+
+### 검색, 하이라이트, 확대·축소 (v0.5.0)
+
+`renderWorkbook`과 `renderSheet`가 반환하는 표시 객체에는 검색 결과 표시, 스크롤, 위치 판정, 확대·축소 멤버가 있습니다(`WorkbookView`는 `SheetView`를 확장한 것). `view`와 그 `Viewer`에는 아직 없습니다.
+
+```ts
+import { findText, openXlsx } from 'xsheet';
+import { renderWorkbook } from 'xsheet/render';
+
+const bytes = await file.arrayBuffer();
+const wb = await renderWorkbook(container, bytes, { zoom: { fit: 'width' } });
+const book = await openXlsx(bytes); // renderWorkbook은 연 통합 문서를 밖에 내주지 않으므로 검색용으로 하나 더 엶(닫는 것은 호출하는 쪽)
+
+const ac = new AbortController();
+const shown = wb.sheets.find((s) => !s.hidden) ?? wb.sheets[0]; // 처음에 표시되는 시트
+const sheet = await book.openSheet(shown.index);
+const { matches, truncated } = await findText(sheet, '합계', { signal: ac.signal });
+wb.setHighlights(matches);
+wb.focusHighlight(0); // 첫 번째 일치 위치로 스크롤하고 현재 일치로 표시
+
+container.addEventListener('click', (e) => {
+  const hit = wb.highlightAt(e.clientX, e.clientY);
+  if (hit >= 0) wb.focusHighlight(hit, { scroll: false });
+});
+```
+
+| 멤버 | 설명 |
+| --- | --- |
+| `findText(sheet, query, options?)` | `xsheet`, `xsheet/core`에서 가져옴. 표시된 그대로의 문자(표시 형식을 적용한 뒤)를 검색. 결과는 `{ matches, truncated }`이고, 일치 하나는 `{ r, c, start, end }`(셀은 1부터, 위치는 UTF-16이며 `end`는 포함하지 않음). 옵션: `match`(`'partial'` 또는 `'cell'`), `ignoreCase`(`true`), `ignoreNewlines`(`true`), `skipHidden`(`true`), `signal`(중단하면 `AbortError` `DOMException`으로 reject), `maxMatches`(10,000, 최대 100,000). 약 10ms마다 페이지에 처리를 양보함 |
+| `setHighlights(matches)` | 일치를 강조 표시. `null`이나 `[]`로 지움. 스크롤해도 남고, 시트를 바꾸면 지워짐. 색은 `--xs-hit-bg`, `--xs-hit-current-bg` |
+| `focusHighlight(index, options?)` | 일치 하나(`setHighlights`에 넘긴 배열의 번호)를 현재 일치로 정하고, 표시 영역의 위에서 약 1/3 위치까지 스크롤. `{ scroll: false }`는 표시만, `{ smooth: true }`는 부드럽게, `-1`은 표시를 해제 |
+| `scrollToCell(r, c, options?)` | 셀(1부터)이 보이도록 같은 방식으로 스크롤 |
+| `cellAt(clientX, clientY)` | 화면 위 위치에 있는 셀 `{ r, c }`. 머리글, 스크롤바, 표 바깥이면 `null`. 병합 셀은 왼쪽 위 셀을, 넘친 문자는 그 원래 셀을 반환 |
+| `highlightAt(clientX, clientY)` | 그 위치에 있는 일치의 번호. 없으면 `-1` |
+| `setZoom(zoom)`, `zoom` | 배율을 바꾸거나(값은 `zoom` 옵션과 같음) 읽음. 왼쪽 위 셀은 움직이지 않음. 머리글 크기는 그대로이고(100% 미만에서는 행 번호 글자만 작아짐), 선 굵기도 바뀌지 않음 |
+| `showSheet(index)` | 표시를 다시 만들지 않고 시트를 바꿈. 배율은 유지하고 하이라이트는 지움. `renderSheet`의 반환값에도 있음 |
+| `activeSheet` | 선택된 시트의 번호(`SheetInfo.index`). 탭을 누르거나 `showSheet`를 호출하면 바로 바뀜. 파일을 열 수 없었으면 `null` |
+
+- 표시 영역에 CSS `transform`으로 배율을 걸지 마세요. `cellAt`과 `highlightAt`이 엉뚱한 셀을 가리킵니다. `setZoom`을 쓰세요.
 
 전체 API는 [docs/02_architecture.md](docs/02_architecture.md)의 §2(core)와 §3(render와 `view` 계층)에 정리되어 있습니다.
 
@@ -256,7 +298,7 @@ book.close();
 ## 테마
 
 - 다크 모드로 표시하려면 `view`에 `theme: 'dark'`를 넘기세요(`'auto'`는 OS 설정을 따름). `renderWorkbook` 등을 쓸 때는 표시 영역의 루트나 `<html>` 같은 상위 요소에 `data-xs-theme="dark"`(또는 `"auto"`)를 붙입니다. 다크 값은 `style.css`에 들어 있으므로 따로 복사할 필요가 없습니다.
-- 색은 14개의 CSS 변수(`--xs-*`)로 바꿀 수 있습니다. 기본값의 명시도(specificity)가 0(`:where(:root, :host)`)이라서, Shadow DOM 안을 포함해 어디서든 덮어쓸 수 있습니다.
+- 색은 16개의 CSS 변수(`--xs-*`)로 바꿀 수 있습니다. 기본값의 명시도(specificity)가 0(`:where(:root, :host)`)이라서, Shadow DOM 안을 포함해 어디서든 덮어쓸 수 있습니다.
 
 ```css
 /* 라이트 테마의 강조색만 바꾸기 */

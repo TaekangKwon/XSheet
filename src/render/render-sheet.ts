@@ -101,6 +101,12 @@ export interface SheetView {
    * XSheet: ADR-0007 §7（M7-9）
    */
   showSheet(index: number): Promise<void>;
+  /**
+   * 選んでいるシートの番号（`SheetInfo.index`）。開けなかったシートでもその番号。表の無い表示（開けなかったブック）では null。
+   * `showSheet` を呼ぶとすぐに替わる（表示し終えるのを待たない）。
+   * XSheet: ADR-0007 §7（版 1.1）
+   */
+  readonly activeSheet: number | null;
   /** リスナ・ResizeObserver・blob URL・シートを放し、表示を `container` から外す。何度呼んでもよい。ブックは閉じない */
   destroy(): void;
 }
@@ -131,6 +137,7 @@ export async function renderSheet(
     zoom: options.zoom,
     headers: options.headers,
   });
+  let selected = sheetIndex;
   try {
     await view.showSheet(sheetIndex);
   } catch (e) {
@@ -148,9 +155,17 @@ export async function renderSheet(
       return view.zoom;
     },
     showSheet: async (index) => {
-      if (view.activeIndex !== index || !book.sheets.some((s) => s.index === index)) {
+      if (!book.sheets.some((s) => s.index === index)) {
+        await view.showSheet(index); // ブックに無い番号は RangeError（選んでいるシートは替えない）
+        return;
+      }
+      if (view.activeIndex !== index) {
+        selected = index;
         await view.showSheet(index);
       }
+    },
+    get activeSheet() {
+      return selected;
     },
     destroy: () => view.destroy(),
   };

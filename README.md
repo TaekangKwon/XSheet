@@ -235,6 +235,48 @@ book.close();
 | `tabPosition` | `'top'` | `'top'` or `'bottom'`: where to put the sheet tabs (`renderWorkbook` only) |
 | `nonce` | — | Nonce for the format `<style>` element (for CSP `style-src 'nonce-…'`) |
 | `limits` | `DEFAULT_LIMITS` | Read limits (`renderWorkbook` only; for `renderSheet`, pass them to `openXlsx`) |
+| `zoom` | `1` | Initial zoom (v0.5.0): a number from 0.5 to 2.0, or `{ fit: 'width' }` to fit the used columns to the view's width (`min` / `max` default to 0.5 / 2.0). Numbers outside the range are clamped; `NaN` or any other value throws `RangeError` |
+| `headers` | `true` | With `false`, no row numbers and no column letters; the cells start at the top-left corner (v0.5.0) |
+| `onSheetChange` | — | Called with the sheet index after a tab click or `showSheet` has switched sheets and drawn the new one; not for the first sheet (`renderWorkbook` only, v0.5.0). Use it to search the new sheet, since highlights are cleared on a switch |
+
+### Search, highlights and zoom (v0.5.0)
+
+The views returned by `renderWorkbook` and `renderSheet` have members for search results, scrolling, hit testing and zoom (`WorkbookView` extends `SheetView`). `view` and its `Viewer` do not have them yet.
+
+```ts
+import { findText, openXlsx } from 'xsheet';
+import { renderWorkbook } from 'xsheet/render';
+
+const bytes = await file.arrayBuffer();
+const wb = await renderWorkbook(container, bytes, { zoom: { fit: 'width' } });
+const book = await openXlsx(bytes); // renderWorkbook keeps its book to itself; open one more to search (close it yourself)
+
+const ac = new AbortController();
+const shown = wb.sheets.find((s) => !s.hidden) ?? wb.sheets[0]; // the sheet shown first
+const sheet = await book.openSheet(shown.index);
+const { matches, truncated } = await findText(sheet, 'total', { signal: ac.signal });
+wb.setHighlights(matches);
+wb.focusHighlight(0); // scroll to the first hit and mark it as the current one
+
+container.addEventListener('click', (e) => {
+  const hit = wb.highlightAt(e.clientX, e.clientY);
+  if (hit >= 0) wb.focusHighlight(hit, { scroll: false });
+});
+```
+
+| Member | Meaning |
+| --- | --- |
+| `findText(sheet, query, options?)` | From `xsheet` / `xsheet/core`. Searches the text as displayed (after number formats). Resolves to `{ matches, truncated }`; a match is `{ r, c, start, end }` (1-based cell, UTF-16 offsets, `end` exclusive). Options: `match` (`'partial'` or `'cell'`), `ignoreCase` (`true`), `ignoreNewlines` (`true`), `skipHidden` (`true`), `signal` (rejects with an `AbortError` `DOMException`), `maxMatches` (10,000, at most 100,000). It yields to the page about every 10 ms |
+| `setHighlights(matches)` | Highlight the matches; `null` or `[]` clears them. They survive scrolling and are cleared when the sheet changes. Colors: `--xs-hit-bg`, `--xs-hit-current-bg` |
+| `focusHighlight(index, options?)` | Make one match (its index in the `setHighlights` array) the current one and scroll it about a third of the way down the view. `{ scroll: false }` only marks it, `{ smooth: true }` animates, `-1` clears the mark |
+| `scrollToCell(r, c, options?)` | Scroll a cell (1-based) into view the same way |
+| `cellAt(clientX, clientY)` | The cell `{ r, c }` under a point on the screen, or `null` on the headers, a scrollbar or outside the grid. A merged range gives its top-left cell; overflowing text gives the cell it comes from |
+| `highlightAt(clientX, clientY)` | The index of the match under the point, or `-1` |
+| `setZoom(zoom)`, `zoom` | Change the zoom (same values as the `zoom` option) or read it. The top-left cell stays in place. The headers keep their size (row numbers get a smaller font below 100%), and line widths do not change |
+| `showSheet(index)` | Switch sheets without rebuilding the view: the zoom is kept and the highlights are cleared. `renderSheet` has it too |
+| `activeSheet` | The index (`SheetInfo.index`) of the selected sheet; it changes as soon as a tab is clicked or `showSheet` is called. `null` when the file could not be opened |
+
+- Do not scale the view with a CSS `transform`; `cellAt` and `highlightAt` would point at the wrong cells. Use `setZoom`.
 
 The full API is described in [docs/02_architecture.md](docs/02_architecture.md) §2 (core) and §3 (render and the `view` layer).
 
@@ -256,7 +298,7 @@ The full API is described in [docs/02_architecture.md](docs/02_architecture.md) 
 ## Theming
 
 - For a dark view, pass `theme: 'dark'` to `view` (`'auto'` follows the OS). With `renderWorkbook` and friends, put `data-xs-theme="dark"` (or `"auto"`) on the view root or an ancestor such as `<html>`. The dark values ship in `style.css`; you do not need to copy them.
-- Colors are 14 CSS variables (`--xs-*`). Their defaults have zero specificity (`:where(:root, :host)`), so you can override them anywhere, including inside Shadow DOM.
+- Colors are 16 CSS variables (`--xs-*`). Their defaults have zero specificity (`:where(:root, :host)`), so you can override them anywhere, including inside Shadow DOM.
 
 ```css
 /* change only the accent color of the light theme */

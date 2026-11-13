@@ -1,10 +1,10 @@
 # 0007. 検索・ハイライト・拡大縮小などの公開 API（Moobius の依頼 R1〜R7）
 
-> 版: 1.0 ・ 更新日: 2026-11-12 ・ 担当: kwon
+> 版: 1.1 ・ 更新日: 2026-11-13 ・ 担当: kwon
 > 関連文書: [0003](0003-universal-distribution.md)（§4-1 写しの規約） / [0006](0006-npm-publish.md)（npm の版） / [01_requirements](../01_requirements.md)（M7 の候補） / [05_quality](../05_quality.md)（③ 実機の確認）
 
 ## TL;DR
-- Moobius（書庫管理のファイルビューア）からの依頼 R1〜R7 を M7 として受け、公開 API を足す：検索 `findText`、`SheetView` の `setHighlights`・`focusHighlight`・`scrollToCell`・`cellAt`・`highlightAt`・`setZoom`・`zoom`・`showSheet`、`RenderOptions` の `zoom`・`headers`。
+- Moobius（書庫管理のファイルビューア）からの依頼 R1〜R7 を M7 として受け、公開 API を足す：検索 `findText`、`SheetView` の `setHighlights`・`focusHighlight`・`scrollToCell`・`cellAt`・`highlightAt`・`setZoom`・`zoom`・`showSheet`・`activeSheet`、`RenderOptions` の `zoom`・`headers`、`WorkbookOptions` の `onSheetChange`。
 - 検索は依頼の案（同期・配列）と違い、**非同期で、中断と件数の上限を持つ**（`Promise<{ matches, truncated }>`）。依頼の案と違う点は Moobius に伝える。
 - 拡大縮小は**寸法に倍率を掛けて描き直す**（CSS の `zoom`・`transform` は使わない）。見出しには倍率を掛けない。
 - 曜日（`aaa`・`aaaa`）と、書式に直接書かれた和暦（`ggg`・`e` など）はいつも表示する。**組み込みの書式 27〜36・50〜58 は既定では西暦のままにし、読み取りの指定 `builtinDates: 'japanese-era'` で和暦にする**。
@@ -15,6 +15,8 @@
 ## ステータス
 
 accepted（2026-11-12）。ユーザーが検討の推奨どおりに決めた：検索の形（§1・非同期・中断・件数の上限）、拡大縮小の方式と見出しに倍率を掛けないこと（§5）、和暦を読み取りの指定にすること（§6）、受け入れから外す項目（§8）、版の割り振り（§9）。§1 の形は依頼の案と違うので、型定義（§9）と一緒に Moobius に伝える。
+
+2026-11-13 に §7 へ `activeSheet`・`onSheetChange` を足した（版 1.1）。例のページに検索を付けたとき、タブを押された後に検索するシートを外から知る方法が無いと分かり、ユーザーが追加を決めた。
 
 ## コンテキスト
 
@@ -151,12 +153,20 @@ interface RenderOptions {
 }
 interface SheetView {
   showSheet(index: number): Promise<void>; // SheetInfo.index。中の SheetViewInstance.showSheet を出す
+  readonly activeSheet: number | null;      // 選んでいるシートの SheetInfo.index（1.1 で追加）
+}
+interface WorkbookOptions {
+  onSheetChange?: (index: number) => void;  // シートが替わって表示し終えたとき（1.1 で追加）
 }
 ```
 
 - `headers: false` は行番号の列の幅と見出しの高さを 0 として計算する。見出しの寸法を定数からインスタンスの値に替える（写したファイルに口が要る）。
 - `showSheet` は依頼に無いが足す。今はシートを替えるたびに表示を作り直すしかなく、倍率とハイライトが毎回消える。
   - シートを替えたら、ハイライトと今のヒットは消す（一致の一覧はシートごと）。倍率は保つ。fit なら合わせ直す。
+- `activeSheet`・`onSheetChange`（1.1 で追加）：`renderWorkbook` ではタブを押すとシートが替わるが、外からはどのシートが出ているか分からず、検索するシートを決められない（ハイライトはシートを替えると消えるので、替わったことも知りたい）。
+  - `activeSheet` は選んでいるシート（タブの `is-active` と同じ）。開けなかったシートでもその番号を返す。表の無い表示（開けなかったブック）では `null`。`showSheet` を呼ぶとすぐに替わる（表示し終えるのを待たない）。
+  - `onSheetChange(index)` は、タブ・`showSheet` でシートが替わり、そのシートを表示し終えた後に呼ぶ（ハイライトを付け直せる時点）。最初のシートの表示・表示中のシートの `showSheet`・後の呼び出しに追い越された切り替え・`destroy` の後では呼ばない。呼ぶ側の例外は `showSheet` を失敗にせず、`setTimeout` で投げ直す（ブラウザの開発者ツールに出る）。
+  - `renderSheet` はタブを持たず、シートを替えるのは呼ぶ側だけなので `onSheetChange` を持たない（`activeSheet` は持つ）。
 - §2〜§5・§7 の `SheetView` の追加は、`renderWorkbook` の `WorkbookView` も同じ形で持つ（中のシートの表示に渡す）。`view` の `Viewer` に足すかは別に決める。
 
 ### 8. 受け入れの確認から外す項目
@@ -196,6 +206,8 @@ interface SheetView {
 | 見出しにも倍率を掛ける | 写したファイルの直す所が増える（`grid.ts` の定数と `style.css` の `24px`）。Moobius は見出しを隠す見込み（§7） |
 | 組み込みの書式 27〜36・50〜58 を既定で和暦にする | ほかの言語環境のファイルが間違って見える |
 | ハイライトを CSS Custom Highlight API で塗る | `elementsFromPoint` で拾えず §4 の判定を別に作ることになる。対応ブラウザも確かめていない。`span` 1 つで包めば空白の問題は起きない |
+| 今のシートを DOM のイベント（`CustomEvent`）で知らせる | 型が付かず、名前を文字列で合わせることになる。今の公開 API に同じ形が無い（指定は options の関数で受けている） |
+| タブの `is-active` を公開の印にする | DOM の形を互換の範囲に入れることになる。写したファイルのタブの作りを変えにくくなる |
 | 移動の後に `span` の位置を測って直す | 描き直しは次のフレームで、smooth の途中にも描き直すため、測る時点が決まらない |
 
 ## 結果

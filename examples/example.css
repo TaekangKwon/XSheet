@@ -106,6 +106,25 @@ body {
   border-radius: 4px;
 }
 
+.ex-find input,
+.ex-find button {
+  font: inherit;
+  color: inherit;
+  padding: 2px 6px;
+  background: var(--xs-bg);
+  border: 1px solid var(--xs-border);
+  border-radius: 4px;
+}
+
+.ex-find input {
+  width: 14em;
+}
+
+.ex-find output {
+  min-width: 5em;
+  color: var(--xs-muted);
+}
+
 .ex-status {
   margin-left: auto;
   color: var(--xs-faint);

@@ -99,9 +99,10 @@ describe('examples/index.html', () => {
 });
 
 describe('examples/main.ts', () => {
-  it('ライブラリは公開の入口（render の index）からだけ引く', () => {
+  it('ライブラリは公開の入口（core・render の index）からだけ引く', () => {
     const imports = [...mainTs.matchAll(/from '([^']+)'/g)].map((m) => m[1]);
-    expect(imports).toEqual(['../src/render/index']);
+    // core は検索（findText・openXlsx。M7-10）
+    expect(imports).toEqual(['../src/core/index', '../src/render/index']);
   });
 
   it('ページの nonce（<link> の nonce プロパティ）を renderWorkbook に渡す', () => {

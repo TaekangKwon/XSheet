@@ -223,3 +223,16 @@
 - `renderSheet` の戻り値に `showSheet`（表示中のシートなら何もしない・ブックに無い番号は RangeError）。倍率は保ち、ハイライトと今のヒットは消す（中の表示が前から持つ動き）。
 - 実機（Chrome・showcase.xlsx）：A1 が表示枠の左上 (0, 0)、行番号の列の幅 0、罫線の層の線と td の境目が一致、`cellAt` が A1 を返す。
 - テスト 7 件。CHANGELOG・02 §3 を更新。README 3 つは M7-10 でまとめて直す。
+
+## 2026-11-13 PR をまとめて出し、M7-10 の文書と例（#34・ブランチ docs/v0.5.0-readme）
+- M7-5〜M7-9 を push して PR #40〜#43 を出し、CI の成功を見て #38〜#43 を順に main へマージした（main は 468e413）。
+- README 3 つに「Search, highlights and zoom (v0.5.0)」の節と `zoom`・`headers` の行を足し、CSS 変数の数を 14 → 16 に直した。
+- 例のページに検索（◀ ▶・クリックで今のヒット）・倍率・見出しの有無・クリックしたセルの番地を足した。`WorkbookView` に今のシートを返すメンバーが無いので、例はタブの `is-active` から引く。実機（showcase.xlsx）で全部の操作を確かめた。
+- 先出しの型と実装の差は `signal` の型（広い・互換）と `builtinDates`（M7-8 で足す）だけ。guide の §6 に書いた。版の上げ・タグ・Release はまだ。
+
+## 2026-11-13 今のシート activeSheet・onSheetChange（#34・ADR-0007 §7 版 1.1）
+- 例のページで、タブを押された後に検索するシートを外から知る方法が無いと分かり、ユーザーの決定で ADR-0007 §7 に足した（DOM のイベント・タブの `is-active` を公開の印にする案は却下）。
+- `SheetView.activeSheet`（選んでいるシート。押した時点で替わる・開けなかったブックは null）と `WorkbookOptions.onSheetChange`（替えたシートを描き終えた後。最初の表示・同じシート・追い越し・destroy の後は呼ばない。例外は setTimeout で投げ直す）。写したファイルは触っていない。
+- テスト 9 件（`active-sheet.test.ts`。全体 2271）。例はタブの DOM を読むのをやめ、`activeSheet`・`onSheetChange` を使う。実機でタブを替えると結果が消え、次の検索が新しいシートを探すことを確かめた。
+- README 3 つ・02 §3・CHANGELOG・先出しの型（0.4.1 の `xsheet.d.ts` と並べて tsc が通る）も直した。`xsheet.mjs` は gzip 91,805 / 94,000。
+
