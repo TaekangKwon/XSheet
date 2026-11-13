@@ -10,6 +10,7 @@
 - 0.5.0 で足す公開 API（検索・ハイライト・移動・位置の判定・拡大縮小・見出しを隠す・`showSheet`・和暦の指定）の型を、実装より先に [xsheet-0.5.0-preview.d.ts](xsheet-0.5.0-preview.d.ts) にまとめた。単独版 0.4.1 の `xsheet.d.ts` と同じフォルダに置くと、画面側のコードを 0.5.0 の形で書いて型検査できる。
 - 依頼の案と違うのは 3 点：検索は**非同期で、中断と件数の上限を持つ**。シートを替える `showSheet` を足した。組み込みの日付の書式の和暦は**指定したときだけ**。
 - 実装はまだ無い（0.4.1 で呼ぶと `undefined`）。0.5.0 を出したら、その版の `xsheet.d.ts` に置き換えてこのファイルは消す。
+- 2026-11-13 に `activeSheet`・`onSheetChange` を足した（タブを押された後に検索するシートを知るため。[§3](#3-使い方の例)）。
 - 実装（main・2026-11-13）と比べた差は 2 つだけ（[§6](#6-実装との差)）：`signal` の型が広い・`builtinDates` はまだ無い（M7-8）。
 
 ---
@@ -22,8 +23,9 @@
 | --- | --- |
 | `XSheet`（関数） | `findText` |
 | 型 | `FindTextOptions`・`FindTextResult`・`TextMatch`・`Zoom`・`FocusHighlightOptions`・`ScrollToCellOptions`・`CellPosition`・`BuiltinDates` |
-| `SheetView`・`WorkbookView` | `setHighlights`・`focusHighlight`・`scrollToCell`・`cellAt`・`highlightAt`・`setZoom`・`zoom`・`showSheet`（`WorkbookView` は前から持つ） |
+| `SheetView`・`WorkbookView` | `setHighlights`・`focusHighlight`・`scrollToCell`・`cellAt`・`highlightAt`・`setZoom`・`zoom`・`showSheet`（`WorkbookView` は前から持つ）・`activeSheet` |
 | `RenderOptions`・`WorkbookOptions` | `zoom`・`headers` |
+| `WorkbookOptions` | `onSheetChange` |
 | `OpenXlsxOptions`・`ReadOptions`・`WorkbookOptions` | `builtinDates` |
 
 このファイルは単独版の `xsheet.d.ts` の中の名前（`xsheet/_/…`）に重ねている。バンドラで `npm install` した XSheet の型には重ならない。
@@ -53,6 +55,9 @@ const sheet = await book.openSheet(view.sheets[0].index);
 const { matches, truncated } = await XSheet.findText(sheet, '見積', { signal: ac.signal });
 view.setHighlights(matches);
 view.focusHighlight(0); // 最初のヒットへスクロールして強調する
+
+// タブでシートが替わるとハイライトは消える。替わったシートを探し直す
+// （renderWorkbook の指定に onSheetChange: (index) => { … book.openSheet(index) … } を渡す。今のシートは view.activeSheet）
 
 el.addEventListener('click', (e) => {
   const hit = view.highlightAt(e.clientX, e.clientY);

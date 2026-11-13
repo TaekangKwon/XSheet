@@ -237,6 +237,7 @@ book.close();
 | `limits` | `DEFAULT_LIMITS` | 읽기 상한값(`renderWorkbook`에만 해당. `renderSheet`를 쓸 때는 `openXlsx`에 넘김) |
 | `zoom` | `1` | 처음 배율(v0.5.0). 0.5~2.0의 숫자, 또는 사용 중인 열을 표시 영역의 너비에 맞추는 `{ fit: 'width' }`(`min`·`max` 기본값은 0.5·2.0). 범위 밖의 숫자는 끝값으로 맞추고, `NaN`이나 그 밖의 값은 `RangeError` |
 | `headers` | `true` | `false`이면 행 번호와 열 머리글을 표시하지 않고, 셀을 왼쪽 위 모서리부터 그림(v0.5.0) |
+| `onSheetChange` | — | 탭이나 `showSheet`로 시트가 바뀌고 그 시트를 다 그린 뒤, 시트 번호를 넘겨 호출. 처음 시트에서는 호출하지 않음(`renderWorkbook`에만 해당, v0.5.0). 시트를 바꾸면 하이라이트가 지워지므로 새 시트를 다시 검색할 때 씀 |
 
 ### 검색, 하이라이트, 확대·축소 (v0.5.0)
 
@@ -273,6 +274,7 @@ container.addEventListener('click', (e) => {
 | `highlightAt(clientX, clientY)` | 그 위치에 있는 일치의 번호. 없으면 `-1` |
 | `setZoom(zoom)`, `zoom` | 배율을 바꾸거나(값은 `zoom` 옵션과 같음) 읽음. 왼쪽 위 셀은 움직이지 않음. 머리글 크기는 그대로이고(100% 미만에서는 행 번호 글자만 작아짐), 선 굵기도 바뀌지 않음 |
 | `showSheet(index)` | 표시를 다시 만들지 않고 시트를 바꿈. 배율은 유지하고 하이라이트는 지움. `renderSheet`의 반환값에도 있음 |
+| `activeSheet` | 선택된 시트의 번호(`SheetInfo.index`). 탭을 누르거나 `showSheet`를 호출하면 바로 바뀜. 파일을 열 수 없었으면 `null` |
 
 - 표시 영역에 CSS `transform`으로 배율을 걸지 마세요. `cellAt`과 `highlightAt`이 엉뚱한 셀을 가리킵니다. `setZoom`을 쓰세요.
 

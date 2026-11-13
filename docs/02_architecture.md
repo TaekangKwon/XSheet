@@ -121,6 +121,7 @@ export interface SheetView {
   setZoom(zoom: Zoom): void;           // 倍率を替える（M7-7・ADR-0007 §5。寸法に倍率を掛けて描き直す・見出しには掛けない）
   readonly zoom: number;                // 今の倍率（fit は計算した値）
   showSheet(index: number): Promise<void>; // シートを替える（M7-9・ADR-0007 §7。倍率は保ち、ハイライトは消す）
+  readonly activeSheet: number | null;  // 選んでいるシートの番号（ADR-0007 §7 版 1.1。showSheet ですぐ替わる・表の無い表示は null）
   destroy(): void;                      // blob URL・リスナ・シートを放す（book は閉じない）
 }
 export function renderSheet(container: HTMLElement, book: XlsxBook, sheetIndex: number, options?: RenderOptions): Promise<SheetView>;
@@ -128,6 +129,7 @@ export function renderSheet(container: HTMLElement, book: XlsxBook, sheetIndex: 
 export interface WorkbookOptions extends RenderOptions {
   limits?: Partial<XlsxLimits>;         // openXlsx に渡す上限
   tabPosition?: 'top' | 'bottom';       // タブ列の場所（既定 top。Issue #17）
+  onSheetChange?: (index: number) => void; // タブ・showSheet でシートが替わり表示し終えた後（最初の表示では呼ばない。ADR-0007 §7 版 1.1）
 }
 export interface WorkbookView extends SheetView {
   readonly sheets: readonly SheetInfo[];   // タブの並び。開けなかったブック・シート 0 枚では空（M6-2）

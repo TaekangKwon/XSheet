@@ -237,6 +237,7 @@ book.close();
 | `limits` | `DEFAULT_LIMITS` | 読み取りの上限（`renderWorkbook` のみ。`renderSheet` を使うときは `openXlsx` に渡します） |
 | `zoom` | `1` | 最初の倍率（v0.5.0）。0.5〜2.0 の数か、使っている列を表示の幅に合わせる `{ fit: 'width' }`（`min`・`max` の既定は 0.5・2.0）。範囲の外の数は端の値にし、`NaN` やその他の値は `RangeError` |
 | `headers` | `true` | `false` なら行番号と列見出しを出さず、セルを左上の角から描きます（v0.5.0） |
+| `onSheetChange` | — | タブや `showSheet` でシートが替わり、そのシートを描き終えた後に、シートの番号を渡して呼びます。最初のシートでは呼びません（`renderWorkbook` のみ・v0.5.0）。シートを替えるとハイライトが消えるので、新しいシートを検索し直すのに使います |
 
 ### 検索・ハイライト・拡大縮小（v0.5.0）
 
@@ -273,6 +274,7 @@ container.addEventListener('click', (e) => {
 | `highlightAt(clientX, clientY)` | その位置にある一致の番号。無ければ `-1` |
 | `setZoom(zoom)`・`zoom` | 倍率を変える（値は `zoom` オプションと同じ）・読む。左上のセルは動きません。見出しの大きさは変わらず（100% 未満では行番号の文字だけ小さくなります）、線の太さも変わりません |
 | `showSheet(index)` | 表示を作り直さずにシートを替えます。倍率は保ち、ハイライトは消します。`renderSheet` の戻り値にもあります |
+| `activeSheet` | 選んでいるシートの番号（`SheetInfo.index`）。タブを押したとき・`showSheet` を呼んだときにすぐ替わります。開けなかったファイルでは `null` |
 
 - 表示に CSS の `transform` で倍率を掛けないでください。`cellAt`・`highlightAt` が違うセルを指します。`setZoom` を使います。
 

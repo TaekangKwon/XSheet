@@ -118,6 +118,11 @@ declare module 'xsheet/_/render/render-workbook' {
   interface WorkbookOptions {
     /** `OpenXlsxOptions.builtinDates` と同じ（`renderWorkbook` はブックを自分で開くため） */
     builtinDates?: BuiltinDates;
+    /**
+     * シートが替わり（タブ・`showSheet`）、そのシートを表示し終えた後に呼ぶ（ADR-0007 §7 版 1.1・2026-11-13 に追加）。
+     * 最初のシートの表示・表示中のシートの `showSheet`・追い越された切り替え・`destroy` の後では呼ばない。
+     */
+    onSheetChange?: (index: number) => void;
   }
 }
 
@@ -171,5 +176,10 @@ declare module 'xsheet/_/render/render-sheet' {
      * @throws RangeError ブックに無い番号
      */
     showSheet(index: number): Promise<void>;
+    /**
+     * 選んでいるシートの番号（`SheetInfo.index`。ADR-0007 §7 版 1.1・2026-11-13 に追加）。
+     * タブを押したとき・`showSheet` を呼んだときにすぐ替わる。開けなかったブックでは null。
+     */
+    readonly activeSheet: number | null;
   }
 }

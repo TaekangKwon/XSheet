@@ -91,19 +91,6 @@ function resetFind(): void {
   findPrev.disabled = true;
 }
 
-/**
- * 表示中のシートの番号（SheetInfo.index）。WorkbookView には今のシートを返すメンバーが無いので、
- * タブ（view.sheets と同じ並び）の is-active から引く。
- */
-function activeSheet(): number | null {
-  if (view === null) {
-    return null;
-  }
-  const tabs = [...viewer.querySelectorAll('.xs-sheet-tab')];
-  const at = tabs.findIndex((t) => t.classList.contains('is-active'));
-  return view.sheets[at]?.index ?? null;
-}
-
 /** 今のヒットを替えて件数を出す */
 function focusHit(index: number, scroll = true): void {
   if (view === null || found === null || found.matches.length === 0) {
@@ -117,7 +104,7 @@ function focusHit(index: number, scroll = true): void {
 /** 表示中のシートで探す。同じ文字・同じシートなら次のヒットへ進む */
 async function find(): Promise<void> {
   const query = findInput.value;
-  const sheetIndex = activeSheet();
+  const sheetIndex = view?.activeSheet ?? null;
   if (view === null || current === null || sheetIndex === null || query === '') {
     resetFind();
     view?.setHighlights(null);
@@ -214,6 +201,7 @@ async function show(): Promise<void> {
     nonce,
     zoom: zoomValue(),
     headers: headersCheck.checked,
+    onSheetChange: resetFind, // シートが替わると XSheet がハイライトを消すので、検索の結果も捨てる
   });
   if (mySeq !== seq) {
     next.destroy(); // 開いている間に別のファイルが選ばれた
@@ -312,13 +300,9 @@ findPrev.addEventListener('click', () => {
   }
 });
 
-// クリック：タブならシートが替わるので検索の結果を捨てる。表の中ならセルの番地を出し、ヒットなら今のヒットにする
+// クリック：表の中ならセルの番地を出し、ヒットなら今のヒットにする
 viewer.addEventListener('click', (e) => {
   if (view === null) {
-    return;
-  }
-  if (e.target instanceof Element && e.target.closest('.xs-sheet-tab') !== null) {
-    resetFind();
     return;
   }
   const cell = view.cellAt(e.clientX, e.clientY);

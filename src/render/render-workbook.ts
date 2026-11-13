@@ -27,6 +27,14 @@ export interface WorkbookOptions extends RenderOptions {
    * XSheet: タブの位置を選べるように足した（Issue #17）
    */
   tabPosition?: 'top' | 'bottom';
+  /**
+   * シートが替わり（タブ・`showSheet`）、そのシートを表示し終えた後に呼ぶ。最初のシートの表示・表示中のシートの
+   * `showSheet`・後の切り替えに追い越された切り替え・`destroy` の後では呼ばない。
+   * 例外は `showSheet` を失敗にせず、`setTimeout` で投げ直す。
+   * @param index 表示したシートの番号（`SheetInfo.index`）
+   * XSheet: ADR-0007 §7（版 1.1）
+   */
+  onSheetChange?: (index: number) => void;
 }
 
 /** タブ付きのブックの表示 */
@@ -74,6 +82,7 @@ function messageView(root: HTMLElement): WorkbookView {
       resolveZoom(zoom);
     },
     zoom: 1,
+    activeSheet: null,
     destroy: () => {
       root.replaceChildren();
       root.remove();
@@ -138,6 +147,11 @@ export async function renderWorkbook(
     root.append(strip.element); // 足し直すと末尾へ動く
   }
 
+  /** 選んでいるシート（タブの is-active と同じ）。XSheet: ADR-0007 §7 の activeSheet */
+  let selected: number | null = null;
+  /** 切り替えの番号（後の切り替えに追い越されたら onSheetChange を呼ばない） */
+  let switches = 0;
+
   /** 指定のシートを開いて表示する（タブ操作・初期表示）。 */
   const showSheet = async (index: number): Promise<void> => {
     if (closed) {
@@ -150,10 +164,26 @@ export async function renderWorkbook(
     if (view.activeIndex === index) {
       return; // 表示中（開けた）のシート。開けなかったシートは activeIndex が null なので開き直す
     }
+    const initial = selected === null;
+    const changed = selected !== index;
+    selected = index;
+    const mySwitch = ++switches;
     buttons.forEach((b, bi) => b.classList.toggle('is-active', bi === at));
     // 選択中タブが見える位置までタブ列をスクロールする
     strip.reveal(buttons[at]);
     await view.showSheet(index);
+    // XSheet: シートが替わったことを知らせる（ADR-0007 §7）。開けなかったシートを開き直しただけなら呼ばない
+    const notify = options.onSheetChange;
+    if (notify === undefined || initial || !changed || closed || mySwitch !== switches) {
+      return;
+    }
+    try {
+      notify(index);
+    } catch (e) {
+      setTimeout(() => {
+        throw e;
+      });
+    }
   };
 
   const onClicks = buttons.map((btn, bi) => {
@@ -197,6 +227,9 @@ export async function renderWorkbook(
     setZoom: (zoom) => view.setZoom(zoom),
     get zoom() {
       return view.zoom;
+    },
+    get activeSheet() {
+      return selected;
     },
     destroy,
   };

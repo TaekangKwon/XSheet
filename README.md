@@ -237,6 +237,7 @@ book.close();
 | `limits` | `DEFAULT_LIMITS` | Read limits (`renderWorkbook` only; for `renderSheet`, pass them to `openXlsx`) |
 | `zoom` | `1` | Initial zoom (v0.5.0): a number from 0.5 to 2.0, or `{ fit: 'width' }` to fit the used columns to the view's width (`min` / `max` default to 0.5 / 2.0). Numbers outside the range are clamped; `NaN` or any other value throws `RangeError` |
 | `headers` | `true` | With `false`, no row numbers and no column letters; the cells start at the top-left corner (v0.5.0) |
+| `onSheetChange` | — | Called with the sheet index after a tab click or `showSheet` has switched sheets and drawn the new one; not for the first sheet (`renderWorkbook` only, v0.5.0). Use it to search the new sheet, since highlights are cleared on a switch |
 
 ### Search, highlights and zoom (v0.5.0)
 
@@ -273,6 +274,7 @@ container.addEventListener('click', (e) => {
 | `highlightAt(clientX, clientY)` | The index of the match under the point, or `-1` |
 | `setZoom(zoom)`, `zoom` | Change the zoom (same values as the `zoom` option) or read it. The top-left cell stays in place. The headers keep their size (row numbers get a smaller font below 100%), and line widths do not change |
 | `showSheet(index)` | Switch sheets without rebuilding the view: the zoom is kept and the highlights are cleared. `renderSheet` has it too |
+| `activeSheet` | The index (`SheetInfo.index`) of the selected sheet; it changes as soon as a tab is clicked or `showSheet` is called. `null` when the file could not be opened |
 
 - Do not scale the view with a CSS `transform`; `cellAt` and `highlightAt` would point at the wrong cells. Use `setZoom`.
 
