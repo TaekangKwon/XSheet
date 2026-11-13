@@ -1,11 +1,17 @@
 /**
  * XSheet の例のページ（M3-2）：.xlsx を選ぶ・ドロップする・サンプルから選ぶと、タブ付きで表示する。
  * テーマ（OS に合わせる・明るい・ダーク）・文言（日本語・English）・図の有無を切り替えられる。
- * v0.5.0 の操作：見出しの有無・倍率（setZoom）・表示中のシートの検索（findText → setHighlights・focusHighlight）・
+ * v0.5.0 の操作：組み込みの和暦（builtinDates）・見出しの有無・倍率（setZoom）・表示中のシートの検索（findText → setHighlights・focusHighlight）・
  * クリックした所のセル（cellAt）とヒット（highlightAt）。
  * 開発サーバー（`npm run examples`）で動かす。ライブラリは src から直接読む（ビルドの前でも動くように）。
  */
-import { findText, openXlsx, type TextMatch, type XlsxBook } from '../src/core/index';
+import {
+  findText,
+  openXlsx,
+  type BuiltinDates,
+  type TextMatch,
+  type XlsxBook,
+} from '../src/core/index';
 import {
   MESSAGES_EN,
   MESSAGES_JA,
@@ -27,6 +33,7 @@ const SAMPLES: readonly { file: string; label: string }[] = [
   { file: 'ref-yugothic.xlsx', label: '列幅（游ゴシック）' },
   { file: 'ref-malgun.xlsx', label: '列幅（Malgun Gothic）' },
   { file: 'ref-weekday.xlsx', label: '曜日の書式' },
+  { file: 'ref-era.xlsx', label: '和暦の書式' },
 ];
 
 const THEME_KEY = 'xsheet-example-theme';
@@ -49,6 +56,7 @@ const langSelect = byId<HTMLSelectElement>('lang');
 const drawingsCheck = byId<HTMLInputElement>('drawings');
 const tabPositionSelect = byId<HTMLSelectElement>('tab-position');
 const headersCheck = byId<HTMLInputElement>('headers');
+const builtinEraCheck = byId<HTMLInputElement>('builtin-era');
 const zoomSelect = byId<HTMLSelectElement>('zoom');
 const findForm = byId<HTMLFormElement>('find');
 const findInput = byId<HTMLInputElement>('find-text');
@@ -75,8 +83,13 @@ function zoomValue(): Zoom {
   return zoomSelect.value === 'fit' ? { fit: 'width' } : Number(zoomSelect.value);
 }
 
+/** 組み込みの和暦の指定 */
+function builtinDatesValue(): BuiltinDates {
+  return builtinEraCheck.checked ? 'japanese-era' : 'default';
+}
+
 /** 検索用のブック（renderWorkbook は開いたブックを外に出さないので、同じバイト列をもう 1 つ開く） */
-let searchBook: { data: ArrayBuffer; book: XlsxBook } | null = null;
+let searchBook: { data: ArrayBuffer; builtinDates: BuiltinDates; book: XlsxBook } | null = null;
 /** 今の検索の結果（どのシートで何を探したか・今のヒットの番号） */
 let found: { sheet: number; query: string; matches: TextMatch[]; current: number } | null = null;
 /** 実行中の検索の中断 */
@@ -120,9 +133,11 @@ async function find(): Promise<void> {
   const target = view;
   findCount.value = '検索中…';
   const data = current.data;
-  if (searchBook?.data !== data) {
+  // 表示と同じ指定で開く（組み込みの和暦の有無で文字が変わるため）
+  const builtinDates = builtinDatesValue();
+  if (searchBook?.data !== data || searchBook.builtinDates !== builtinDates) {
     searchBook?.book.close();
-    searchBook = { data, book: await openXlsx(data) };
+    searchBook = { data, builtinDates, book: await openXlsx(data, { builtinDates }) };
   }
   const sheet = await searchBook.book.openSheet(sheetIndex);
   const started = performance.now();
@@ -201,6 +216,8 @@ async function show(): Promise<void> {
     nonce,
     zoom: zoomValue(),
     headers: headersCheck.checked,
+    // 組み込みの日付の書式 27〜36・50〜58 を日本語版 Excel と同じに（ref-era.xlsx の builtin のシートで違いが見える）
+    builtinDates: builtinDatesValue(),
     onSheetChange: resetFind, // シートが替わると XSheet がハイライトを消すので、検索の結果も捨てる
   });
   if (mySeq !== seq) {
@@ -284,6 +301,7 @@ langSelect.addEventListener('change', reshow);
 drawingsCheck.addEventListener('change', reshow);
 tabPositionSelect.addEventListener('change', reshow);
 headersCheck.addEventListener('change', reshow);
+builtinEraCheck.addEventListener('change', reshow);
 zoomSelect.addEventListener('change', () => view?.setZoom(zoomValue()));
 
 findForm.addEventListener('submit', (e) => {

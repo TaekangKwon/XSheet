@@ -65,7 +65,7 @@ XSheet/
 
 ```ts
 export function openXlsx(data: ArrayBuffer | Uint8Array, options?: OpenXlsxOptions): Promise<XlsxBook>;
-export interface OpenXlsxOptions { limits?: Partial<XlsxLimits> }
+export interface OpenXlsxOptions { limits?: Partial<XlsxLimits>; builtinDates?: BuiltinDates } // BuiltinDates = 'default' | 'japanese-era'（M7-8・ADR-0007 §6）
 
 export interface XlsxBook {
   readonly sheets: readonly SheetInfo[];                 // index は 1 始まり・hidden は veryHidden を含む
@@ -95,7 +95,7 @@ export { findText, DEFAULT_LIMITS, colName, createGeometry, colWidthToPx, defaul
 - 入口は `xsheet/core`（M6-2 で足した。DOM・Node 固有の API を使わないことを約束する入口）。`xsheet` も core の公開物をすべて出す（v0.1.0 では `xsheet` が core の入口だった。§3「入口の層」）。
 - 今の InterHub の `lib/xlsx/index.ts` と同じ形。公開の範囲は M1-3 で次のように決めた（テストは `tests/core/public-api.test.ts`）：
   - 値：上の 12 個（`openXlsx`・`findText`・`XlsxError`・`DEFAULT_LIMITS`・`colName`・`createGeometry`・`colWidthToPx`・`defaultColWidthToPx`・`ptToPx`・`fontDefaultRowPx`・`lookupMdw`・`isPaperFill`）。
-  - 型：`types.ts` の公開の型を全部（図の型 `DrawingText`・`DrawingLine`・`ShapeGeom`・`DrawingGroup` なども `openDrawings` の戻り値から辿れるため）と、`Rgba`・`Geometry`・`XlsxLimits`・`OpenXlsxOptions`・`FindTextOptions`・`FindTextResult`・`TextMatch`。`types.ts` に型を足したら入口にも足す（テストが落ちる）。
+  - 型：`types.ts` の公開の型を全部（図の型 `DrawingText`・`DrawingLine`・`ShapeGeom`・`DrawingGroup` なども `openDrawings` の戻り値から辿れるため）と、`Rgba`・`Geometry`・`XlsxLimits`・`OpenXlsxOptions`・`FindTextOptions`・`FindTextResult`・`TextMatch`・`BuiltinDates`。`types.ts` に型を足したら入口にも足す（テストが落ちる）。
   - 出さない：`Theme`・`FormatTable`・`BorderTable` と読み取りの内部の関数（ブックの中で閉じていて、使う側が触る場面が無い）。
   - `xsheet/internal`（`src/core/internal.ts`・半公開で版の互換を約束しない）：render が使う `applyFillMode` と、描画の部品の試験で使う `emptyLayout`・`DEFAULT_MDW`。
   - `src/render/**` は core を `../core/index` と `../core/internal` からだけ引く（ESLint の `no-restricted-imports`）。M4 で core と render を別のチャンクにしたときに部品が重ならないようにするため。
@@ -128,6 +128,7 @@ export function renderSheet(container: HTMLElement, book: XlsxBook, sheetIndex: 
 
 export interface WorkbookOptions extends RenderOptions {
   limits?: Partial<XlsxLimits>;         // openXlsx に渡す上限
+  builtinDates?: BuiltinDates;          // openXlsx に渡す（M7-8・ADR-0007 §6）
   tabPosition?: 'top' | 'bottom';       // タブ列の場所（既定 top。Issue #17）
   onSheetChange?: (index: number) => void; // タブ・showSheet でシートが替わり表示し終えた後（最初の表示では呼ばない。ADR-0007 §7 版 1.1）
 }
@@ -164,7 +165,7 @@ export function renderWorkbook(container: HTMLElement, data: ArrayBuffer | Uint8
 export type XSheetSource = Blob | ArrayBuffer | ArrayBufferView | Response
   | PromiseLike<Blob | ArrayBuffer | ArrayBufferView | Response>;  // File は Blob。URL の文字列は受けない
 
-export interface ReadOptions { limits?: Partial<XlsxLimits> }
+export interface ReadOptions { limits?: Partial<XlsxLimits>; builtinDates?: BuiltinDates } // view・read が openXlsx に渡す
 export interface ViewOptions extends ReadOptions {
   lang?: 'ja' | 'en' | 'ko' | 'auto';   // 既定 auto
   messages?: Partial<XSheetMessages>;   // lang で選んだ表の上に重ねる
@@ -228,6 +229,8 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
 - `CellView.text` の表示形式は ssf が当てる。ssf が知らない曜日（`aaa`＝「月」・`aaaa` 以上＝「月曜日」。大文字の `AAA` も同じ）は、`src/core/format-ja.ts` が ssf の手前で書式を字句に分け、日付の通し番号から計算した曜日を引用符で包んだ形に置き換える（`format.ts` は ssf を包む `// XSheet:` の口 1 つ。[ADR-0007](adr/0007-moobius-viewer-api.md) §6・#25）。
   - 引用符・`\`・`_`・`*` の後・`[...]` の中と `AM/PM`・`A/P` の a は曜日にしない。a が 1・2 個なら文字のまま。
   - 日付の範囲の外（1900 年基準の負の値・9999/12/31 の先。Excel は ####）は、使う区画に曜日があればセルを空にする。
+- 和暦（M7-8・#32）も同じ字句の分解で置き換える：元号 `g`・`gg`・`ggg`（`R`・`令`・`令和`）、年 `e`・`ee`、`r`（＝`ee`）・`rr`（＝`gggee`）。区画に日本語の言語の指定（`[$-411]`・`[$-ja-JP]` など）があるか、指定が無く元号があるときだけ和暦にする。`[$-ja-JP-x-gannen]` は 2 文字以上の元号の後の 1 年を「元」。日本語でない指定では元号を空にする。指数の `E+`・`General` は字句にしない。結果は日本語版 Excel で作った `ref-era.xlsx` と照合する（[ADR-0007](adr/0007-moobius-viewer-api.md) §6 に確かめた規則）。
+  - 組み込みの書式 27〜36・50〜58 は、`OpenXlsxOptions.builtinDates: 'japanese-era'` のときだけ日本語版 Excel の表（`format-ja.ts` の `JA_BUILTIN_DATES`）で引く。既定は今までの西暦の表（`format.ts` の `createFormatter` に `// XSheet:` の引数 1 つ）。
   - Excel 16（ja-JP）で作った `fixtures/excel/ref-weekday.xlsx`・`ref-weekday-1904.xlsx` と照合する（`tests/core/ref-weekday.test.ts`）。合わないのは ssf の受け持ちの所だけ：列幅いっぱいの埋め `*x`、文字だけの書式・1904 年基準の負の値の「-」、小文字の `am/pm` を大文字にすること、1904 年基準の 9999/12/31 の先。
 
 ## 5. 上限（`XlsxLimits`・既定値）
@@ -337,11 +340,12 @@ dist/
 
 | 入口 | dist（B） | gzip | 圧縮＋gzip | 上限 |
 | --- | ---: | ---: | ---: | ---: |
-| `core/index`（`xsheet/core`） | 215,747 | 70,042 | 32,897 | 36,000 |
+| `core/index`（`xsheet/core`） | 215,747 | 70,042 | 32,897 | 40,000 |
 | `render/index`（`xsheet/render`。core を含む） | 364,970 | 118,714 | 53,699 | 65,000 |
 | `geom/index`（`xsheet/geom`。形の表を含む） | 236,078 | 36,752 | 32,519 | 36,000 |
 
 - `render/index` の上限は M7-7（2026-11-12）で 59,000 から 65,000 にした。ADR-0007 のハイライト・移動と位置の判定・拡大縮小（`highlight.ts`・`navigate.ts`・`zoom.ts`）で 59,489（dist 403,912・gzip 131,527）になったため。M7-9・M7-8 の分も入る余裕を約 1 割とした。
+- `core/index` の上限は M7-8（2026-11-13）で 36,000 から 40,000 にした。ADR-0007 の検索・曜日・和暦（`find-text.ts`・`format-ja.ts`）で 36,071（dist 237,660・gzip 77,441）になったため。余裕は約 1 割。
 - 遅れて読むチャンク `chart-draw`（グラフを描くときだけ）：dist 98,631・gzip 32,632・圧縮＋gzip 15,829（上限 17,500。`tools/size.mjs` の `CHUNK_LIMITS`。チャンクのファイルだけを測り、render から static に辿れたら失敗する）。
 - 使う側のビルド（`check:consumer` の Vite・圧縮あり。0.2.0 の時点）では、最初に読む JS が 235,602 B（gzip 78,051。jszip・ssf・core・render を含む）、図形を描くときに読む形の表のチャンクが 176,422 B（gzip 30,477）、CSS が 5,404 B（gzip 1,537）。
 - 参考（01 N6）：xrag の初版は読み取り＋表示で 40,760 B、jszip が 96,716 B。XSheet は図形・罫線・書式の描画を持つぶん大きい。形の表は図形のあるシートでだけ読む。

@@ -162,6 +162,7 @@ graph LR
 | `tabPosition` | `'top'` | シートタブを置く場所。`'top'`（表の上）か `'bottom'`（Excel と同じく表の下） |
 | `nonce` | — | 自動で挿入する `<style>` と書式用の `<style>` に付ける nonce（CSP 用。[docs/guide/csp.md](docs/guide/csp.md) を参照） |
 | `limits` | `DEFAULT_LIMITS` | 読み取りの上限の一部を変更します |
+| `builtinDates` | `'default'` | `'japanese-era'` にすると、組み込みの日付の書式 27〜36・50〜58 を日本語版 Excel と同じに表示します（書式 28 は `令和8年11月11日`）。書式に直接書いた和暦（`ggg`・`e`）と曜日（`aaa`）は指定しなくても表示します。`read` にも渡せます（v0.5.0） |
 
 #### `Viewer`
 
@@ -235,6 +236,7 @@ book.close();
 | `tabPosition` | `'top'` | シートタブを置く場所。`'top'` か `'bottom'`（`renderWorkbook` のみ） |
 | `nonce` | — | 書式用の `<style>` 要素に付ける nonce（CSP の `style-src 'nonce-…'` 用） |
 | `limits` | `DEFAULT_LIMITS` | 読み取りの上限（`renderWorkbook` のみ。`renderSheet` を使うときは `openXlsx` に渡します） |
+| `builtinDates` | `'default'` | `view` のオプションと同じ（`renderWorkbook` のみ。`renderSheet` を使うときは `openXlsx` に渡します。v0.5.0） |
 | `zoom` | `1` | 最初の倍率（v0.5.0）。0.5〜2.0 の数か、使っている列を表示の幅に合わせる `{ fit: 'width' }`（`min`・`max` の既定は 0.5・2.0）。範囲の外の数は端の値にし、`NaN` やその他の値は `RangeError` |
 | `headers` | `true` | `false` なら行番号と列見出しを出さず、セルを左上の角から描きます（v0.5.0） |
 | `onSheetChange` | — | タブや `showSheet` でシートが替わり、そのシートを描き終えた後に、シートの番号を渡して呼びます。最初のシートでは呼びません（`renderWorkbook` のみ・v0.5.0）。シートを替えるとハイライトが消えるので、新しいシートを検索し直すのに使います |

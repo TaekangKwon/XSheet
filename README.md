@@ -162,6 +162,7 @@ Shows the whole workbook with sheet tabs. Returns `Promise<Viewer>`.
 | `tabPosition` | `'top'` | Where to put the sheet tabs: `'top'` (above the grid) or `'bottom'` (below it, as in Excel) |
 | `nonce` | — | Nonce for the inserted `<style>` and the format `<style>` (for CSP; see [docs/guide/csp.md](docs/guide/csp.md)) |
 | `limits` | `DEFAULT_LIMITS` | Override some of the read limits |
+| `builtinDates` | `'default'` | `'japanese-era'` shows the built-in date formats 27–36 and 50–58 as Japanese Excel does (format 28 shows `令和8年11月11日`). Japanese-era codes written in a format (`ggg`, `e`) and weekdays (`aaa`) are always shown. `read` takes it too (v0.5.0) |
 
 #### `Viewer`
 
@@ -235,6 +236,7 @@ book.close();
 | `tabPosition` | `'top'` | `'top'` or `'bottom'`: where to put the sheet tabs (`renderWorkbook` only) |
 | `nonce` | — | Nonce for the format `<style>` element (for CSP `style-src 'nonce-…'`) |
 | `limits` | `DEFAULT_LIMITS` | Read limits (`renderWorkbook` only; for `renderSheet`, pass them to `openXlsx`) |
+| `builtinDates` | `'default'` | Same as the `view` option (`renderWorkbook` only; for `renderSheet`, pass it to `openXlsx`. v0.5.0) |
 | `zoom` | `1` | Initial zoom (v0.5.0): a number from 0.5 to 2.0, or `{ fit: 'width' }` to fit the used columns to the view's width (`min` / `max` default to 0.5 / 2.0). Numbers outside the range are clamped; `NaN` or any other value throws `RangeError` |
 | `headers` | `true` | With `false`, no row numbers and no column letters; the cells start at the top-left corner (v0.5.0) |
 | `onSheetChange` | — | Called with the sheet index after a tab click or `showSheet` has switched sheets and drawn the new one; not for the first sheet (`renderWorkbook` only, v0.5.0). Use it to search the new sheet, since highlights are cleared on a switch |

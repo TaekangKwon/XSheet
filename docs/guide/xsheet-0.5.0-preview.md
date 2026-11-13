@@ -11,7 +11,7 @@
 - 依頼の案と違うのは 3 点：検索は**非同期で、中断と件数の上限を持つ**。シートを替える `showSheet` を足した。組み込みの日付の書式の和暦は**指定したときだけ**。
 - 実装はまだ無い（0.4.1 で呼ぶと `undefined`）。0.5.0 を出したら、その版の `xsheet.d.ts` に置き換えてこのファイルは消す。
 - 2026-11-13 に `activeSheet`・`onSheetChange` を足した（タブを押された後に検索するシートを知るため。[§3](#3-使い方の例)）。
-- 実装（main・2026-11-13）と比べた差は 2 つだけ（[§6](#6-実装との差)）：`signal` の型が広い・`builtinDates` はまだ無い（M7-8）。
+- 実装（2026-11-13）と比べた差は `signal` の型が広い（互換）ことだけ（[§6](#6-実装との差)）。`builtinDates` も実装した（M7-8）。
 
 ---
 
@@ -78,7 +78,7 @@ el.addEventListener('click', (e) => {
 ## 5. まだ決まっていないこと
 
 - `view` の戻り値 `Viewer`（と `ViewOptions` の `zoom`・`headers`）に同じ操作を足すか。決まるまでは、0.5.0 の操作を使うなら `renderWorkbook` を使う。
-- 組み込みの書式 27〜36・50〜58 を和暦にしたときの書式（日本語版 Excel で確かめてから作る）。元年を「元」と出すか。
+- （決まった）組み込みの書式 27〜36・50〜58 の表と元年の扱いは、日本語版 Excel で確かめて ADR-0007 §6 に書いた。元年は `[$-ja-JP-x-gannen]` のときだけ。
 
 ## 6. 実装との差
 
@@ -87,6 +87,6 @@ M7-4〜M7-7・M7-9 を main に入れた時点（2026-11-13）で、先出しの
 | 所 | 先出し | 実装 | 使う側への影響 |
 | --- | --- | --- | --- |
 | `FindTextOptions.signal` | `AbortSignal` | `{ readonly aborted: boolean }` | 無い。`AbortSignal` をそのまま渡せる（core は DOM の型を持たないため広くした） |
-| `builtinDates`（`OpenXlsxOptions`・`ReadOptions`・`WorkbookOptions`） | ある | まだ無い | M7-8（#32）で足す。それまでは実装の型に無く、実行時に渡しても無視される |
+| `builtinDates`（`OpenXlsxOptions`・`ReadOptions`・`WorkbookOptions`） | ある | ある（M7-8・#32） | 無い。`'japanese-era'` の表は日本語版 Excel で確かめた（ADR-0007 §6） |
 
 0.5.0 の `xsheet.d.ts` と並べて置くと、同じ名前（`Zoom` など）を 2 度宣言するので型エラーになる。0.5.0 に替えるときはこのファイルを外す。

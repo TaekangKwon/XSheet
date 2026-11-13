@@ -6,7 +6,13 @@
  *   言語・テーマ・CSS・高さを語で選べる。開けないファイルは今までどおり例外にせず、帯（`div.xs-banner`）に文言を出す。
  * - `read`：DOM なしで開く（`openXlsx` と同じ。受け取れる形を `view` と揃える）。
  */
-import { openXlsx, type SheetInfo, type XlsxBook, type XlsxLimits } from '../core/index';
+import {
+  openXlsx,
+  type BuiltinDates,
+  type SheetInfo,
+  type XlsxBook,
+  type XlsxLimits,
+} from '../core/index';
 import {
   MESSAGES_EN,
   MESSAGES_JA,
@@ -25,6 +31,8 @@ export type XSheetLang = 'ja' | 'en' | 'ko' | 'auto';
 export interface ReadOptions {
   /** 読み取りの上限を替える（既定は `DEFAULT_LIMITS`） */
   limits?: Partial<XlsxLimits>;
+  /** 組み込みの日付の書式 27〜36・50〜58 の見せ方（`OpenXlsxOptions.builtinDates` と同じ。ADR-0007 §6） */
+  builtinDates?: BuiltinDates;
 }
 
 /** `view` の指定（どれも省略できる） */
@@ -155,6 +163,7 @@ export async function view(
       tabPosition: options.tabPosition,
       nonce: options.nonce,
       limits: options.limits,
+      builtinDates: options.builtinDates,
     });
   } catch (e) {
     disposeHeight();
@@ -194,5 +203,8 @@ export async function view(
  * @throws XlsxError 開けないファイル（`kind` で種類が分かる）
  */
 export async function read(source: XSheetSource, options: ReadOptions = {}): Promise<XlsxBook> {
-  return openXlsx(await toSourceBytes(source), { limits: options.limits });
+  return openXlsx(await toSourceBytes(source), {
+    limits: options.limits,
+    builtinDates: options.builtinDates,
+  });
 }

@@ -162,6 +162,7 @@ graph LR
 | `tabPosition` | `'top'` | 시트 탭을 놓을 위치. `'top'`(표 위) 또는 `'bottom'`(Excel처럼 표 아래) |
 | `nonce` | — | 자동으로 삽입하는 `<style>`과 서식용 `<style>`에 붙일 nonce(CSP용. [docs/guide/csp.md](docs/guide/csp.md) 참고) |
 | `limits` | `DEFAULT_LIMITS` | 읽기 상한값 중 일부를 바꿈 |
+| `builtinDates` | `'default'` | `'japanese-era'`로 하면 내장 날짜 서식 27~36·50~58을 일본어판 Excel과 같게 표시(서식 28은 `令和8年11月11日`). 서식에 직접 쓴 와레키(`ggg`·`e`)와 요일(`aaa`)은 지정하지 않아도 표시. `read`에도 넘길 수 있음(v0.5.0) |
 
 #### `Viewer`
 
@@ -235,6 +236,7 @@ book.close();
 | `tabPosition` | `'top'` | 시트 탭을 놓을 위치. `'top'` 또는 `'bottom'`(`renderWorkbook`에만 해당) |
 | `nonce` | — | 서식용 `<style>` 요소에 붙일 nonce(CSP의 `style-src 'nonce-…'`용) |
 | `limits` | `DEFAULT_LIMITS` | 읽기 상한값(`renderWorkbook`에만 해당. `renderSheet`를 쓸 때는 `openXlsx`에 넘김) |
+| `builtinDates` | `'default'` | `view`의 옵션과 같음(`renderWorkbook`에만 해당. `renderSheet`를 쓸 때는 `openXlsx`에 넘김. v0.5.0) |
 | `zoom` | `1` | 처음 배율(v0.5.0). 0.5~2.0의 숫자, 또는 사용 중인 열을 표시 영역의 너비에 맞추는 `{ fit: 'width' }`(`min`·`max` 기본값은 0.5·2.0). 범위 밖의 숫자는 끝값으로 맞추고, `NaN`이나 그 밖의 값은 `RangeError` |
 | `headers` | `true` | `false`이면 행 번호와 열 머리글을 표시하지 않고, 셀을 왼쪽 위 모서리부터 그림(v0.5.0) |
 | `onSheetChange` | — | 탭이나 `showSheet`로 시트가 바뀌고 그 시트를 다 그린 뒤, 시트 번호를 넘겨 호출. 처음 시트에서는 호출하지 않음(`renderWorkbook`에만 해당, v0.5.0). 시트를 바꾸면 하이라이트가 지워지므로 새 시트를 다시 검색할 때 씀 |
