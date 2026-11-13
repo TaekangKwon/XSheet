@@ -3,13 +3,14 @@
 | 項目 | 値 |
 | --- | --- |
 | 文書 | XSheet 使い方の手引き |
-| 更新日 | 2026-11-12 |
+| 更新日 | 2026-11-13 |
 | 関連 | [xsheet-0.5.0-preview.d.ts](xsheet-0.5.0-preview.d.ts)（型）・[ADR-0007](../adr/0007-moobius-viewer-api.md)（決定）・[standalone.md](standalone.md)（単独版） |
 
 ## TL;DR
 - 0.5.0 で足す公開 API（検索・ハイライト・移動・位置の判定・拡大縮小・見出しを隠す・`showSheet`・和暦の指定）の型を、実装より先に [xsheet-0.5.0-preview.d.ts](xsheet-0.5.0-preview.d.ts) にまとめた。単独版 0.4.1 の `xsheet.d.ts` と同じフォルダに置くと、画面側のコードを 0.5.0 の形で書いて型検査できる。
 - 依頼の案と違うのは 3 点：検索は**非同期で、中断と件数の上限を持つ**。シートを替える `showSheet` を足した。組み込みの日付の書式の和暦は**指定したときだけ**。
 - 実装はまだ無い（0.4.1 で呼ぶと `undefined`）。0.5.0 を出したら、その版の `xsheet.d.ts` に置き換えてこのファイルは消す。
+- 実装（main・2026-11-13）と比べた差は 2 つだけ（[§6](#6-実装との差)）：`signal` の型が広い・`builtinDates` はまだ無い（M7-8）。
 
 ---
 
@@ -73,3 +74,14 @@ el.addEventListener('click', (e) => {
 
 - `view` の戻り値 `Viewer`（と `ViewOptions` の `zoom`・`headers`）に同じ操作を足すか。決まるまでは、0.5.0 の操作を使うなら `renderWorkbook` を使う。
 - 組み込みの書式 27〜36・50〜58 を和暦にしたときの書式（日本語版 Excel で確かめてから作る）。元年を「元」と出すか。
+
+## 6. 実装との差
+
+M7-4〜M7-7・M7-9 を main に入れた時点（2026-11-13）で、先出しの型と `src/` の型を比べた。名前・引数・戻り値・既定はこのファイルのとおりで、差は次の 2 つ。
+
+| 所 | 先出し | 実装 | 使う側への影響 |
+| --- | --- | --- | --- |
+| `FindTextOptions.signal` | `AbortSignal` | `{ readonly aborted: boolean }` | 無い。`AbortSignal` をそのまま渡せる（core は DOM の型を持たないため広くした） |
+| `builtinDates`（`OpenXlsxOptions`・`ReadOptions`・`WorkbookOptions`） | ある | まだ無い | M7-8（#32）で足す。それまでは実装の型に無く、実行時に渡しても無視される |
+
+0.5.0 の `xsheet.d.ts` と並べて置くと、同じ名前（`Zoom` など）を 2 度宣言するので型エラーになる。0.5.0 に替えるときはこのファイルを外す。

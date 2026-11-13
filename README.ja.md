@@ -235,6 +235,46 @@ book.close();
 | `tabPosition` | `'top'` | シートタブを置く場所。`'top'` か `'bottom'`（`renderWorkbook` のみ） |
 | `nonce` | — | 書式用の `<style>` 要素に付ける nonce（CSP の `style-src 'nonce-…'` 用） |
 | `limits` | `DEFAULT_LIMITS` | 読み取りの上限（`renderWorkbook` のみ。`renderSheet` を使うときは `openXlsx` に渡します） |
+| `zoom` | `1` | 最初の倍率（v0.5.0）。0.5〜2.0 の数か、使っている列を表示の幅に合わせる `{ fit: 'width' }`（`min`・`max` の既定は 0.5・2.0）。範囲の外の数は端の値にし、`NaN` やその他の値は `RangeError` |
+| `headers` | `true` | `false` なら行番号と列見出しを出さず、セルを左上の角から描きます（v0.5.0） |
+
+### 検索・ハイライト・拡大縮小（v0.5.0）
+
+`renderWorkbook`・`renderSheet` が返す表示には、検索結果の表示・スクロール・位置の判定・拡大縮小のメンバーがあります（`WorkbookView` は `SheetView` を拡張したもの）。`view` とその `Viewer` には、まだありません。
+
+```ts
+import { findText, openXlsx } from 'xsheet';
+import { renderWorkbook } from 'xsheet/render';
+
+const bytes = await file.arrayBuffer();
+const wb = await renderWorkbook(container, bytes, { zoom: { fit: 'width' } });
+const book = await openXlsx(bytes); // renderWorkbook は開いたブックを外に出さないので、検索用にもう 1 つ開く（閉じるのは呼ぶ側）
+
+const ac = new AbortController();
+const shown = wb.sheets.find((s) => !s.hidden) ?? wb.sheets[0]; // 最初に表示されるシート
+const sheet = await book.openSheet(shown.index);
+const { matches, truncated } = await findText(sheet, '合計', { signal: ac.signal });
+wb.setHighlights(matches);
+wb.focusHighlight(0); // 最初のヒットまでスクロールし、今のヒットにする
+
+container.addEventListener('click', (e) => {
+  const hit = wb.highlightAt(e.clientX, e.clientY);
+  if (hit >= 0) wb.focusHighlight(hit, { scroll: false });
+});
+```
+
+| メンバー | 説明 |
+| --- | --- |
+| `findText(sheet, query, options?)` | `xsheet`・`xsheet/core` から。表示どおりの文字（表示形式を当てた後）を探します。結果は `{ matches, truncated }` で、一致は `{ r, c, start, end }`（セルは 1 始まり、位置は UTF-16 で `end` を含まない）。オプション：`match`（`'partial'` か `'cell'`）、`ignoreCase`（`true`）、`ignoreNewlines`（`true`）、`skipHidden`（`true`）、`signal`（中断すると `AbortError` の `DOMException` で reject）、`maxMatches`（10,000。最大 100,000）。約 10ms ごとにページへ処理を返します |
+| `setHighlights(matches)` | 一致を光らせます。`null` か `[]` で消します。スクロールしても残り、シートを替えると消えます。色は `--xs-hit-bg`・`--xs-hit-current-bg` |
+| `focusHighlight(index, options?)` | 一致の 1 つ（`setHighlights` に渡した配列の番号）を今のヒットにし、表示の上から約 1/3 の位置までスクロールします。`{ scroll: false }` なら印だけ、`{ smooth: true }` ならなめらかに、`-1` で印を外します |
+| `scrollToCell(r, c, options?)` | セル（1 始まり）を同じ方法で見える位置までスクロールします |
+| `cellAt(clientX, clientY)` | 画面上の位置にあるセル `{ r, c }`。見出し・スクロールバー・表の外では `null`。結合したセルは左上、はみ出した文字はその元のセルを返します |
+| `highlightAt(clientX, clientY)` | その位置にある一致の番号。無ければ `-1` |
+| `setZoom(zoom)`・`zoom` | 倍率を変える（値は `zoom` オプションと同じ）・読む。左上のセルは動きません。見出しの大きさは変わらず（100% 未満では行番号の文字だけ小さくなります）、線の太さも変わりません |
+| `showSheet(index)` | 表示を作り直さずにシートを替えます。倍率は保ち、ハイライトは消します。`renderSheet` の戻り値にもあります |
+
+- 表示に CSS の `transform` で倍率を掛けないでください。`cellAt`・`highlightAt` が違うセルを指します。`setZoom` を使います。
 
 API の全体は [docs/02_architecture.md](docs/02_architecture.md) の §2（core）と §3（render と `view` の層）にまとめています。
 
@@ -256,7 +296,7 @@ API の全体は [docs/02_architecture.md](docs/02_architecture.md) の §2（co
 ## テーマ
 
 - ダークで表示するには、`view` に `theme: 'dark'` を渡します（`'auto'` なら OS の設定に合わせます）。`renderWorkbook` などを使う場合は、表示のルート要素か `<html>` などの祖先要素に `data-xs-theme="dark"`（または `"auto"`）を付けます。ダークの値は `style.css` に含まれているので、自分で書き写す必要はありません。
-- 色は 14 個の CSS 変数（`--xs-*`）で変えられます。既定値の詳細度は 0（`:where(:root, :host)`）なので、Shadow DOM の中を含め、どこからでも上書きできます。
+- 色は 16 個の CSS 変数（`--xs-*`）で変えられます。既定値の詳細度は 0（`:where(:root, :host)`）なので、Shadow DOM の中を含め、どこからでも上書きできます。
 
 ```css
 /* ライトテーマのアクセントカラーだけを変える */

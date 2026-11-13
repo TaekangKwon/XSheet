@@ -12,6 +12,11 @@
 - 拡大縮小：`RenderOptions.zoom`（`renderSheet`・`renderWorkbook` の最初の倍率）と `SheetView`・`WorkbookView` の `setZoom(zoom)`・`zoom`（[#31](https://github.com/TaekangKwon/XSheet/issues/31)。[ADR-0007](docs/adr/0007-moobius-viewer-api.md) §5）。倍率は 0.5〜2.0（範囲の外は端の値・数でない値は `RangeError`）、`{ fit: 'width' }` はデータのある列と図の右端までを表示枠の幅に合わせ、枠の大きさが変わると合わせ直す。セルの寸法と文字に倍率を掛けて描き直す（CSS の `zoom`・`transform` で縮めない）ので、縮小しても 1px の罫線が消えない。見出し（列記号・行番号の列の幅）には倍率を掛けない。倍率を替えても左上に見ていたセルが残る。シートを替えても倍率は保つ。表示の外側に `transform: scale()` を掛けると `cellAt`・`highlightAt` の位置がずれる。
 - `RenderOptions.headers`（既定 `true`）：`false` で行番号の列と列見出しを出さず、セルを表示枠の左上から描く（[#33](https://github.com/TaekangKwon/XSheet/issues/33)。[ADR-0007](docs/adr/0007-moobius-viewer-api.md) §7）。`renderWorkbook` でも使える。
 - `SheetView.showSheet(index)`：`renderSheet` の表示を作り直さずにシートを替える（#33。`WorkbookView` は前から持つ）。倍率は保ち、ハイライトと今のヒットは消す。表示中のシートなら何もしない。
+- 例のページ（Pages のデモ）に、表示中のシートの検索（◀ ▶ で前後のヒット・クリックしたヒットを今のヒットに）・倍率（50〜200%・幅に合わせる）・見出しの有無を足した。クリックしたセルの番地も出す（[#34](https://github.com/TaekangKwon/XSheet/issues/34)）。
+
+### 変更
+
+- README（英・日・韓）に 0.5.0 の API（`findText`・`setHighlights`・`focusHighlight`・`scrollToCell`・`cellAt`・`highlightAt`・`setZoom`・`zoom`・`showSheet`・`RenderOptions` の `zoom`・`headers`）の節を足し、CSS 変数の数を 16 個に直した（#34）。
 
 ## [0.4.1] - 2026-11-12
 
