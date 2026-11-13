@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### 追加
+
+- 単独版の zip に確認用のビューア `viewer2.html`（`examples/standalone-viewer2.html`）を足した。[ADR-0007](docs/adr/0007-moobius-viewer-api.md) の未決の 2 つ（表示に 0.5.0 の操作を足す・組み込みの日付の書式の既定を日本語版 Excel の表にする）を、公開の API（`renderWorkbook`・`openXlsx`・`findText`）だけで試せる。ライブラリの API は変えていない。v0.5.0 の Release の zip も、この `viewer2.html` を足したものに差し替えた（2026-11-13。ほかのファイルは最初の zip と同じ）。
+
 ## [0.5.0] - 2026-11-13
 
 Moobius の依頼 R1〜R7 をまとめた版（[ADR-0007](docs/adr/0007-moobius-viewer-api.md)）。検索・ハイライト・移動と位置の判定・拡大縮小・見出しを隠す・今のシート・和暦を足した。今までの API の形は変えていない（`builtinDates` の既定は今までの表のまま）。

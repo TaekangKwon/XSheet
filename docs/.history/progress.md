@@ -255,3 +255,13 @@
 - Issue #34 を閉じた（マイルストーン v0.5.0 の Issue は全部閉じた。マイルストーン自体は開いたまま）。Moobius への知らせはまだ。
 
 - 先出しの型（`docs/guide/xsheet-0.5.0-preview.d.ts`・`.md`）を消した（0.5.0 の zip の `xsheet.d.ts` に置き換わったため・ユーザーの決定）。04 と ADR-0007 に M7 の完了と v0.5.0 を書いた。
+
+## 2026-11-13 ADR-0007 の未決 2 つを試す view2（確認用・ブランチ trial/viewer2）
+- `src/facade/view2.ts`（公開しない・facade の index から出さない・dist に入らない）：`view` と同じ作りに、§7 の 0.5.0 の操作（`find`・ハイライト・移動・`cellAt`・`highlightAt`・倍率・`activeSheet`・`onSheetChange`）と、§6 の組み込みの表の既定 `'japanese-era'` を足した。`view.ts` は `pickMessages`・`resolveTarget` を export しただけ。
+- 確認のページ `examples/viewer2.html`（開発サーバーの /examples/viewer2.html・Pages には載せない）。「組み込みの表」で今の表と比べられる。
+- テスト `tests/facade/view2.test.ts`（9 件）。全体 2299・typecheck・lint・format・build・size が通る。ブラウザで ref-era.xlsx の検索・タブを替えた後の探し直し・27〜30 の表の違い・倍率・クリックの判定を確かめた。
+- 未コミット。採るかはユーザーの決定（採るなら ADR-0007 に書いて `view` に入れ、view2 を消す）。
+- 続き：単独版の zip に確認用のビューア `viewer2.html` を足した（元は `examples/standalone-viewer2.html`。view2 と同じ動きを公開の API の `renderWorkbook`・`openXlsx`・`findText` で書き、`file://` で開ける。view2 自体は単独版に入れない）。`tools/release-zip.mjs` が `xsheet.min.js`・`xsheet.css` の場所を直す。zip は 12 ファイル・367,216 B（ローカルで作り直しただけ。GitHub の v0.5.0 の Release は変えていない）。
+- zip を展開した `viewer2.html` を開発サーバー経由で開き、検索・タブを替えた後の探し直し・組み込みの表の切り替え・倍率・クリックしたセルを確かめた（内蔵ブラウザは file:// のスクリプトを動かせない）。テスト 2302・typecheck・lint・format が通る。CHANGELOG の Unreleased・02 §8・guide/standalone.md に書いた。
+- 続き：ユーザーの指示で v0.5.0 の Release の zip を差し替えた（`gh release upload --clobber`）。タグ v0.5.0 の `dist`・`standalone.html`・`NOTICE`・`LICENSE` から作り、`viewer2.html` だけを足した（12 ファイル・367,028 B。最初の zip の 363,008 B との差 4,020 B は viewer2.html の圧縮後の大きさと見出しの分と一致＝ほかは同じ）。今の作業ツリーの dist は使っていない（`xsheet.d.ts` に `pickMessages`・`resolveTarget` が出るため）。Release の説明の zip の表に viewer2.html の行を足した。タグは変えていない。
+- 続き：view2 のために `view.ts` から export した `pickMessages`・`resolveTarget` が単独版の `xsheet.d.ts` に出ていたので、公開の型から参照されない `src/facade/view-shared.ts` に移した（`view.ts` の export は v0.5.0 と同じに戻った）。ビルドした `xsheet.d.ts` は v0.5.0 のタグと同じ。`xsheet.min.js`・`xsheet.mjs` は大きさが同じでモジュールの並びだけ違う。テスト 2302・typecheck・lint・format・size が通る。trial/viewer2 にコミットした（push・PR はまだ）。

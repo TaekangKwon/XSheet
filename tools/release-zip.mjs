@@ -1,6 +1,7 @@
 // 単独版の zip を作る（M6-5・ADR-0003 §6・`npm run release:zip`）。GitHub Release に添付する物。先に `npm run build` で dist/ を作っておくこと。
-// - 中身は xsheet-<版>/ の下に、単独版のファイル（tools/standalone/parts.mjs の一覧）・viewer.html・NOTICE・LICENSE。
+// - 中身は xsheet-<版>/ の下に、単独版のファイル（tools/standalone/parts.mjs の一覧）・viewer.html・viewer2.html・NOTICE・LICENSE。
 // - viewer.html は examples/standalone.html の写し。スクリプトの場所（../dist/xsheet.min.js）だけを同じフォルダ（xsheet.min.js）に直す。
+// - viewer2.html は examples/standalone-viewer2.html（ADR-0007 の未決を試す確認用のビューア）の写し。xsheet.min.js と xsheet.css の場所を同じフォルダに直す。
 // - 出力は release/xsheet-<版>-standalone.zip（Git の対象外）。zip は jszip（このライブラリの依存）で作る。外へは通信しない。
 // タグ・Release を作るのは人（ユーザーの指示があるとき）。手順は docs/02_architecture.md §8。
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -27,10 +28,26 @@ if (page.split(SCRIPT).length !== 2) {
   process.exit(1);
 }
 
+const SCRIPT2 = '<script src="../dist/xsheet.min.js"></script>';
+const CSS2 = '<link rel="stylesheet" href="../dist/xsheet.css" nonce="xsheet-viewer" />';
+const page2 = readFileSync(path.join(repo, 'examples/standalone-viewer2.html'), 'utf8');
+if (page2.split(SCRIPT2).length !== 2 || page2.split(CSS2).length !== 2) {
+  console.error(
+    'examples/standalone-viewer2.html に xsheet.min.js の <script> と xsheet.css の <link> が 1 つずつあること',
+  );
+  process.exit(1);
+}
+
 const zip = new JSZip();
 for (const f of STANDALONE_FILES)
   zip.file(`${folder}/${f}`, readFileSync(path.join(repo, 'dist', f)));
 zip.file(`${folder}/viewer.html`, page.replace(SCRIPT, '<script src="xsheet.min.js"></script>'));
+zip.file(
+  `${folder}/viewer2.html`,
+  page2
+    .replace(SCRIPT2, '<script src="xsheet.min.js"></script>')
+    .replace(CSS2, '<link rel="stylesheet" href="xsheet.css" nonce="xsheet-viewer" />'),
+);
 zip.file(`${folder}/NOTICE`, readFileSync(path.join(repo, 'NOTICE')));
 zip.file(`${folder}/LICENSE`, readFileSync(path.join(repo, 'LICENSE')));
 
