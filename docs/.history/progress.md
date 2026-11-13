@@ -248,3 +248,8 @@
 - 版を 0.5.0 にし、CHANGELOG に `## [0.5.0] - 2026-11-13` と比較のリンク、README 3 つの `npm install` のタグ、guide の目次を直した。
 - 先出しの型（`xsheet-0.5.0-preview.d.ts`・`.md`）は消さずに「0.4.1 用。0.5.0 では並べて置かない」と書いた（消すかはユーザーの決定待ち）。
 - テスト 2290・typecheck・lint・format:check・build・size・check:standalone・check:consumer・pages:build が通る。タグ・Release・zip はまだ。
+
+## 2026-11-13 M7-10 v0.5.0 を出した（#34）
+- PR #46（版 0.5.0・CHANGELOG の日付）をマージし（13b8a7b）、main からビルドした `dist` だけのコミット（c7f6fcf・`release/v0.5.0`）に注釈付きのタグ `v0.5.0` を打って push した（ブランチは push しない）。
+- GitHub Release「XSheet 0.5.0」に `xsheet-0.5.0-standalone.zip`（11 ファイル・363,008 B）を添付。zip の `xsheet.mjs` を Node で読み（和暦・`builtinDates`・`findText`）、`viewer.html` を開発サーバー経由で開いて `ref-era.xlsx` の和暦を確かめた。
+- Issue #34 を閉じた（マイルストーン v0.5.0 の Issue は全部閉じた。マイルストーン自体は開いたまま）。Moobius への知らせはまだ。
