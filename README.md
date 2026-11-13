@@ -243,7 +243,7 @@ The full API is described in [docs/02_architecture.md](docs/02_architecture.md) 
 | Import | Contents |
 | --- | --- |
 | `xsheet` | Everything: `view`, `read`, plus all public exports of `xsheet/core` and `xsheet/render` |
-| `xsheet/core` | Reading only (`openXlsx`, `XlsxError`, `DEFAULT_LIMITS`, unit conversions, …) and the types. Guaranteed to use no DOM and no Node-specific API (for Workers and Node) |
+| `xsheet/core` | Reading only (`openXlsx`, `findText` (text search, v0.5.0), `XlsxError`, `DEFAULT_LIMITS`, unit conversions, …) and the types. Guaranteed to use no DOM and no Node-specific API (for Workers and Node) |
 | `xsheet/render` | Rendering (`renderWorkbook`, `renderSheet`, `MESSAGES_JA`, `MESSAGES_EN`, `MESSAGES_KO`) |
 | `xsheet/style.css` | The CSS (light defaults plus dark values under `data-xs-theme`) |
 | `xsheet/geom` | The shape table and its formula evaluator. `render` imports it dynamically; you normally do not use it directly |

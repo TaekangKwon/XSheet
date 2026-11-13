@@ -243,7 +243,7 @@ API の全体は [docs/02_architecture.md](docs/02_architecture.md) の §2（co
 | import | 内容 |
 | --- | --- |
 | `xsheet` | すべて：`view`、`read`、および `xsheet/core` と `xsheet/render` の公開 API 全部 |
-| `xsheet/core` | 読み取り（`openXlsx`、`XlsxError`、`DEFAULT_LIMITS`、単位の換算など）と型。DOM と Node 固有の API を使わないことを保証します（Worker・Node 向け） |
+| `xsheet/core` | 読み取り（`openXlsx`、`findText`（文字の検索・v0.5.0）、`XlsxError`、`DEFAULT_LIMITS`、単位の換算など）と型。DOM と Node 固有の API を使わないことを保証します（Worker・Node 向け） |
 | `xsheet/render` | 表示（`renderWorkbook`、`renderSheet`、`MESSAGES_JA`、`MESSAGES_EN`、`MESSAGES_KO`） |
 | `xsheet/style.css` | CSS（ライトの既定値と、`data-xs-theme` 用のダークの値） |
 | `xsheet/geom` | 図形の定義表と、その数式の評価。`render` が動的に import するので、通常は直接使いません |

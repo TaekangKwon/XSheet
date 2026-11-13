@@ -85,14 +85,17 @@ export interface XlsxSheet {
   getRows(first: number, last: number): SheetRow[]; // 見えている範囲だけ展開
 }
 
+// 文字の検索（M7-4・ADR-0007 §1）。非同期・中断・件数の上限。CellView.text で照らす
+export function findText(sheet: XlsxSheet, query: string, options?: FindTextOptions): Promise<FindTextResult>;
+
 export class XlsxError extends Error { kind: 'not-zip' | 'encrypted' | 'broken' | 'too-large' | 'unsupported' }
-export { DEFAULT_LIMITS, colName, createGeometry, colWidthToPx, defaultColWidthToPx, ptToPx, fontDefaultRowPx, lookupMdw, isPaperFill };
+export { findText, DEFAULT_LIMITS, colName, createGeometry, colWidthToPx, defaultColWidthToPx, ptToPx, fontDefaultRowPx, lookupMdw, isPaperFill };
 ```
 
 - 入口は `xsheet/core`（M6-2 で足した。DOM・Node 固有の API を使わないことを約束する入口）。`xsheet` も core の公開物をすべて出す（v0.1.0 では `xsheet` が core の入口だった。§3「入口の層」）。
 - 今の InterHub の `lib/xlsx/index.ts` と同じ形。公開の範囲は M1-3 で次のように決めた（テストは `tests/core/public-api.test.ts`）：
-  - 値：上の 11 個（`openXlsx`・`XlsxError`・`DEFAULT_LIMITS`・`colName`・`createGeometry`・`colWidthToPx`・`defaultColWidthToPx`・`ptToPx`・`fontDefaultRowPx`・`lookupMdw`・`isPaperFill`）。
-  - 型：`types.ts` の公開の型を全部（図の型 `DrawingText`・`DrawingLine`・`ShapeGeom`・`DrawingGroup` なども `openDrawings` の戻り値から辿れるため）と、`Rgba`・`Geometry`・`XlsxLimits`・`OpenXlsxOptions`。`types.ts` に型を足したら入口にも足す（テストが落ちる）。
+  - 値：上の 12 個（`openXlsx`・`findText`・`XlsxError`・`DEFAULT_LIMITS`・`colName`・`createGeometry`・`colWidthToPx`・`defaultColWidthToPx`・`ptToPx`・`fontDefaultRowPx`・`lookupMdw`・`isPaperFill`）。
+  - 型：`types.ts` の公開の型を全部（図の型 `DrawingText`・`DrawingLine`・`ShapeGeom`・`DrawingGroup` なども `openDrawings` の戻り値から辿れるため）と、`Rgba`・`Geometry`・`XlsxLimits`・`OpenXlsxOptions`・`FindTextOptions`・`FindTextResult`・`TextMatch`。`types.ts` に型を足したら入口にも足す（テストが落ちる）。
   - 出さない：`Theme`・`FormatTable`・`BorderTable` と読み取りの内部の関数（ブックの中で閉じていて、使う側が触る場面が無い）。
   - `xsheet/internal`（`src/core/internal.ts`・半公開で版の互換を約束しない）：render が使う `applyFillMode` と、描画の部品の試験で使う `emptyLayout`・`DEFAULT_MDW`。
   - `src/render/**` は core を `../core/index` と `../core/internal` からだけ引く（ESLint の `no-restricted-imports`）。M4 で core と render を別のチャンクにしたときに部品が重ならないようにするため。

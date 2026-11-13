@@ -37,6 +37,7 @@ describe('公開の入口（xsheet）', () => {
         'colWidthToPx',
         'createGeometry',
         'defaultColWidthToPx',
+        'findText',
         'fontDefaultRowPx',
         'isPaperFill',
         'lookupMdw',
