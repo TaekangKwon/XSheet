@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- CSP は index.html と同じ（docs/02_architecture.md §3「CSP」） -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'nonce-xsheet-example'; img-src blob:; connect-src 'self'; base-uri 'none'; form-action 'none'"
+    />
+    <title>XSheet の例（view2・確認用）</title>
+    <link rel="stylesheet" href="/src/style.css" nonce="xsheet-example" />
+    <link rel="stylesheet" href="./example.css" nonce="xsheet-example" />
+    <script type="module" src="./viewer2.ts"></script>
+  </head>
+  <body>
+    <!--
+      確認用：ADR-0007 の未決の 2 つを試す view2（src/facade/view2.ts）のページ。
+      1. view の Viewer に 0.5.0 の操作を足したもの（find・倍率・今のシート・クリックの判定）。
+      2. 組み込みの日付の書式の既定を日本語版 Excel の表にしたもの（「組み込みの表」で今の表と比べられる）。
+    -->
+    <header class="ex-bar">
+      <h1 class="ex-title">XSheet view2</h1>
+      <label class="ex-field">
+        <span>ファイル</span>
+        <input
+          id="file"
+          type="file"
+          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        />
+      </label>
+      <label class="ex-field">
+        <span>サンプル</span>
+        <select id="sample">
+          <option value="">（選ぶ）</option>
+          <option value="ref-era.xlsx">和暦の書式</option>
+          <option value="ref-weekday.xlsx">曜日の書式</option>
+          <option value="showcase.xlsx">見本</option>
+        </select>
+      </label>
+      <label class="ex-field">
+        <span>組み込みの表</span>
+        <select id="builtin">
+          <option value="">日本語版 Excel（view2 の既定）</option>
+          <option value="default">今の表（view の既定）</option>
+        </select>
+      </label>
+      <label class="ex-field ex-check">
+        <input id="headers" type="checkbox" checked />
+        <span>見出し</span>
+      </label>
+      <label class="ex-field">
+        <span>倍率</span>
+        <select id="zoom">
+          <option value="fit">幅に合わせる</option>
+          <option value="0.5">50%</option>
+          <option value="0.75">75%</option>
+          <option value="1" selected>100%</option>
+          <option value="1.5">150%</option>
+          <option value="2">200%</option>
+        </select>
+      </label>
+      <form id="find" class="ex-field ex-find" role="search">
+        <input
+          id="find-text"
+          type="search"
+          placeholder="表示中のシートを検索"
+          aria-label="検索する文字"
+        />
+        <button id="find-prev" type="button" aria-label="前のヒット" disabled>◀</button>
+        <button id="find-next" type="submit" aria-label="次のヒット">▶</button>
+        <output id="find-count" aria-live="polite"></output>
+      </form>
+      <output id="status" class="ex-status" aria-live="polite"></output>
+    </header>
+    <main id="viewer" class="ex-viewer">
+      <p class="ex-hint">
+        .xlsx を選ぶか、サンプルを選んでください。<br />
+        ファイルを直接（file://）開いても動きません。開発サーバー（<code>npm run examples</code>）の
+        http://localhost:5173/examples/viewer2.html で開いてください。
+      </p>
+    </main>
+  </body>
+</html>

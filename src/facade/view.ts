@@ -13,15 +13,9 @@ import {
   type XlsxBook,
   type XlsxLimits,
 } from '../core/index';
-import {
-  MESSAGES_EN,
-  MESSAGES_JA,
-  MESSAGES_KO,
-  renderWorkbook,
-  type XSheetMessages,
-} from '../render/index';
-import { resolveMessages } from '../render/messages';
+import { renderWorkbook, type XSheetMessages } from '../render/index';
 import { toSourceBytes, type XSheetSource } from './source';
+import { pickMessages, resolveTarget } from './view-shared';
 import { applyHeight, applyTheme, ensureStyle, type XSheetTheme } from './style';
 
 /** 文言の言語。`auto` は `<html lang>`、無ければブラウザの言語。合うものが無ければ英語 */
@@ -69,37 +63,6 @@ export interface Viewer {
   destroy(): void;
 }
 
-const TABLES: Readonly<Record<'ja' | 'en' | 'ko', Readonly<XSheetMessages>>> = {
-  ja: MESSAGES_JA,
-  en: MESSAGES_EN,
-  ko: MESSAGES_KO,
-};
-
-/** 言語の名前（`ko-KR` など）から表を選ぶ。合わなければ null */
-function tableFor(tag: string | null | undefined): Readonly<XSheetMessages> | null {
-  const primary = (tag ?? '').trim().toLowerCase().split(/[-_]/)[0];
-  return primary === 'ja' || primary === 'en' || primary === 'ko' ? TABLES[primary] : null;
-}
-
-/**
- * 使う文言の表（`lang` で選んだ表に `messages` を重ねる）。
- * `auto` は `<html lang>` があればそれだけで決め（合わなければ英語）、無いときだけブラウザの言語を見る。
- * 型を通らない呼び出し（`<script>` から `'ko-KR'`・`'zh'` など）も、名前から選ぶか `auto` と同じにする。
- */
-function pickMessages(doc: Document, options: ViewOptions): Readonly<XSheetMessages> {
-  const lang: unknown = options.lang ?? 'auto';
-  let base = lang === 'auto' || typeof lang !== 'string' ? null : tableFor(lang);
-  if (base === null) {
-    const pageLang = doc.documentElement.lang.trim();
-    const nav = doc.defaultView?.navigator;
-    base =
-      pageLang !== ''
-        ? (tableFor(pageLang) ?? MESSAGES_EN)
-        : (tableFor(nav?.languages?.[0]) ?? tableFor(nav?.language) ?? MESSAGES_EN);
-  }
-  return resolveMessages(options.messages, base);
-}
-
 /** 同じ container の今の表示（新しい `view` が前の表示を外す。読み込み中に次の `view` が来たら、前の読み込みは捨てる） */
 const current = new WeakMap<HTMLElement, { token: object; viewer: Viewer | null }>();
 
@@ -109,19 +72,6 @@ const DISCARDED: Viewer = Object.freeze({
   showSheet: () => Promise.reject(new RangeError('XSheet: the viewer was replaced or destroyed')),
   destroy: () => undefined,
 });
-
-/** 要素か CSS セレクタを要素にする */
-function resolveTarget(target: HTMLElement | string): HTMLElement {
-  if (typeof target !== 'string') {
-    if (typeof target !== 'object' || target === null || target.nodeType !== 1) {
-      throw new TypeError('XSheet: the target must be an element or a CSS selector');
-    }
-    return target;
-  }
-  const el = document.querySelector<HTMLElement>(target);
-  if (el === null) throw new TypeError(`XSheet: no element matches the selector ${target}`);
-  return el;
-}
 
 /**
  * xlsx をタブ付きで表示する。
