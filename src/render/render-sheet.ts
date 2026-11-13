@@ -4,7 +4,7 @@
  * 表示は呼び出しごとのインスタンスで、`destroy()` でリスナ・blob URL・シートを放す（ブックは閉じない）。
  * 中身は `sheet-view.ts`（InterHub `spreadsheet.ts` の .xlsx の部分）。タブ付きのブック全体は `renderWorkbook`（M2-4）。
  */
-import type { XlsxBook } from '../core/index';
+import type { TextMatch, XlsxBook } from '../core/index';
 import { resolveMessages, type XSheetMessages } from './messages';
 import { createSheetView } from './sheet-view';
 
@@ -20,6 +20,13 @@ export interface RenderOptions {
 
 /** 表示 1 つ */
 export interface SheetView {
+  /**
+   * 検索の一致（`findText` の `matches`）を光らせる。`null`・空の配列で消す。
+   * スクロールで描き直しても残り、シートを替えると消える。色は CSS 変数 `--xs-hit-bg`・`--xs-hit-current-bg`。
+   * 一致の片は `span.xs-hit`（`data-xs-hit` に配列の番号）。収まらず `###` で出す数値のセルは、セル全体を光らせる。
+   * XSheet: ADR-0007 §2（M7-5）
+   */
+  setHighlights(matches: readonly TextMatch[] | null): void;
   /** リスナ・ResizeObserver・blob URL・シートを放し、表示を `container` から外す。何度呼んでもよい。ブックは閉じない */
   destroy(): void;
 }
@@ -54,5 +61,8 @@ export async function renderSheet(
     view.destroy();
     throw e;
   }
-  return { destroy: () => view.destroy() };
+  return {
+    setHighlights: (matches) => view.setHighlights(matches),
+    destroy: () => view.destroy(),
+  };
 }

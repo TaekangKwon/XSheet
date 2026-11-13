@@ -7,6 +7,8 @@
  */
 import type { CellFormat, Geometry } from '../core/index';
 import { formatClassName, spillInkGradient } from './format-css';
+// XSheet: 検索の一致のハイライト（ADR-0007 §2）
+import { decorateCell, type GridHits } from './highlight';
 import {
   cellAlignClass,
   cellInnerHeight,
@@ -127,6 +129,7 @@ function cellBox(text: string, height: number): HTMLDivElement {
  * @param mdw 最大桁幅 MDW（`SheetLayout.mdw`。収まらない数値を `###` にする推定幅に使う）
  * @param range 描く列の範囲（`first`〜`last`・1 始まり）。表の全列を描くときは 1〜`cols`
  * @param formats 書式の表（`XlsxSheet.formats`。`rows[i].formats` の値が指す）
+ * @param hits 検索の一致のハイライト（XSheet: ADR-0007 §2。無ければ null）
  */
 export function buildGridTable(
   colName: (c: number) => string,
@@ -137,6 +140,7 @@ export function buildGridTable(
   mdw: number,
   range: Pick<ColRange, 'first' | 'last'>,
   formats: readonly CellFormat[],
+  hits: GridHits | null = null,
 ): HTMLTableElement {
   const table = document.createElement('table');
   table.className = 'xs-grid';
@@ -243,6 +247,10 @@ export function buildGridTable(
               box.classList.add('is-over-fill'); // 文字の下に面の色を敷かない（塗りを隠さない）
               inkSpill(box, formats, row.formats, k, geo, c, columns);
             }
+          }
+          // XSheet: 検索の一致を光らせる口（highlight.ts・ADR-0007 §2）
+          if (hits) {
+            decorateCell(box, cell.text, shown, hits.at(row.r, c + 1), hits.current);
           }
           td.append(box);
         }

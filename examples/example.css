@@ -24,6 +24,8 @@
     --xs-border-ink: #d4d4d4;
     --xs-backdrop: #ffffff;
     --xs-backdrop-display: block;
+    --xs-hit-bg: rgba(255, 255, 0, 0.3);
+    --xs-hit-current-bg: #b45309;
   }
 }
 
@@ -43,6 +45,8 @@
   --xs-border-ink: #d4d4d4;
   --xs-backdrop: #ffffff;
   --xs-backdrop-display: block;
+  --xs-hit-bg: rgba(255, 255, 0, 0.3);
+  --xs-hit-current-bg: #b45309;
 }
 
 /* ページの枠（ライブラリの変数をそのまま使い、表示と同じ色にそろえる） */

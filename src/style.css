@@ -38,6 +38,9 @@
   /* 図の下地（ダーク表示だけ白にする）。-display は下地の svg の表示（明るい表示は none＝描画・レイアウトの負荷を省く） */
   --xs-backdrop: transparent;
   --xs-backdrop-display: none;
+  /* XSheet: 検索の一致（.xs-hit）と今のヒット（.xs-hit.is-current）の地（ADR-0007 §2） */
+  --xs-hit-bg: rgba(255, 255, 0, 0.4);
+  --xs-hit-current-bg: #ffa500;
 }
 
 /* --- 表示の根 ---
@@ -530,6 +533,8 @@
   --xs-border-ink: #d4d4d4;
   --xs-backdrop: #ffffff;
   --xs-backdrop-display: block;
+  --xs-hit-bg: rgba(255, 255, 0, 0.3);
+  --xs-hit-current-bg: #b45309;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -549,6 +554,8 @@
     --xs-border-ink: #d4d4d4;
     --xs-backdrop: #ffffff;
     --xs-backdrop-display: block;
+    --xs-hit-bg: rgba(255, 255, 0, 0.3);
+    --xs-hit-current-bg: #b45309;
   }
 }
 
@@ -666,4 +673,25 @@
 
 .xs-sheet-nav:hover:not(:disabled) {
   background: color-mix(in srgb, var(--xs-head-bg) 50%, var(--xs-bg));
+}
+
+/* --- XSheet: 検索の一致のハイライト（M7-5・ADR-0007 §2・highlight.ts）---
+   セルの文字を一致の範囲で分けた全体を span.xs-hits 1 つで包む（.xs-cell・.xs-text は flex なので、
+   包まずに分けると各片が別の flex 項目になり、片の端の空白が消える）。xs-hits は包む前の文字と同じ flex 項目のふるまい。
+   片（span.xs-hit）には背景だけを付け、行の高さ・列の幅を変えない。### のセルは入れ物（.xs-cell）ごと光らせる。 */
+.xs-hits {
+  flex: 0 1 auto;
+}
+
+.xs-hit {
+  background: var(--xs-hit-bg);
+}
+
+.xs-hit.is-current {
+  background: var(--xs-hit-current-bg);
+}
+
+/* 塗りをまたぐ自動の色の文字（親の span が background-clip: text で描く）では、片の地が文字を隠すので、片に文字の色を付ける */
+.xs-hit.is-ink {
+  color: var(--xs-fg);
 }
