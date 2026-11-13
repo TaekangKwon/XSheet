@@ -242,3 +242,9 @@
 - `format-ja.ts` に g・e・r の字句・区画の和暦の扱い・`eraOfSerial`・`JA_BUILTIN_DATES`。ssf が `m.d` で例外を投げるので和暦の区画では「.」を引用符で包む。`@` の区画は数値に使わない。`builtinDates` は openXlsx・read・view・renderWorkbook に通した（`format.ts` は引数 1 つの口）。
 - テスト：ref-era 7 件（2952 セル中 261 を理由付きで除外）・format-era 11 件・builtin-dates 1 件（全体 2290）。依頼のファイルの 12 行目が `令和8年11月11日` になり、ほかの行は変わらない。例のページに「和暦の書式」と「組み込みの和暦」を足した。
 - core/index が gzip 36,071 で上限 36,000 を超えたので、理由を 02 §8 に書いて 40,000 にした。
+
+## 2026-11-13 v0.5.0 の準備（#34・ブランチ chore/release-v0.5.0）
+- PR #44（README・例・activeSheet）と #45（M7-8 和暦）をマージした（main は fb9aac8）。
+- 版を 0.5.0 にし、CHANGELOG に `## [0.5.0] - 2026-11-13` と比較のリンク、README 3 つの `npm install` のタグ、guide の目次を直した。
+- 先出しの型（`xsheet-0.5.0-preview.d.ts`・`.md`）は消さずに「0.4.1 用。0.5.0 では並べて置かない」と書いた（消すかはユーザーの決定待ち）。
+- テスト 2290・typecheck・lint・format:check・build・size・check:standalone・check:consumer・pages:build が通る。タグ・Release・zip はまだ。

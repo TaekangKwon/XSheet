@@ -95,7 +95,7 @@ book.close();
 > XSheet는 **아직 npm에 올리지 않았습니다.** Git 태그마다 빌드된 `dist/`가 들어 있어서, 태그로 설치해도 빌드 스크립트가 실행되지 않습니다([ADR-0002](docs/adr/0002-build-and-distribution.md)).
 
 ```bash
-npm install github:TaekangKwon/XSheet#v0.4.1
+npm install github:TaekangKwon/XSheet#v0.5.0
 ```
 
 - 의존 패키지는 `jszip`과 `ssf` 두 개뿐이며, 함께 설치됩니다.
