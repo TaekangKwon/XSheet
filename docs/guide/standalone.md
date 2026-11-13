@@ -85,6 +85,7 @@ GitHub Release に添付する単独版の zip（[ADR-0003](../adr/0003-universa
 | `xsheet.min.js`・`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet-chart.mjs`・`xsheet.css` | 上の 1 のとおり |
 | `xsheet.d.ts`・`xsheet.d.mts` | 型 |
 | `viewer.html` | 出来上がりのビューア（`examples/standalone.html` を `xsheet.min.js` と同じフォルダで動くようにしたもの）。ダブルクリックで開ける |
+| `viewer2.html` | 確認用のビューア（`examples/standalone-viewer2.html`）。[ADR-0007](../adr/0007-moobius-viewer-api.md) の未決の 2 つ（表示に 0.5.0 の操作を足す・組み込みの日付の書式の既定を日本語版 Excel の表にする）を試す。検索・倍率・見出しの有無・クリックしたセルを試せる。ダブルクリックで開ける |
 | `LICENSE` | XSheet のライセンス（MIT） |
 | `NOTICE` | 形の表の元の Ecma の著作権表示 |
 | `xsheet.licenses.txt` | 中に持つ依存のライセンスの全文 |

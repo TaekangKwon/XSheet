@@ -128,6 +128,7 @@ describe('examples/standalone.html・esm.html（M6-4・単独版）', () => {
   const pages = {
     standalone: read('examples/standalone.html'),
     esm: read('examples/esm.html'),
+    viewer2: read('examples/standalone-viewer2.html'),
   };
 
   it.each(Object.entries(pages))(
@@ -160,5 +161,14 @@ describe('examples/standalone.html・esm.html（M6-4・単独版）', () => {
     expect(pages.standalone.split('<script src="../dist/xsheet.min.js"></script>')).toHaveLength(2);
     expect(pages.standalone).toContain('XSheet.view(');
     expect(pages.esm).toContain("import { view } from '../dist/xsheet.mjs';");
+  });
+
+  it('viewer2（確認用・zip の viewer2.html）は ../dist/ の xsheet.min.js と xsheet.css を 1 つずつ読み、既定の組み込みの表は日本語版 Excel', () => {
+    const html = pages.viewer2;
+    expect(html.split('<script src="../dist/xsheet.min.js"></script>')).toHaveLength(2);
+    expect(html.split('href="../dist/xsheet.css"')).toHaveLength(2);
+    expect(html).toContain('XSheet.renderWorkbook(');
+    expect(html).toContain('XSheet.findText(');
+    expect(html).toMatch(/<select id="builtin">\s*<option value="japanese-era">/);
   });
 });

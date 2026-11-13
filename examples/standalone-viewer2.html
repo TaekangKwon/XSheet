@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      XSheet の単独版（xsheet.min.js）だけで動く確認用のビューア（view2）。ADR-0007 の未決の 2 つを試す。
+      1. 表示に 0.5.0 の操作を足したもの：表示中のシートの検索（findText → setHighlights・focusHighlight）・タブを替えたら探し直す
+         （onSheetChange）・倍率（setZoom）・見出しの有無・クリックしたセル（cellAt）とヒット（highlightAt）。
+      2. 組み込みの日付の書式の既定を日本語版 Excel の表にしたもの（builtinDates: 'japanese-era'）。「組み込みの表」で今の表と比べられる。
+      src/facade/view2.ts と同じ動きを、単独版の公開の API（renderWorkbook・openXlsx・findText）で書いている（view2 は単独版に入れない）。
+      - ダブルクリック（file://）でも開ける。.xlsx を選ぶか、ページへドロップする。ファイルは外へ送らない（XSheet は通信しない）。
+      - このリポジトリでは先に `npm run build` で dist/ を作る。配布の zip では viewer2.html の名前で xsheet.min.js と同じフォルダに置く
+        （zip を作る道具が、下の `../dist/` を外す）。
+      CSP は standalone.html と同じ（通信は許さない）。nonce はファイルで配るので固定の値。
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' file: 'nonce-xsheet-viewer'; style-src 'nonce-xsheet-viewer'; img-src blob:; base-uri 'none'; form-action 'none'"
+    />
+    <title>XSheet ビューア（view2・確認用）</title>
+    <link rel="stylesheet" href="../dist/xsheet.css" nonce="xsheet-viewer" />
+    <style nonce="xsheet-viewer">
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        font-family: system-ui, sans-serif;
+        background: #ffffff;
+        color: #1a1a1a;
+      }
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        align-items: center;
+        padding: 8px 12px;
+        border-bottom: 1px solid #8884;
+      }
+      .bar h1 {
+        margin: 0;
+        font-size: 16px;
+      }
+      .bar label,
+      .bar form {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        font-size: 13px;
+        margin: 0;
+      }
+      .status {
+        font-size: 13px;
+        opacity: 0.75;
+      }
+      #viewer {
+        flex: 1 1 0;
+        min-height: 0;
+        padding: 8px;
+      }
+      #viewer.is-drop {
+        outline: 2px dashed #3b82f6;
+        outline-offset: -6px;
+      }
+      .hint {
+        margin: 24px;
+        opacity: 0.7;
+      }
+    </style>
+    <script src="../dist/xsheet.min.js"></script>
+  </head>
+  <body>
+    <header class="bar">
+      <h1>XSheet view2</h1>
+      <label>
+        <span>ファイル</span>
+        <input
+          id="file"
+          type="file"
+          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        />
+      </label>
+      <label>
+        <span>組み込みの表</span>
+        <select id="builtin">
+          <option value="japanese-era">日本語版 Excel（view2 の既定）</option>
+          <option value="default">今の表（view の既定）</option>
+        </select>
+      </label>
+      <label><input id="headers" type="checkbox" checked /><span>見出し</span></label>
+      <label>
+        <span>倍率</span>
+        <select id="zoom">
+          <option value="fit">幅に合わせる</option>
+          <option value="0.5">50%</option>
+          <option value="0.75">75%</option>
+          <option value="1" selected>100%</option>
+          <option value="1.5">150%</option>
+          <option value="2">200%</option>
+        </select>
+      </label>
+      <form id="find" role="search">
+        <input
+          id="find-text"
+          type="search"
+          placeholder="表示中のシートを検索"
+          aria-label="検索する文字"
+        />
+        <button id="find-prev" type="button" aria-label="前のヒット" disabled>◀</button>
+        <button type="submit" aria-label="次のヒット">▶</button>
+        <output id="find-count" aria-live="polite"></output>
+      </form>
+      <output id="status" class="status" aria-live="polite"></output>
+    </header>
+    <main id="viewer">
+      <p class="hint">.xlsx を選ぶか、ここへドロップしてください。</p>
+    </main>
+    <script nonce="xsheet-viewer">
+      // src/facade/view2.ts と同じ動き：表示は renderWorkbook、検索は同じバイト列・同じ組み込みの表で開いたブックを findText で探す
+      const el = (id) => document.getElementById(id);
+      const viewerEl = el('viewer');
+      let current = null; // { name, data }
+      let view = null; // renderWorkbook の戻り値
+      let searchBook = null; // 検索用のブック（表示ごとに開き直す）
+      let finding = null; // 今の検索の AbortController
+      let found = null; // { query, count, current }
+      let seq = 0;
+
+      const zoomValue = () =>
+        el('zoom').value === 'fit' ? { fit: 'width' } : Number(el('zoom').value);
+      const columnName = (c) => {
+        let s = '';
+        for (let n = c; n > 0; n = Math.floor((n - 1) / 26))
+          s = String.fromCharCode(65 + ((n - 1) % 26)) + s;
+        return s;
+      };
+      const report = (e) => {
+        if (e && e.name === 'AbortError') return; // 次の検索・シートの切り替えで中断した
+        el('status').value = e instanceof Error ? `エラー：${e.message}` : String(e);
+      };
+
+      function clearFind() {
+        finding?.abort();
+        finding = null;
+        found = null;
+        el('find-count').value = '';
+        el('find-prev').disabled = true;
+      }
+
+      function focusHit(index, scroll = true) {
+        if (view === null || found === null || found.count === 0) return;
+        found.current = index;
+        view.focusHighlight(index, { scroll });
+        el('find-count').value = `${index + 1} / ${found.count}`;
+      }
+
+      /** 表示中のシートで探す（同じ文字なら次のヒットへ） */
+      async function find() {
+        const query = el('find-text').value;
+        const index = view?.activeSheet ?? null;
+        if (view === null || index === null) return;
+        if (found !== null && found.query === query && found.count > 0) {
+          focusHit((found.current + 1) % found.count);
+          return;
+        }
+        clearFind();
+        if (query === '') {
+          view.setHighlights(null);
+          return;
+        }
+        const ac = new AbortController();
+        finding = ac;
+        const target = view;
+        el('find-count').value = '検索中…';
+        const started = performance.now();
+        const sheet = await (await searchBook).openSheet(index);
+        const result = await XSheet.findText(sheet, query, { signal: ac.signal });
+        if (finding !== ac || view !== target || view.activeSheet !== index) return;
+        finding = null;
+        found = { query, count: result.matches.length, current: 0 };
+        view.setHighlights(result.matches);
+        const ms = Math.round(performance.now() - started);
+        if (found.count === 0) {
+          el('find-count').value = `なし（${ms} ms）`;
+          return;
+        }
+        el('find-prev').disabled = false;
+        focusHit(0);
+        el('status').value =
+          `シート ${index}：${found.count}${result.truncated ? ' 件以上' : ' 件'}（${ms} ms）`;
+      }
+
+      /** 今のファイルを今の指定で表示し直す */
+      async function show() {
+        if (current === null) return;
+        const mine = ++seq;
+        clearFind();
+        view?.destroy();
+        view = null;
+        searchBook?.then((b) => b.close()).catch(() => undefined);
+        viewerEl.replaceChildren();
+        const builtinDates = el('builtin').value;
+        const started = performance.now();
+        el('status').value = '読み込み中…';
+        // 検索用のブックも同じ組み込みの表で開く（表示の文字と検索の文字を揃える）
+        searchBook = XSheet.openXlsx(current.data, { builtinDates });
+        searchBook.catch(() => undefined);
+        const next = await XSheet.renderWorkbook(viewerEl, current.data, {
+          nonce: 'xsheet-viewer',
+          builtinDates,
+          zoom: zoomValue(),
+          headers: el('headers').checked,
+          onSheetChange: (index) => {
+            // シートが替わるとハイライトが消えるので、同じ文字で探し直す
+            el('status').value = `シート ${index} を表示`;
+            clearFind();
+            if (el('find-text').value !== '') find().catch(report);
+          },
+        });
+        if (mine !== seq) {
+          next.destroy();
+          return;
+        }
+        view = next;
+        el('status').value =
+          `${current.name}（${Math.round(performance.now() - started)} ms・${view.sheets.length} シート）`;
+      }
+
+      async function load(file) {
+        try {
+          current = { name: file.name, data: await file.arrayBuffer() };
+          await show();
+        } catch (e) {
+          report(e);
+        }
+      }
+
+      el('file').addEventListener('change', () => {
+        const file = el('file').files?.[0];
+        if (file) void load(file);
+      });
+      el('builtin').addEventListener('change', () => show().catch(report));
+      el('headers').addEventListener('change', () => show().catch(report));
+      el('zoom').addEventListener('change', () => view?.setZoom(zoomValue()));
+      el('find').addEventListener('submit', (e) => {
+        e.preventDefault();
+        find().catch(report);
+      });
+      el('find-prev').addEventListener('click', () => {
+        if (found !== null && found.count > 0)
+          focusHit((found.current - 1 + found.count) % found.count);
+      });
+      viewerEl.addEventListener('click', (e) => {
+        if (view === null) return;
+        const cell = view.cellAt(e.clientX, e.clientY);
+        if (cell !== null) el('status').value = `${columnName(cell.c)}${cell.r}`;
+        const hit = view.highlightAt(e.clientX, e.clientY);
+        if (hit >= 0) focusHit(hit, false);
+      });
+      viewerEl.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        viewerEl.classList.add('is-drop');
+      });
+      viewerEl.addEventListener('dragleave', () => viewerEl.classList.remove('is-drop'));
+      viewerEl.addEventListener('drop', (e) => {
+        e.preventDefault();
+        viewerEl.classList.remove('is-drop');
+        const file = e.dataTransfer?.files?.[0];
+        if (file) void load(file);
+      });
+    </script>
+  </body>
+</html>
