@@ -109,6 +109,7 @@ export interface RenderOptions {
   messages?: Partial<XSheetMessages>;   // 既定は ja（MESSAGES_JA）。en（MESSAGES_EN）も同梱
   drawings?: boolean;                   // 図の層（既定 true）
   nonce?: string;                       // 書式の <style> に付ける（CSP 用。§3「CSP」）
+  zoom?: Zoom;                          // 最初の倍率（M7-7・ADR-0007 §5。0.5〜2.0 か { fit: 'width' }）
 }
 export interface SheetView {
   setHighlights(matches: readonly TextMatch[] | null): void; // 検索の一致を光らせる（M7-5・ADR-0007 §2。null・空で消す）
@@ -116,6 +117,8 @@ export interface SheetView {
   scrollToCell(r: number, c: number, options?: ScrollToCellOptions): void; // 縦は上から約 1/3・横は見えていないときだけ
   cellAt(clientX: number, clientY: number): CellPosition | null; // 画面の位置のセル（M7-6・ADR-0007 §4。結合は左上）
   highlightAt(clientX: number, clientY: number): number; // 画面の位置のハイライトの番号（無ければ -1）
+  setZoom(zoom: Zoom): void;           // 倍率を替える（M7-7・ADR-0007 §5。寸法に倍率を掛けて描き直す・見出しには掛けない）
+  readonly zoom: number;                // 今の倍率（fit は計算した値）
   destroy(): void;                      // blob URL・リスナ・シートを放す（book は閉じない）
 }
 export function renderSheet(container: HTMLElement, book: XlsxBook, sheetIndex: number, options?: RenderOptions): Promise<SheetView>;
@@ -261,6 +264,7 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
   - どちらも 16 個すべてと `color-scheme: dark` を持つ。値を替えるときは、属性の付いた要素より内側で `--xs-*` を上書きする（[guide/theme.md](guide/theme.md)）。
   - 2 つのブロックとこの表の「ダークの例」の列が同じことを `tests/render/style-css.test.ts` が突き合わせる。
 - 自前のテーマの属性で 16 個を上書きする形も使える。例は `examples/example.css`（M3-2。`npm run examples` で http://localhost:5173/examples/ を開く）。この表の「ダークの例」の列と同じ値で、`tests/render/examples.test.ts` が突き合わせる。
+- `--xs-zoom`（倍率。M7-7）はテーマの変数ではなく、表示の根（`.xs-sheet`）に JS が入れる値で、16 個に数えない。使う側は上書きしない（倍率は `setZoom` で替える）。
 - Excel の色（塗り・文字の色・図形の色）は変数ではなく、書式の CSS とインラインの値で入る。ダーク表示の描き分けの規則（塗りのあるセルは Excel の色のまま、白の塗りは「紙」など）は InterHub ADR-0030 のとおり。
 - 変数の表は M3-1 で、InterHub の実際の規則に合わせて直した：グリッド線は `--ih-border` ではなく `--ih-border-soft`（`.ih-data-view th, td` の線）だったため `--xs-grid` の値を替え、見出し行の下の線・タブの枠の `--ih-border` を `--xs-border` に分けた。タブ（`--ih-accent`）と通知の帯（`--ih-warn*`）の変数を足した。この表と `style.css` の既定値は `tests/render/style-css.test.ts` が突き合わせる。
 - Excel に寄せた見た目（Issue #23）：明るい既定値のうち `--xs-cell-bg`（白）・`--xs-grid`・`--xs-border`（少し濃く）を InterHub の値から変えた。ダークの値は変えていない。
@@ -330,9 +334,10 @@ dist/
 | 入口 | dist（B） | gzip | 圧縮＋gzip | 上限 |
 | --- | ---: | ---: | ---: | ---: |
 | `core/index`（`xsheet/core`） | 215,747 | 70,042 | 32,897 | 36,000 |
-| `render/index`（`xsheet/render`。core を含む） | 364,970 | 118,714 | 53,699 | 59,000 |
+| `render/index`（`xsheet/render`。core を含む） | 364,970 | 118,714 | 53,699 | 65,000 |
 | `geom/index`（`xsheet/geom`。形の表を含む） | 236,078 | 36,752 | 32,519 | 36,000 |
 
+- `render/index` の上限は M7-7（2026-11-12）で 59,000 から 65,000 にした。ADR-0007 のハイライト・移動と位置の判定・拡大縮小（`highlight.ts`・`navigate.ts`・`zoom.ts`）で 59,489（dist 403,912・gzip 131,527）になったため。M7-9・M7-8 の分も入る余裕を約 1 割とした。
 - 遅れて読むチャンク `chart-draw`（グラフを描くときだけ）：dist 98,631・gzip 32,632・圧縮＋gzip 15,829（上限 17,500。`tools/size.mjs` の `CHUNK_LIMITS`。チャンクのファイルだけを測り、render から static に辿れたら失敗する）。
 - 使う側のビルド（`check:consumer` の Vite・圧縮あり。0.2.0 の時点）では、最初に読む JS が 235,602 B（gzip 78,051。jszip・ssf・core・render を含む）、図形を描くときに読む形の表のチャンクが 176,422 B（gzip 30,477）、CSS が 5,404 B（gzip 1,537）。
 - 参考（01 N6）：xrag の初版は読み取り＋表示で 40,760 B、jszip が 96,716 B。XSheet は図形・罫線・書式の描画を持つぶん大きい。形の表は図形のあるシートでだけ読む。

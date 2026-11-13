@@ -20,10 +20,11 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 /**
  * 上限（B・圧縮して gzip）。M4-2 の実測（docs/02_architecture.md §8）に 1 割ほどの余裕を足した値。
  * 超えたら、大きくなった理由を確かめてから上限を見直す。
+ * render/index は M7-7（2026-11-12）で見直した：ADR-0007 の検索の表示・移動・拡大縮小で 59,489 になったので、約 1 割の余裕で 65,000。
  */
 const LIMITS = {
   'core/index': 36_000,
-  'render/index': 59_000,
+  'render/index': 65_000,
   'geom/index': 36_000,
 };
 

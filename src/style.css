@@ -705,3 +705,23 @@
   visibility: hidden;
   pointer-events: none;
 }
+
+/* XSheet: 拡大縮小（zoom.ts・ADR-0007 §5）。--xs-zoom は表示の根（.xs-sheet）に JS が入れる倍率。
+   セルの文字の大きさだけに倍率を掛ける（書式ごとの大きさは em の比なので一緒に変わる）。寸法は JS が倍率を掛けて指定する。
+   見出し（列記号）の文字には掛けない。行番号は行の高さに収まるよう、縮小のときだけ小さくする。
+   図の層は中を 100% で描き、層に transform: scale() を掛ける（原点は A1 の左上）。 */
+.xs-sheet .xs-grid {
+  font-size: calc(13px * var(--xs-zoom, 1));
+}
+
+.xs-sheet .xs-grid thead th {
+  font-size: 13px;
+}
+
+.xs-sheet .xs-grid .xs-rownum .xs-cell {
+  font-size: calc(13px * min(1, var(--xs-zoom, 1)));
+}
+
+.xs-layer {
+  transform-origin: 0 0;
+}

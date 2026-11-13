@@ -44,6 +44,19 @@ import type { TextMatch } from '../core/index';
 // XSheet: 今のヒットへの移動・位置の判定（ADR-0007 §3・§4）
 import { createNavigation, type Navigation } from './navigate';
 import type { GridRow } from './grid';
+// XSheet: 拡大縮小（ADR-0007 §5）
+import {
+  anchorScroll,
+  contentWidth,
+  fitZoom,
+  resolveZoom,
+  scrollAnchor,
+  scrollbarWidth,
+  unzoomRect,
+  zoomGeometry,
+  type Zoom,
+  type ZoomSpec,
+} from './zoom';
 import { createImageLayer } from './image-layer';
 import { formatMessage, type XSheetMessages } from './messages';
 import { loadGeom } from './shapes';
@@ -76,6 +89,8 @@ export interface SheetViewOptions {
   drawings: boolean;
   /** 書式の `<style>` に付ける nonce（CSP 用） */
   nonce?: string;
+  /** XSheet: 最初の倍率（既定 1。ADR-0007 §5） */
+  zoom?: Zoom;
 }
 
 /** 1 シートの表示（`renderSheet`・`renderWorkbook` の中身） */
@@ -100,6 +115,13 @@ export interface SheetViewInstance {
   scrollToCell: Navigation['scrollToCell'];
   cellAt: Navigation['cellAt'];
   highlightAt: Navigation['highlightAt'];
+  /**
+   * XSheet: 倍率を替える（見ていた左上のセルを左上に残す。ADR-0007 §5）
+   * @throws RangeError 数でない倍率・正しくない指定
+   */
+  setZoom(zoom: Zoom): void;
+  /** XSheet: 今の倍率（fit のときは計算した値） */
+  readonly zoom: number;
   /** リスナ・ResizeObserver・rAF・blob URL・シートを放し、根を `container` から外す。何度呼んでもよい。ブックは閉じない */
   destroy(): void;
 }
@@ -196,6 +218,13 @@ export function createSheetView(
   let hits: GridHits | null = null;
   // XSheet: 描いた行（位置の判定で結合・はみ出しを引く。ADR-0007 §4）
   let drawnRows: GridRow[] = [];
+  // XSheet: 倍率（ADR-0007 §5）。zoomSpec は指定、zoom は今の値（fit は draw が合わせる）。contentW は fit の中身の幅（100%）
+  let zoomSpec: ZoomSpec = resolveZoom(options.zoom ?? 1);
+  let zoom = 'fixed' in zoomSpec ? zoomSpec.fixed : 1;
+  let contentW = 0;
+  /** 倍率を替えている間（中の draw で幅に合わせ直さない） */
+  let zooming = false;
+  root.style.setProperty('--xs-zoom', String(zoom));
 
   // --- 図の層（ISSUE-86・ADR-0026 §決定 8）---
   // スクロール枠の中の常駐の wrapper（position: relative）に、表（描き直しのたびに差し替える）と図の層（position: absolute）を並べる。
@@ -248,8 +277,8 @@ export function createSheetView(
       sh.layout,
       sh.rowCount,
       sh.colCount,
-      body.clientWidth,
-      body.clientHeight,
+      body.clientWidth / zoom, // XSheet: 倍率を掛けた寸法で枠を埋める（ADR-0007 §5）
+      body.clientHeight / zoom,
       drawingMin.rows,
       drawingMin.cols,
     );
@@ -257,7 +286,7 @@ export function createSheetView(
       return false;
     }
     extent = next;
-    geo = createGeometry(sh.layout, next.rows, next.cols);
+    geo = zoomGeometry(createGeometry(sh.layout, next.rows, next.cols), zoom); // XSheet: ADR-0007 §5
     return true;
   };
 
@@ -278,6 +307,12 @@ export function createSheetView(
   const draw = (force = false): void => {
     const sh = sheet;
     if (!sh || closed) {
+      return;
+    }
+    // XSheet: 幅に合わせる倍率を、枠の大きさが変わるたびに合わせ直す（ADR-0007 §5）
+    const fitted = fitTarget();
+    if (fitted !== null) {
+      applyZoom(fitted);
       return;
     }
     const extended = refreshExtent(sh);
@@ -321,7 +356,7 @@ export function createSheetView(
         rows,
         g,
         extent.rows,
-        sh.layout.mdw,
+        sh.layout.mdw * zoom, // XSheet: 収まる数値の判定も倍率で（ADR-0007 §5）
         cols,
         sh.formats,
         hits, // XSheet: ADR-0007 §2
@@ -338,7 +373,9 @@ export function createSheetView(
       drawnRows = rows; // XSheet: ADR-0007 §4
       drawn = { first: range.first, last: range.last, firstCol: cols.first, lastCol: cols.last };
       // 図の層の原点は A1 の左上（行番号の列の幅・見出し行の高さだけ表の左上からずらす）
-      layer.place(originX, GRID_HEADER_HEIGHT, g.totalWidth, g.totalHeight);
+      // XSheet: 図の層は中を 100% で描き、層に倍率を掛ける（ADR-0007 §5）
+      layer.place(originX, GRID_HEADER_HEIGHT, g.totalWidth / zoom, g.totalHeight / zoom);
+      layer.element.style.transform = zoom === 1 ? '' : `scale(${zoom})`;
       // 罫線の層も、表を作り直す時だけ同じ行・列の範囲から作り直す（スクロール・テーマ切替では触らない）
       if (sh.borders.length > 0) {
         borderLayer.render(
@@ -352,15 +389,62 @@ export function createSheetView(
     }
     // 図の出し入れは、表を描き直さない横スクロール・縦スクロールでも毎回判定する
     layer.update(
-      viewWindow(
-        body.scrollLeft,
-        body.scrollTop,
-        body.clientWidth,
-        body.clientHeight,
-        originX,
-        GRID_HEADER_HEIGHT,
+      unzoomRect(
+        viewWindow(
+          body.scrollLeft,
+          body.scrollTop,
+          body.clientWidth,
+          body.clientHeight,
+          originX,
+          GRID_HEADER_HEIGHT,
+        ),
+        zoom, // XSheet: 図の層の中の座標（100%）で判定する（ADR-0007 §5）
       ),
     );
+  };
+
+  // XSheet: 拡大縮小（ADR-0007 §5）
+  /** 幅に合わせる倍率（合わせ直さなくてよいときは null）。縦のスクロールバーが無いときは、出る分を先に引く */
+  const fitTarget = (): number | null => {
+    if (!('fit' in zoomSpec) || !sheet || zooming) return null;
+    const bar = body.offsetWidth - body.clientWidth > 0 ? 0 : scrollbarWidth();
+    const available = body.clientWidth - bar - rowNumWidth(extent.rows || sheet.rowCount);
+    return fitZoom(available, contentW, zoomSpec.fit, zoom);
+  };
+  /** 倍率を z にして描き直し、左上に見ていたセルを左上に残す */
+  const applyZoom = (z: number): void => {
+    const anchor = geo ? scrollAnchor(geo, body.scrollTop, body.scrollLeft) : null;
+    zoom = z;
+    root.style.setProperty('--xs-zoom', String(z));
+    geo = null;
+    zooming = true;
+    try {
+      // 新しい寸法でのスクロール位置が今の表の大きさに収まる（縮小など）なら、先にスクロールして 1 回で描く
+      if (anchor && sheet) {
+        refreshExtent(sheet);
+        const g = geo as Geometry | null;
+        const pos = g ? anchorScroll(g, anchor) : null;
+        if (
+          pos &&
+          pos.top <= body.scrollHeight - body.clientHeight &&
+          pos.left <= body.scrollWidth - body.clientWidth
+        ) {
+          body.scrollTop = pos.top;
+          body.scrollLeft = pos.left;
+          draw(true);
+          return;
+        }
+      }
+      draw(true);
+      if (anchor && geo) {
+        const pos = anchorScroll(geo, anchor);
+        body.scrollTop = pos.top;
+        body.scrollLeft = pos.left;
+        draw();
+      }
+    } finally {
+      zooming = false;
+    }
   };
 
   /** スクロール・枠の大きさの変化を次のフレームの描画 1 回にまとめる */
@@ -458,6 +542,8 @@ export function createSheetView(
     // 値が無く図だけのシートも空シートにせず、図のある範囲までグリッドを出す。
     boxes = placed;
     drawingMin = drawingExtent(bigGeo, boxes);
+    // XSheet: 幅に合わせる中身の幅（データのある列と図の右端。ADR-0007 §5）
+    contentW = contentWidth(bigGeo.colLeft(opened.colCount + 1), boxes);
     // 前のシートの blob URL はここ（新しいシートへの切替）ですべて revoke される
     layer.setSheet(
       options.drawings
@@ -559,6 +645,20 @@ export function createSheetView(
     },
     cellAt: (x, y) => (closed ? null : nav.cellAt(x, y)),
     highlightAt: (x, y) => (closed ? -1 : nav.highlightAt(x, y)),
+    // XSheet: ADR-0007 §5
+    setZoom(next) {
+      const spec = resolveZoom(next);
+      if (closed) return;
+      zoomSpec = spec;
+      if ('fixed' in spec) {
+        if (spec.fixed !== zoom) applyZoom(spec.fixed);
+      } else {
+        draw(); // 幅に合わせる（draw が倍率を出す）
+      }
+    },
+    get zoom() {
+      return zoom;
+    },
     destroy,
   };
 }
