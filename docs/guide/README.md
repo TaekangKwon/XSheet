@@ -3,7 +3,7 @@
 | 項目 | 値 |
 | --- | --- |
 | 文書 | XSheet 使い方の手引き（目次） |
-| 更新日 | 2026-11-12 |
+| 更新日 | 2026-11-13 |
 | 関連 | [../../README.md](../../README.md)（3 行で始める・指定の一覧）・[../02_architecture.md](../02_architecture.md)（設計）・[ADR-0003](../adr/0003-universal-distribution.md) |
 
 ## TL;DR
@@ -20,4 +20,3 @@
 | [worker.md](worker.md) | Web Worker で読む（`xsheet/core`・`ArrayBuffer` の転送）。表示は main thread |
 | [csp.md](csp.md) | CSP の指定（`script-src`・`style-src` の nonce・`img-src blob:`）と、`css: 'none'` で `<link>` にする形 |
 | [theme.md](theme.md) | ダーク表示（`theme`・`data-xs-theme`）・変数の上書き・Shadow DOM |
-| [xsheet-0.5.0-preview.md](xsheet-0.5.0-preview.md) | （0.4.1 用・0.5.0 では不要）0.5.0 で足した公開 API の型の先出し（[xsheet-0.5.0-preview.d.ts](xsheet-0.5.0-preview.d.ts)）。0.5.0 の単独版は zip の `xsheet.d.ts` を使う |

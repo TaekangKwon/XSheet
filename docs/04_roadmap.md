@@ -3,7 +3,7 @@
 | 項目 | 値 |
 | --- | --- |
 | 文書 | XSheet 立ち上げ資料 04 |
-| 更新日 | 2026-11-12 |
+| 更新日 | 2026-11-13 |
 | 関連 | [03_source-map.md](03_source-map.md)・[05_quality.md](05_quality.md) |
 
 ## TL;DR
@@ -98,10 +98,12 @@ flowchart LR
 | Worker | 解析を Worker で動かす補助（core は DOM 非依存なのでそのまま動く。転送の型を用意する） |
 | Excel との照合 | 罫線 E1〜E5・書式 F1〜F10 の暫定項目を Excel 16 で確かめる（[05_quality.md](05_quality.md) §3） |
 | 表示の追加 | 揃えと折り返し・条件付き書式・テーブルのスタイル・フォント名・リッチテキストの部分書式・グラフの G2（面・散布図・データラベル・第 2 軸・組み合わせ） |
-| 操作 | 検索・ハイライト・移動（`scrollToCell`）・位置の判定・拡大縮小・見出しを隠す：**API は決定**（2026-11-12・[ADR-0007](adr/0007-moobius-viewer-api.md)。Moobius の依頼 R1〜R7）。作業は下の「M7 Moobius の依頼」。残りはセルの選択とコピー |
-| 公開 | npm 公開：**名前・入口は決定**（2026-11-05・[ADR-0006](adr/0006-npm-publish.md)。`@taekangkwon/xsheet`・`xsheet/internal` を外す）。残りは ADR-0006 §4（アカウントと Trusted Publisher の用意・名前の付け替え・`publish.yml`・0.5.0） |
+| 操作 | 検索・ハイライト・移動（`scrollToCell`）・位置の判定・拡大縮小・見出しを隠す・今のシート・和暦：**出した**（2026-11-13・v0.5.0・[ADR-0007](adr/0007-moobius-viewer-api.md)。Moobius の依頼 R1〜R7）。残りはセルの選択とコピー、`view` の `Viewer` に同じ操作を足すか（ADR-0007 §7） |
+| 公開 | npm 公開：**名前・入口は決定**（2026-11-05・[ADR-0006](adr/0006-npm-publish.md)。`@taekangkwon/xsheet`・`xsheet/internal` を外す）。残りは ADR-0006 §4（アカウントと Trusted Publisher の用意・名前の付け替え・`publish.yml`）。版は 0.6.0 以降（ADR-0007 §9。0.5.0 は GitHub の Release だけで出した） |
 
 ### M7 Moobius の依頼（v0.4.1・v0.5.0・[ADR-0007](adr/0007-moobius-viewer-api.md)）
+
+**完了（2026-11-13）**：M7-1〜M7-10（#25〜#34）を全部閉じ、v0.4.1（2026-11-12）と v0.5.0（2026-11-13）を出した。
 
 順は M7-1 → M7-3（v0.4.1）、M7-2 は実装より先、M7-4 → M7-5 → M7-6 → M7-7 → M7-9 の順に積み上げ、M7-8 は M7-1 の後ならいつでもよい。最後に M7-10（v0.5.0）。GitHub のマイルストーン `v0.4.1`・`v0.5.0` に入れた。
 
