@@ -112,8 +112,11 @@ export interface RenderOptions {
 }
 export interface SheetView {
   setHighlights(matches: readonly TextMatch[] | null): void; // 検索の一致を光らせる（M7-5・ADR-0007 §2。null・空で消す）
+  focusHighlight(index: number, options?: FocusHighlightOptions): void; // 今のヒット（M7-6・ADR-0007 §3。-1 で外す）
+  scrollToCell(r: number, c: number, options?: ScrollToCellOptions): void; // 縦は上から約 1/3・横は見えていないときだけ
+  cellAt(clientX: number, clientY: number): CellPosition | null; // 画面の位置のセル（M7-6・ADR-0007 §4。結合は左上）
+  highlightAt(clientX: number, clientY: number): number; // 画面の位置のハイライトの番号（無ければ -1）
   destroy(): void;                      // blob URL・リスナ・シートを放す（book は閉じない）
-  scrollToCell?(r: number, c: number): void; // M7 の候補
 }
 export function renderSheet(container: HTMLElement, book: XlsxBook, sheetIndex: number, options?: RenderOptions): Promise<SheetView>;
 

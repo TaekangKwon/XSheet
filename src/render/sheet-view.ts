@@ -41,6 +41,9 @@ import { buildGridTable } from './grid-table';
 // XSheet: 検索の一致のハイライト（ADR-0007 §2）
 import { createGridHits, type GridHits } from './highlight';
 import type { TextMatch } from '../core/index';
+// XSheet: 今のヒットへの移動・位置の判定（ADR-0007 §3・§4）
+import { createNavigation, type Navigation } from './navigate';
+import type { GridRow } from './grid';
 import { createImageLayer } from './image-layer';
 import { formatMessage, type XSheetMessages } from './messages';
 import { loadGeom } from './shapes';
@@ -92,6 +95,11 @@ export interface SheetViewInstance {
    * XSheet: ADR-0007 §2
    */
   setHighlights(matches: readonly TextMatch[] | null): void;
+  /** XSheet: ADR-0007 §3・§4（中身は navigate.ts） */
+  focusHighlight: Navigation['focusHighlight'];
+  scrollToCell: Navigation['scrollToCell'];
+  cellAt: Navigation['cellAt'];
+  highlightAt: Navigation['highlightAt'];
   /** リスナ・ResizeObserver・rAF・blob URL・シートを放し、根を `container` から外す。何度呼んでもよい。ブックは閉じない */
   destroy(): void;
 }
@@ -186,6 +194,8 @@ export function createSheetView(
   let closed = false;
   // XSheet: 検索の一致のハイライト（描くたびに付け直す。シートを替えると消す。ADR-0007 §2）
   let hits: GridHits | null = null;
+  // XSheet: 描いた行（位置の判定で結合・はみ出しを引く。ADR-0007 §4）
+  let drawnRows: GridRow[] = [];
 
   // --- 図の層（ISSUE-86・ADR-0026 §決定 8）---
   // スクロール枠の中の常駐の wrapper（position: relative）に、表（描き直しのたびに差し替える）と図の層（position: absolute）を並べる。
@@ -325,6 +335,7 @@ export function createSheetView(
         wrapper.prepend(table);
       }
       tableEl = table;
+      drawnRows = rows; // XSheet: ADR-0007 §4
       drawn = { first: range.first, last: range.last, firstCol: cols.first, lastCol: cols.last };
       // 図の層の原点は A1 の左上（行番号の列の幅・見出し行の高さだけ表の左上からずらす）
       layer.place(originX, GRID_HEADER_HEIGHT, g.totalWidth, g.totalHeight);
@@ -420,6 +431,7 @@ export function createSheetView(
     activeIndex = index;
     drawn = null;
     hits = null; // XSheet: 一致の一覧はシートごと（ADR-0007 §7）
+    drawnRows = []; // XSheet: ADR-0007 §4
     body.scrollTop = 0;
     body.scrollLeft = 0;
     notices.clear();
@@ -497,12 +509,28 @@ export function createSheetView(
     tableEl = null;
     notices.clear();
     hits = null; // XSheet: ADR-0007 §2
+    drawnRows = []; // XSheet: ADR-0007 §4
+    nav.dispose();
     wrapper.replaceChildren();
     body.replaceChildren();
     root.replaceChildren();
     root.removeAttribute('data-xs-fmt');
     root.remove();
   };
+
+  // XSheet: 今のヒットへの移動・位置の判定（ADR-0007 §3・§4）。表示の今の状態を引いて計算する
+  const nav = createNavigation({
+    body,
+    root,
+    sheet: () => sheet,
+    geometry: () => geo,
+    origin: () => ({ x: rowNumWidth(extent.rows), y: GRID_HEADER_HEIGHT }),
+    cols: () => extent.cols,
+    drawn: () => ({ rows: drawnRows, firstCol: drawn?.firstCol ?? 1 }),
+    hits: () => hits,
+    table: () => tableEl,
+    draw: () => draw(),
+  });
 
   root.append(noticeBar, body, fmtStyle);
   container.append(root);
@@ -522,6 +550,15 @@ export function createSheetView(
         draw(true);
       }
     },
+    // XSheet: ADR-0007 §3・§4
+    focusHighlight: (index, opts) => {
+      if (!closed) nav.focusHighlight(index, opts);
+    },
+    scrollToCell: (r, c, opts) => {
+      if (!closed) nav.scrollToCell(r, c, opts);
+    },
+    cellAt: (x, y) => (closed ? null : nav.cellAt(x, y)),
+    highlightAt: (x, y) => (closed ? -1 : nav.highlightAt(x, y)),
     destroy,
   };
 }
