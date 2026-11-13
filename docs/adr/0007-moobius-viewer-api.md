@@ -133,6 +133,7 @@ interface RenderOptions {
   ```ts
   interface OpenXlsxOptions { builtinDates?: 'default' | 'japanese-era' } // 既定 'default'
   interface ReadOptions { builtinDates?: 'default' | 'japanese-era' }     // XSheet.read・view でも使える
+  interface WorkbookOptions { builtinDates?: 'default' | 'japanese-era' } // renderWorkbook もブックを自分で開く（型の先出し M7-2 で足した）
   ```
 
   - 既定を変えない理由：これらの番号の見た目は、ファイルではなく開く Excel の言語環境が決める。韓国語・中国語の環境のファイルも同じ番号を自分の言語の日付に使うので、既定を和暦にするとそれらが間違って見える。
