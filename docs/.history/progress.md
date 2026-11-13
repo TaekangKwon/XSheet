@@ -236,3 +236,9 @@
 - テスト 9 件（`active-sheet.test.ts`。全体 2271）。例はタブの DOM を読むのをやめ、`activeSheet`・`onSheetChange` を使う。実機でタブを替えると結果が消え、次の検索が新しいシートを探すことを確かめた。
 - README 3 つ・02 §3・CHANGELOG・先出しの型（0.4.1 の `xsheet.d.ts` と並べて tsc が通る）も直した。`xsheet.mjs` は gzip 91,805 / 94,000。
 
+## 2026-11-13 M7-8 和暦の書式・builtinDates（#32・ブランチ feat/japanese-era）
+- ユーザーの依頼のファイル（SekisanHistoryTest の compare_features.xlsx・03_表示形式）で `[$-ja-JP]ggge"年"m"月"d"日"` が `ggg2026年11月11日` と出るのを確かめ、ユーザーが M7-8 を全部 0.5.0 に入れると決めた。
+- 正解は `make-ref-era.ps1`（XML から組んだ合成の xlsx を Excel 16 ja-JP の COM で開いて Range.Text を読む。保存しない）。組み込み 27〜36・50〜58 の書式、元年は `[$-ja-JP-x-gannen]` で 2 文字以上の元号の後だけ、`[$-ja]`・`[$-0411]` も日本語、などを ADR-0007 §6（版 1.2）に書いた。
+- `format-ja.ts` に g・e・r の字句・区画の和暦の扱い・`eraOfSerial`・`JA_BUILTIN_DATES`。ssf が `m.d` で例外を投げるので和暦の区画では「.」を引用符で包む。`@` の区画は数値に使わない。`builtinDates` は openXlsx・read・view・renderWorkbook に通した（`format.ts` は引数 1 つの口）。
+- テスト：ref-era 7 件（2952 セル中 261 を理由付きで除外）・format-era 11 件・builtin-dates 1 件（全体 2290）。依頼のファイルの 12 行目が `令和8年11月11日` になり、ほかの行は変わらない。例のページに「和暦の書式」と「組み込みの和暦」を足した。
+- core/index が gzip 36,071 で上限 36,000 を超えたので、理由を 02 §8 に書いて 40,000 にした。

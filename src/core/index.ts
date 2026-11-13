@@ -10,6 +10,7 @@ import { parseCellFormats, stylesUseTheme, type FormatTable } from './cell-forma
 import { parseChart } from './chart';
 import { findDrawingRelId, loadSheetDrawings } from './drawing';
 import { createFormatter, type CellFormatter } from './format';
+import type { BuiltinDates } from './format-ja';
 import { createImageBudget, readImageFrom, type ImageBudget } from './image';
 import { DEFAULT_LIMITS, type XlsxLimits } from './limits';
 import { checkSignature, openPackage, toBytes, type XlsxPackage } from './open';
@@ -102,6 +103,7 @@ export { colName } from './xml';
 export { isPaperFill } from './cell-format';
 export { findText } from './find-text';
 export type { FindTextOptions, FindTextResult, TextMatch } from './find-text';
+export type { BuiltinDates } from './format-ja';
 
 /** styles.xml から読むもの：表示形式の整形器と、寸法の換算に使う最大桁幅 MDW・フォントの既定の行高・罫線の表・書式（塗り・文字の装飾）の表 */
 interface StyleInfo {
@@ -129,6 +131,13 @@ const createChartBudget = (): ChartBudget => ({ used: 0, exhausted: false, count
 export interface OpenXlsxOptions {
   /** 上限を替える（既定は DEFAULT_LIMITS。試験で小さい値を渡す用） */
   limits?: Partial<XlsxLimits>;
+  /**
+   * 組み込みの日付の書式 27〜36・50〜58 の見せ方（既定 `'default'`＝西暦の表のまま）。
+   * `'japanese-era'` で日本語版 Excel と同じ表（28 は `令和8年11月11日`、27 は `R8.11.11` など）にする。
+   * 書式に直接書かれた和暦（`ggg`・`e` など）と曜日（`aaa`・`aaaa`）は、指定しなくてもいつも出す。
+   * XSheet: ADR-0007 §6（M7-8）
+   */
+  builtinDates?: BuiltinDates;
 }
 
 /**
@@ -194,7 +203,11 @@ export async function openXlsx(
       // <fonts>・<fills>・<borders> が theme を使わないブックでは、テーマの読み取りを増やさない
       const theme = stylesUseTheme(xml) ? await loadThemeOnce(p) : DEFAULT_THEME;
       return {
-        formatter: createFormatter(styles, workbook.date1904),
+        formatter: createFormatter(
+          styles,
+          workbook.date1904,
+          options.builtinDates === 'japanese-era' ? 'japanese-era' : 'default',
+        ),
         mdw: styles.mdw,
         fontRowPx: styles.fontRowPx,
         borderTable: parseBorders(xml, theme, limits),

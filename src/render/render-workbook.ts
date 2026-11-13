@@ -8,7 +8,13 @@
  * - `destroy()` でタブ列・シートの表示（blob URL・リスナ）を放し、ブックを閉じ、根を外す。
  * シート名はユーザーのファイル内容（信頼できない入力）なので、`textContent` と `title` にだけ入れる。
  */
-import { openXlsx, type SheetInfo, type XlsxBook, type XlsxLimits } from '../core/index';
+import {
+  openXlsx,
+  type BuiltinDates,
+  type SheetInfo,
+  type XlsxBook,
+  type XlsxLimits,
+} from '../core/index';
 import { resolveMessages, type XSheetMessages } from './messages';
 import type { RenderOptions, SheetView } from './render-sheet';
 import { buildSheetTabStrip, makeSheetTab } from './sheet-tabs';
@@ -20,6 +26,11 @@ import { resolveZoom } from './zoom';
 export interface WorkbookOptions extends RenderOptions {
   /** 読み取りの上限を替える（`openXlsx` の `limits`。既定は `DEFAULT_LIMITS`） */
   limits?: Partial<XlsxLimits>;
+  /**
+   * 組み込みの日付の書式 27〜36・50〜58 の見せ方（`OpenXlsxOptions.builtinDates` と同じ。`renderWorkbook` はブックを自分で開くため）。
+   * XSheet: ADR-0007 §6（M7-8）
+   */
+  builtinDates?: BuiltinDates;
   /**
    * シートタブの列を置く場所（既定 `'top'`＝表の上。`'bottom'` は Excel と同じく表の下）。
    * `'bottom'` ではタブ列を DOM でもシートの表示の後ろに置き、根に `xs-tabs-bottom` を付ける。
@@ -114,7 +125,7 @@ export async function renderWorkbook(
 
   let book: XlsxBook;
   try {
-    book = await openXlsx(data, { limits: options.limits });
+    book = await openXlsx(data, { limits: options.limits, builtinDates: options.builtinDates });
   } catch (e) {
     root.append(messageElement('xs-banner', xlsxErrorMessage(e, messages)));
     return messageView(root);

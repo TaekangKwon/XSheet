@@ -14,10 +14,12 @@
 - `SheetView.showSheet(index)`：`renderSheet` の表示を作り直さずにシートを替える（#33。`WorkbookView` は前から持つ）。倍率は保ち、ハイライトと今のヒットは消す。表示中のシートなら何もしない。
 - `SheetView`・`WorkbookView` の `activeSheet` と `WorkbookOptions.onSheetChange`：選んでいるシートの番号と、シートが替わった知らせ（[#34](https://github.com/TaekangKwon/XSheet/issues/34)。[ADR-0007](docs/adr/0007-moobius-viewer-api.md) §7 版 1.1）。`activeSheet` はタブを押したとき・`showSheet` を呼んだときにすぐ替わり、開けなかったブックでは `null`。`onSheetChange(index)` は替えたシートを表示し終えた後に呼ぶ（最初のシート・表示中のシートの `showSheet`・追い越された切り替え・`destroy` の後では呼ばない。例外は `setTimeout` で投げ直す）。タブを押された後に検索し直すシートを知るために足した。
 - 例のページ（Pages のデモ）に、表示中のシートの検索（◀ ▶ で前後のヒット・クリックしたヒットを今のヒットに・シートを替えたら結果を捨てる）・倍率（50〜200%・幅に合わせる）・見出しの有無を足した。クリックしたセルの番地も出す（[#34](https://github.com/TaekangKwon/XSheet/issues/34)）。
+- 和暦の書式（[#32](https://github.com/TaekangKwon/XSheet/issues/32)。[ADR-0007](docs/adr/0007-moobius-viewer-api.md) §6）：書式に直接書いた元号 `g`・`gg`・`ggg`（`R`・`令`・`令和`）、和暦の年 `e`・`ee`、`r`・`rr` を日本語版 Excel と同じに出す。今までは `[$-ja-JP]ggge"年"m"月"d"日"` が `ggg2026年11月11日` と出ていた（`令和8年11月11日` になる）。`[$-ja-JP-x-gannen]` の元年、日本語でない言語の指定（元号は空）、1904 年基準も Excel に合わせた。言語の指定が無く元号の無い `e` は西暦のまま。Excel 16（ja-JP）で表示を読んだ `fixtures/excel/ref-era.xlsx` と照合した。
+- `builtinDates: 'japanese-era'`（`openXlsx`・`read`・`view`・`renderWorkbook` の指定。#32）：組み込みの日付の書式 27〜36・50〜58 を日本語版 Excel と同じ表で出す（28 は `令和8年11月11日`、27 は `R8.11.11`、34 は `2026年11月` など）。既定（`'default'`）は今までの表のまま。
 
 ### 変更
 
-- README（英・日・韓）に 0.5.0 の API（`findText`・`setHighlights`・`focusHighlight`・`scrollToCell`・`cellAt`・`highlightAt`・`setZoom`・`zoom`・`showSheet`・`activeSheet`・`RenderOptions` の `zoom`・`headers`・`onSheetChange`）の節を足し、CSS 変数の数を 16 個に直した（#34）。
+- README（英・日・韓）に 0.5.0 の API（`findText`・`setHighlights`・`focusHighlight`・`scrollToCell`・`cellAt`・`highlightAt`・`setZoom`・`zoom`・`showSheet`・`activeSheet`・`RenderOptions` の `zoom`・`headers`・`onSheetChange`）の節と `builtinDates` の行を足し、CSS 変数の数を 16 個に直した（#34）。
 
 ## [0.4.1] - 2026-11-12
 

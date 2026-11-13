@@ -3,9 +3,10 @@
  * 数値の表示形式を当てて、Excel で見える文字にする。
  * 書式コードの解釈は `ssf` 0.11.2 に任せ、日本語環境に合わせた組み込みの書式の対応表だけ自前で持つ。
  * 和暦（`ggge`）は ssf にも無いので、1 次では対応しない（ADR-0025「悪い点」）。
+ * XSheet: 和暦は format-ja.ts で ssf の手前で置き換える（ADR-0007 §6）。
  */
 import * as ssfModule from 'ssf';
-import { withJaTokens } from './format-ja'; // XSheet: 曜日の口（ADR-0007 §6）
+import { JA_BUILTIN_DATES, withJaTokens, type BuiltinDates } from './format-ja'; // XSheet: 曜日・和暦の口（ADR-0007 §6）
 import { MAX_FORMAT_CODE_LENGTH } from './limits';
 import type { Styles } from './styles';
 
@@ -112,9 +113,17 @@ export interface CellFormatter {
  * 書式コードは非信頼の styles.xml から来るため、長さが上限（MAX_FORMAT_CODE_LENGTH）を超えるものは
  * ssf に渡さず General として値だけを出す（ReDoS 対策）。
  */
-export function createFormatter(styles: Styles, date1904: boolean): CellFormatter {
+export function createFormatter(
+  styles: Styles,
+  date1904: boolean,
+  // XSheet: 組み込みの日付の書式 27〜36・50〜58 を日本語版 Excel の表で引く指定（ADR-0007 §6）
+  builtinDates: BuiltinDates = 'default',
+): CellFormatter {
   const codes: string[] = styles.xfNumFmtIds.map((id) => {
-    const code = styles.customFormats.get(id) ?? builtinFormatCode(id);
+    const code =
+      styles.customFormats.get(id) ??
+      (builtinDates === 'japanese-era' ? JA_BUILTIN_DATES.get(id) : undefined) ??
+      builtinFormatCode(id);
     return code.length > MAX_FORMAT_CODE_LENGTH ? 'General' : code;
   });
   const codeOf = (xf: number) => codes[xf] ?? 'General';
