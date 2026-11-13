@@ -217,3 +217,9 @@
 - 実機（Chrome）：50%・75%・100%・150%・200% で罫線の層の線と td の境目が一致、図の位置と大きさがちょうど倍率どおり、倍率を替えても左上のセル（1001 行・11 列）が残る。3000 行 × 80 列で倍率の切り替えは 200〜400ms、50% の描き直しは td が 2.4 倍で約 240ms（100% で約 115ms。隠れた画面での値）。縮小のときは先にスクロールして 1 回で描く。
 - `render/index` が上限 59,000 を 489 B 超えたので、理由（ADR-0007 の 3 機能）を 02 §8 に書いて上限を 65,000 にした。`xsheet.mjs` は 91,601 / 94,000。
 - テスト 21 件（`zoom.test.ts`）。`style-css.test.ts` は `--xs-zoom` をテーマの変数から外して見るようにした。CHANGELOG・02 §3・§6・§8 を更新。
+
+## 2026-11-12 M7-9 見出しを隠す headers・SheetView.showSheet（#33・ブランチ feat/headers）
+- `RenderOptions.headers: false` で、列見出しの行を作らず行番号の列を幅 0 で畳む（`grid-table.ts` の口：引数 `headers`・列の畳み・`thead` を外す）。`sheet-view.ts` は見出しの寸法を定数からインスタンスの値（`headX`・`headY`）にし、表・罫線の層・図の層・判定・fit が同じ原点を使う。`renderWorkbook` も渡す。
+- `renderSheet` の戻り値に `showSheet`（表示中のシートなら何もしない・ブックに無い番号は RangeError）。倍率は保ち、ハイライトと今のヒットは消す（中の表示が前から持つ動き）。
+- 実機（Chrome・showcase.xlsx）：A1 が表示枠の左上 (0, 0)、行番号の列の幅 0、罫線の層の線と td の境目が一致、`cellAt` が A1 を返す。
+- テスト 7 件。CHANGELOG・02 §3 を更新。README 3 つは M7-10 でまとめて直す。

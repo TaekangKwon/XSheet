@@ -23,6 +23,11 @@ export interface RenderOptions {
    * @throws RangeError（`renderSheet`・`renderWorkbook` が投げる）数でない倍率・正しくない指定
    */
   zoom?: Zoom;
+  /**
+   * 行番号の列と列見出しを出すか（既定 true）。false なら出さず、セルを表示枠の左上から描く。
+   * XSheet: ADR-0007 §7（M7-9）
+   */
+  headers?: boolean;
 }
 
 /** `focusHighlight` の指定（XSheet: ADR-0007 §3） */
@@ -88,6 +93,14 @@ export interface SheetView {
   setZoom(zoom: Zoom): void;
   /** 今の倍率（fit のときは計算した値） */
   readonly zoom: number;
+  /**
+   * シートを替える（表示を作り直さない）。倍率は保ち（幅に合わせるなら合わせ直す）、ハイライトと今のヒットは消す。
+   * 表示中のシートなら何もしない。開けないシートは、例外にせず枠の中にメッセージを出す。
+   * @param index シートの番号（`SheetInfo.index`。1 始まり・非表示のシートも数える）
+   * @throws RangeError ブックに無い番号
+   * XSheet: ADR-0007 §7（M7-9）
+   */
+  showSheet(index: number): Promise<void>;
   /** リスナ・ResizeObserver・blob URL・シートを放し、表示を `container` から外す。何度呼んでもよい。ブックは閉じない */
   destroy(): void;
 }
@@ -116,6 +129,7 @@ export async function renderSheet(
     drawings: options.drawings !== false,
     nonce: options.nonce,
     zoom: options.zoom,
+    headers: options.headers,
   });
   try {
     await view.showSheet(sheetIndex);
@@ -132,6 +146,11 @@ export async function renderSheet(
     setZoom: (zoom) => view.setZoom(zoom),
     get zoom() {
       return view.zoom;
+    },
+    showSheet: async (index) => {
+      if (view.activeIndex !== index || !book.sheets.some((s) => s.index === index)) {
+        await view.showSheet(index);
+      }
     },
     destroy: () => view.destroy(),
   };

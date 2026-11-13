@@ -110,6 +110,7 @@ export interface RenderOptions {
   drawings?: boolean;                   // 図の層（既定 true）
   nonce?: string;                       // 書式の <style> に付ける（CSP 用。§3「CSP」）
   zoom?: Zoom;                          // 最初の倍率（M7-7・ADR-0007 §5。0.5〜2.0 か { fit: 'width' }）
+  headers?: boolean;                    // 行番号の列と列見出し（既定 true。M7-9・ADR-0007 §7）
 }
 export interface SheetView {
   setHighlights(matches: readonly TextMatch[] | null): void; // 検索の一致を光らせる（M7-5・ADR-0007 §2。null・空で消す）
@@ -119,6 +120,7 @@ export interface SheetView {
   highlightAt(clientX: number, clientY: number): number; // 画面の位置のハイライトの番号（無ければ -1）
   setZoom(zoom: Zoom): void;           // 倍率を替える（M7-7・ADR-0007 §5。寸法に倍率を掛けて描き直す・見出しには掛けない）
   readonly zoom: number;                // 今の倍率（fit は計算した値）
+  showSheet(index: number): Promise<void>; // シートを替える（M7-9・ADR-0007 §7。倍率は保ち、ハイライトは消す）
   destroy(): void;                      // blob URL・リスナ・シートを放す（book は閉じない）
 }
 export function renderSheet(container: HTMLElement, book: XlsxBook, sheetIndex: number, options?: RenderOptions): Promise<SheetView>;
