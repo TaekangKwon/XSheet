@@ -214,6 +214,8 @@ export interface NavigationHost {
   table(): HTMLTableElement | null;
   /** 今のスクロール位置で描く（描いた範囲に収まっていれば何もしない） */
   draw(): void;
+  /** 行 r へ移動する前に、その行の文字が最後の列からはみ出す分だけ表を広げる（ADR-0008 §4。無ければ何もしない） */
+  prepare?(r: number): void;
 }
 
 /** {@link createNavigation} の戻り値（`SheetView` の §3・§4 の操作） */
@@ -273,6 +275,7 @@ export function createNavigation(host: NavigationHost): Navigation {
 
   /** 行 r・列 c（横は range）が見える所へのスクロール */
   const reveal = (r: number, range: XRange | null, c: number, smooth: boolean): void => {
+    host.prepare?.(r); // 表の幅（スクロールの上限）を先に広げる（ADR-0008 §4）
     const geo = host.geometry();
     if (!geo) return;
     const view = viewBox();

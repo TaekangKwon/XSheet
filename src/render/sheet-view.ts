@@ -57,6 +57,8 @@ import {
   type Zoom,
   type ZoomSpec,
 } from './zoom';
+// XSheet: 最後の列からはみ出す文字の分だけ表を広げる（ADR-0008 §4）
+import { spillReachCols } from './spill-extent';
 import { createImageLayer } from './image-layer';
 import { formatMessage, type XSheetMessages } from './messages';
 import { loadGeom } from './shapes';
@@ -220,6 +222,9 @@ export function createSheetView(
   let hits: GridHits | null = null;
   // XSheet: 描いた行（位置の判定で結合・はみ出しを引く。ADR-0007 §4）
   let drawnRows: GridRow[] = [];
+  // XSheet: はみ出しが届く列数（広げるだけ。シートを替えると 0）と、それを数える倍率 1 の寸法（ADR-0008 §4）
+  let spillMin = 0;
+  let spillGeo: Geometry | null = null;
   // XSheet: 倍率（ADR-0007 §5）。zoomSpec は指定、zoom は今の値（fit は draw が合わせる）。contentW は fit の中身の幅（100%）
   let zoomSpec: ZoomSpec = resolveZoom(options.zoom ?? 1);
   let zoom = 'fixed' in zoomSpec ? zoomSpec.fixed : 1;
@@ -266,6 +271,8 @@ export function createSheetView(
     layer.setSheet(null);
     boxes = [];
     drawingMin = { rows: 0, cols: 0 };
+    spillMin = 0; // XSheet: ADR-0008 §4
+    spillGeo = null;
     tableEl = null;
     borderLayer.clear();
     wrapper.replaceChildren(borderLayer.element, layer.element);
@@ -286,7 +293,7 @@ export function createSheetView(
       body.clientWidth / zoom, // XSheet: 倍率を掛けた寸法で枠を埋める（ADR-0007 §5）
       body.clientHeight / zoom,
       drawingMin.rows,
-      drawingMin.cols,
+      Math.max(drawingMin.cols, spillMin), // XSheet: はみ出しの届く列まで（ADR-0008 §4）
     );
     if (geo && next.rows === extent.rows && next.cols === extent.cols) {
       return false;
@@ -294,6 +301,20 @@ export function createSheetView(
     extent = next;
     geo = zoomGeometry(createGeometry(sh.layout, next.rows, next.cols), zoom); // XSheet: ADR-0007 §5
     return true;
+  };
+
+  // XSheet: 行の文字が届く列まで表を広げる（ADR-0008 §4）。表の範囲が変わったら true
+  const growSpill = (
+    sh: XlsxSheet,
+    rows: readonly Pick<GridRow, 'cells' | 'formats'>[],
+  ): boolean => {
+    spillGeo ??= createGeometry(sh.layout, MAX_GRID_ROWS, MAX_GRID_COLS);
+    const need = Math.min(MAX_GRID_COLS, spillReachCols(spillGeo, rows, sh.formats));
+    if (need <= spillMin) {
+      return false;
+    }
+    spillMin = need;
+    return refreshExtent(sh);
   };
 
   /** 行 a〜b の読み出し。データより下（足した空の行）は空の行にする。 */
@@ -356,6 +377,11 @@ export function createSheetView(
               (c) => sh.colFormat(c),
             )
           : read;
+      // XSheet: 描く行の文字が最後の列からはみ出すなら、表を広げて描き直す（ADR-0008 §4）
+      if (growSpill(sh, rows)) {
+        draw(true);
+        return;
+      }
       const table = buildGridTable(
         colName,
         extent.cols,
@@ -549,6 +575,8 @@ export function createSheetView(
     // 値が無く図だけのシートも空シートにせず、図のある範囲までグリッドを出す。
     boxes = placed;
     drawingMin = drawingExtent(bigGeo, boxes);
+    spillMin = 0; // XSheet: ADR-0008 §4
+    spillGeo = bigGeo;
     // XSheet: 幅に合わせる中身の幅（データのある列と図の右端。ADR-0007 §5）
     contentW = contentWidth(bigGeo.colLeft(opened.colCount + 1), boxes);
     // 前のシートの blob URL はここ（新しいシートへの切替）ですべて revoke される
@@ -623,6 +651,13 @@ export function createSheetView(
     hits: () => hits,
     table: () => tableEl,
     draw: () => draw(),
+    // XSheet: 移動先の行の文字が届く列まで、先に表を広げる（ADR-0008 §4）
+    prepare: (r) => {
+      const sh = sheet;
+      if (sh && r >= 1 && r <= sh.rowCount && growSpill(sh, sh.getRows(r, r))) {
+        draw(true);
+      }
+    },
   });
 
   root.append(noticeBar, body, fmtStyle);
