@@ -153,6 +153,9 @@ export interface XlsxSpec {
   xfFontIds?: number[];
   /** cellXfs の `fillId`（xfs と同じ位置。省略した位置は 0） */
   xfFillIds?: number[];
+  // XSheet: 配置（ADR-0008 §1）
+  /** cellXfs の `<alignment>` の属性（xfs と同じ位置。例 `horizontal="center" wrapText="1"`）。省略した位置は配置なし（子は `<protection>`） */
+  xfAlignments?: (string | undefined)[];
   /** `<colors><indexedColors>` の `rgb`（ARGB 8 桁の 16 進。`indexed` 0 から順に上書きする）。省くと入れない */
   indexedColors?: string[];
   /** styles.xml の先頭の font（最大桁幅 MDW の算出元）。省略すると `<fonts>` を入れない */
@@ -417,10 +420,13 @@ export async function buildXlsx(spec: XlsxSpec): Promise<Uint8Array> {
     const colors = spec.indexedColors
       ? `<${q('colors')}><${q('indexedColors')}>${spec.indexedColors.map((c) => `<${q('rgbColor')} rgb="${c}"/>`).join('')}</${q('indexedColors')}></${q('colors')}>`
       : '';
+    // XSheet: xf の子。配置の指定が無ければ配置に効かない <protection> を置く（子のある xf の読み飛ばしの確認は残す。ADR-0008 §1）
+    const xfChild = (align: string | undefined): string =>
+      align === undefined ? `<${q('protection')} locked="1"/>` : `<${q('alignment')} ${align}/>`;
     // cellStyleXfs にも <xf> を置く（cellXfs の数え方が混ざらないことの確認）
     z.file(
       'xl/styles.xml',
-      `${HEAD}<${q('styleSheet')} ${nsDecl}>${numFmts}${fonts}${fills}${borders}<${q('cellStyleXfs')} count="1"><${q('xf')} numFmtId="49" fontId="0" fillId="0" borderId="0"/></${q('cellStyleXfs')}><${q('cellXfs')} count="${xfs.length}">${xfs.map((id, i) => `<${q('xf')} numFmtId="${id}" fontId="${spec.xfFontIds?.[i] ?? 0}" fillId="${spec.xfFillIds?.[i] ?? 0}" borderId="${spec.xfBorderIds?.[i] ?? 0}" xfId="0"><${q('alignment')} vertical="top"/></${q('xf')}>`).join('')}</${q('cellXfs')}>${colors}</${q('styleSheet')}>`,
+      `${HEAD}<${q('styleSheet')} ${nsDecl}>${numFmts}${fonts}${fills}${borders}<${q('cellStyleXfs')} count="1"><${q('xf')} numFmtId="49" fontId="0" fillId="0" borderId="0"/></${q('cellStyleXfs')}><${q('cellXfs')} count="${xfs.length}">${xfs.map((id, i) => `<${q('xf')} numFmtId="${id}" fontId="${spec.xfFontIds?.[i] ?? 0}" fillId="${spec.xfFillIds?.[i] ?? 0}" borderId="${spec.xfBorderIds?.[i] ?? 0}" xfId="0">${xfChild(spec.xfAlignments?.[i])}</${q('xf')}>`).join('')}</${q('cellXfs')}>${colors}</${q('styleSheet')}>`,
     );
   }
 

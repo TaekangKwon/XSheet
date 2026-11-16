@@ -6,11 +6,14 @@
  * - 同じ見た目の書式は 1 つにまとめる（キーは数値だけ。ファイルの文字列は持たない）。まとめた後の数は `maxCellFormats` まで。
  * - 塗りは 1 色に畳む：`solid`＝`fgColor`、ほかの模様＝前景と背景の混色、グラデーション＝50% の位置の色。
  * - `applyFill`・`applyFont` は見ない（F5）。cellStyleXfs は読まない。フォント名は読まない。
+ * - XSheet: 配置と折り返し（`<alignment>`）は cell-align.ts で読んで足す（ADR-0008 §1）。
  * - 色は SpreadsheetML の `<color>`（cell-color.ts）をテーマで解いてから持つ。解けない値は例外にせず既定の色・書式なしに倒す。
  * - 走査は線形（開きタグは `[^<>]*>`、閉じは `indexOf`）。
  */
 import { type Rgba, mixColors, mixColorsLinear } from './color';
 import { parseIndexedColors, resolveCellColor } from './cell-color';
+// XSheet: 配置と折り返し（ADR-0008 §1）
+import { alignKey, readXfAlignments } from './cell-align';
 import { MAX_GRADIENT_STOPS, type XlsxLimits } from './limits';
 import type { Theme } from './theme';
 import type { CellFormat } from './types';
@@ -263,6 +266,7 @@ export function parseCellFormats(
   const formats: CellFormat[] = [];
   const keyToIndex = new Map<string, number>();
   const xfFormat: number[] = [];
+  const aligns = readXfAlignments(cellXfs.body); // XSheet: xf の位置ごとの配置（ADR-0008 §1）
   for (const m of cellXfs.body.matchAll(new RegExp(String.raw`<${NS}xf\b[^<>]*>`, 'g'))) {
     const a = parseAttrs(m[0]);
     const fontId = intAttr(a.fontId);
@@ -277,6 +281,7 @@ export function parseCellFormats(
     if (font?.strike) format.strike = true;
     if (font?.underline) format.underline = font.underline;
     if (font?.sizeRatio !== undefined) format.sizeRatio = font.sizeRatio;
+    Object.assign(format, aligns[xfFormat.length]); // XSheet: 配置（ADR-0008 §1。位置は今の xf）
     if (Object.keys(format).length === 0) {
       xfFormat.push(-1);
       continue;
@@ -305,7 +310,8 @@ function formatKey(f: CellFormat): string {
     (f.strike ? 4 : 0) |
     (f.underline === 'single' ? 8 : 0) |
     (f.underline === 'double' ? 16 : 0);
-  return `${f.fill?.rgb ?? -1}|${f.color?.rgb ?? -1}|${bits}|${Math.round((f.sizeRatio ?? 1) * 100)}`;
+  // XSheet: 末尾に配置（ADR-0008 §1）
+  return `${f.fill?.rgb ?? -1}|${f.color?.rgb ?? -1}|${bits}|${Math.round((f.sizeRatio ?? 1) * 100)}|${alignKey(f)}`;
 }
 
 /**
