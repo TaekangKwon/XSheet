@@ -647,7 +647,7 @@ export function createSheetView(
     geometry: () => geo,
     origin: () => ({ x: headX(extent.rows), y: headY }),
     cols: () => extent.cols,
-    drawn: () => ({ rows: drawnRows, firstCol: drawn?.firstCol ?? 1 }),
+    drawn: () => ({ rows: drawnRows, firstCol: drawn?.firstCol ?? 1, lastCol: drawn?.lastCol }),
     hits: () => hits,
     table: () => tableEl,
     draw: () => draw(),
