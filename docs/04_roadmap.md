@@ -119,3 +119,15 @@ flowchart LR
 | M7-8 | [#32](https://github.com/TaekangKwon/XSheet/issues/32) | 和暦の書式と組み込みの書式の指定 `builtinDates`（先に日本語版 Excel で 27〜36・50〜58 の見え方を確かめる） | M7-1 | テストが通る。Excel で作ったファイルと同じ表示 |
 | M7-9 | [#33](https://github.com/TaekangKwon/XSheet/issues/33) | 見出しを隠す `headers`・`SheetView.showSheet` | M7-7 | テストが通る。examples で目視 |
 | M7-10 | [#34](https://github.com/TaekangKwon/XSheet/issues/34) | v0.5.0 を出す（examples・README・受け入れの確認） | M7-2・M7-4〜M7-9 | タグと Release（ユーザーの指示で） |
+
+### M7 Moobius の追加の依頼 R8・R9（v0.6.0・[ADR-0008](adr/0008-align-wrap-spill.md)）
+
+順は M7-11 → M7-12 → M7-13 → M7-14 → M7-15。M7-11〜M7-14 は自分だけで進め、ユーザーの確認（実機・依頼の自己テスト・版を出す）は M7-15 にまとめる。GitHub の Issue はまだ作っていない（作るかはユーザーの指示）。
+
+| Issue | GitHub | 内容 | 依存 | 完了の条件 |
+| --- | --- | --- | --- | --- |
+| M7-11 | — | R8：最終列からのはみ出しの分だけ表を広げる（描いた行・移動先の行から） | — | テストが通る。BH3・BH1500 へ移動して文字が切れない |
+| M7-12 | — | R9 core：`<alignment>` を読み `CellFormat` に `hAlign`・`vAlign`・`wrap` を足す。`make-xlsx` の `xfAlignments` | — | テストが通る |
+| M7-13 | — | R9 render：配置のクラス・折り返し・左と両側へのはみ出し | M7-11・M7-12 | テストが通る |
+| M7-14 | — | R9：判定（`cellAt`）と移動の横の位置（`matchRange`）を配置に合わせる | M7-13 | テストが通る |
+| M7-15 | — | 実機の確認（依頼のサンプル）・文書・CHANGELOG。依頼の自己テストと v0.6.0 はユーザーの指示で | M7-11〜M7-14 | 依頼のセルを実機で確かめる |
