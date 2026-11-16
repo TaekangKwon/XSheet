@@ -41,6 +41,20 @@ describe('左・両側へのはみ出しの判定', () => {
     expect(resolveDrawnCell(rows, 1, 8, 10, 1, formats)).toEqual({ r: 1, c: 6 });
   });
 
+  it('左の文字列と右の右寄せの両方が届きうる空のセルは、左の文字が実際に届くかで決める', () => {
+    const both: GridRow[] = [
+      {
+        r: 1,
+        cells: [t('short', 's'), undefined, undefined, t('right', 's')],
+        formats: [undefined, undefined, undefined, 0],
+      },
+    ];
+    // 届かない → 右寄せの元・届く → 左の元・測れない（reaches 無し）→ 左の元
+    expect(resolveDrawnCell(both, 1, 2, 10, 1, formats, 10, () => false)).toEqual({ r: 1, c: 4 });
+    expect(resolveDrawnCell(both, 1, 2, 10, 1, formats, 10, () => true)).toEqual({ r: 1, c: 1 });
+    expect(resolveDrawnCell(both, 1, 2, 10, 1, formats)).toEqual({ r: 1, c: 1 });
+  });
+
   it('書式が無ければ今までどおり（左寄せ）。描いた範囲の外の元は数えない', () => {
     expect(resolveDrawnCell(rows, 1, 2, 10)).toEqual({ r: 1, c: 2 });
     expect(resolveDrawnCell(rows, 1, 2, 10, 1, formats, 3)).toEqual({ r: 1, c: 2 });

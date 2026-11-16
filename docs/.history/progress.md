@@ -271,3 +271,4 @@
 - `make-xlsx` の xf の子の既定を `<alignment vertical="top"/>` から `<protection>` に替え、`xfAlignments` を足した。単独版 `xsheet.mjs` の大きさの上限を 94,000 → 104,000（02 §8）。
 - 依頼のサンプル `compare_features.xlsx`（リポジトリの外。確かめるときだけ `.screenshots/r8r9/` に写す）を開発サーバーの viewer2 で開き、01_書式 C22〜C31・04_結合 B5:D7・B9:E9・06_検索 BH3・BH1500（100%・150%）の見え方・移動・`cellAt`・`highlightAt` を確かめた。依頼の自己テストは手元に無く、まだ回していない。
 - テスト 2334・typecheck・lint・build・size・check:standalone・check:consumer が通る。コミットは Issue ごと（push・PR はまだ。GitHub の Issue も作っていない）。
+- 続き：依頼の自己テストは手元に無いので、依頼の資料の確認項目を再現したページ（`.screenshots/r8r9/selftest.html`・Git 管理外）で 65 項目を回した。`cellAt` が左の短い文字列（A30）を返す誤りを直し（`resolveDrawnCell` の `reaches`）、NG 0。テスト 2335。

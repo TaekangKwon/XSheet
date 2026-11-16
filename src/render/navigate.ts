@@ -122,6 +122,8 @@ function isEmpty(cell: GridRow['cells'][number]): boolean {
  * - 結合：同じ行の左、無ければ上の行を、結合で隠れるセル（null）の続く間だけ辿る。
  * - はみ出し：左の空のセルを辿り、最初の値のあるセルの文字が右へ c まで届くかを見る。届かなければ右の空のセルを辿り、
  *   最初の値のあるセル（右寄せ・中央）の文字が左へ c まで届くかを見る（`spillSides`。ADR-0008 §3）。
+ *   左右どちらの元も c へ届きうるとき（左の文字列と右の右寄せ・中央の間の空のセル）は、`reaches` で左の元の文字が
+ *   c まで実際に届くかを見て、届かなければ右の元にする（`reaches` が無ければ左の元）。
  *   描く列の範囲（firstCol〜lastCol）の外のセルは、描くときと同じくはみ出しの元にしない。
  * 描いた範囲より上で始まる結合は、描いた範囲の最初の行を左上として返す（描いた行には元の行が無いため）。
  *
@@ -130,6 +132,7 @@ function isEmpty(cell: GridRow['cells'][number]): boolean {
  * @param firstCol 描いた最初の列
  * @param formats 書式の表（`XlsxSheet.formats`。配置を引く。無ければすべて標準）
  * @param lastCol 描いた最後の列（右寄せ・中央の元を探す右端。無ければ cols）
+ * @param reaches 行の k 番目（0 始まり）のセルの文字が、右へ列 c（1 始まり）まで届くか（文字の幅を測る）
  */
 export function resolveDrawnCell(
   rows: readonly GridRow[],
@@ -139,6 +142,7 @@ export function resolveDrawnCell(
   firstCol = 1,
   formats: readonly CellFormat[] = [],
   lastCol = cols,
+  reaches?: (row: GridRow, k: number, c: number) => boolean,
 ): { r: number; c: number } {
   const i0 = rows.findIndex((row) => row.r === r);
   if (i0 < 0) return { r, c };
@@ -164,16 +168,14 @@ export function resolveDrawnCell(
   };
   let k = c - 2;
   while (k >= lo && isEmpty(cells[k])) k--;
-  if (k >= lo && spillSides(cells, k, formatAt(k), lo, cols).right >= c - 1 - k) {
-    return { r, c: k + 1 };
-  }
+  const fromLeft = k >= lo && spillSides(cells, k, formatAt(k), lo, cols).right >= c - 1 - k;
   // 右寄せ・中央の文字の左へのはみ出し（ADR-0008 §3）
   const hi = Math.min(cols, lastCol);
   let j = c;
   while (j < hi && isEmpty(cells[j])) j++;
-  if (j < hi && spillSides(cells, j, formatAt(j), lo, cols).left >= j - (c - 1)) {
-    return { r, c: j + 1 };
-  }
+  const fromRight = j < hi && spillSides(cells, j, formatAt(j), lo, cols).left >= j - (c - 1);
+  if (fromLeft && (!fromRight || !reaches || reaches(rows[i0]!, k, c))) return { r, c: k + 1 };
+  if (fromRight) return { r, c: j + 1 };
   return { r, c };
 }
 
@@ -337,6 +339,26 @@ export function createNavigation(host: NavigationHost): Navigation {
     };
   };
 
+  /**
+   * 行の k 番目のセルの文字が、右へ列 c まで届くか（左右どちらの元も届きうるときだけ呼ばれる）。
+   * 文字の右端は配置で出す（左寄せ・標準＝左端＋余白＋幅、中央＝中心＋幅の半分）。測れない（幅 0）ときは届くとみなす。
+   */
+  const reaches = (row: GridRow, k: number, c: number): boolean => {
+    const geo = host.geometry();
+    const cell = row.cells[k];
+    if (!geo || !cell) return true;
+    const fi = row.formats?.[k];
+    const format = fi === undefined ? undefined : host.sheet()?.formats[fi];
+    const w = measure.width(cell.text, fi === undefined ? '' : formatClassName(fi));
+    if (!(w > 0)) return true;
+    const left = geo.colLeft(k + 1);
+    const end =
+      resolveHAlign(cell.kind, format) === 'center'
+        ? left + (geo.colWidth(k + 1) + w) / 2
+        : left + CELL_PAD_LEFT + w;
+    return end > geo.colLeft(c);
+  };
+
   return {
     focusHighlight(index, options = {}) {
       const hits = host.hits();
@@ -380,6 +402,7 @@ export function createNavigation(host: NavigationHost): Navigation {
         d.firstCol,
         host.sheet()?.formats, // 配置で左・両側へのはみ出しを引く（ADR-0008 §3）
         d.lastCol,
+        reaches,
       );
     },
     highlightAt(clientX, clientY) {
