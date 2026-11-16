@@ -97,7 +97,7 @@ flowchart LR
 | 生の値 | `cellValue(r, c)`、`sheetToJson`・`sheetToCsv`（SheetJS の `sheet_to_json` に当たる） |
 | Worker | 解析を Worker で動かす補助（core は DOM 非依存なのでそのまま動く。転送の型を用意する） |
 | Excel との照合 | 罫線 E1〜E5・書式 F1〜F10 の暫定項目を Excel 16 で確かめる（[05_quality.md](05_quality.md) §3） |
-| 表示の追加 | 揃えと折り返し・条件付き書式・テーブルのスタイル・フォント名・リッチテキストの部分書式・グラフの G2（面・散布図・データラベル・第 2 軸・組み合わせ） |
+| 表示の追加 | 揃えと折り返し：**入れた**（2026-11-16・ADR-0008・M7-12・M7-13）。残りは条件付き書式・テーブルのスタイル・フォント名・リッチテキストの部分書式・グラフの G2（面・散布図・データラベル・第 2 軸・組み合わせ） |
 | 操作 | 検索・ハイライト・移動（`scrollToCell`）・位置の判定・拡大縮小・見出しを隠す・今のシート・和暦：**出した**（2026-11-13・v0.5.0・[ADR-0007](adr/0007-moobius-viewer-api.md)。Moobius の依頼 R1〜R7）。残りはセルの選択とコピー、`view` の `Viewer` に同じ操作を足すか（ADR-0007 §7） |
 | 公開 | npm 公開：**名前・入口は決定**（2026-11-05・[ADR-0006](adr/0006-npm-publish.md)。`@taekangkwon/xsheet`・`xsheet/internal` を外す）。残りは ADR-0006 §4（アカウントと Trusted Publisher の用意・名前の付け替え・`publish.yml`）。版は 0.6.0 以降（ADR-0007 §9。0.5.0 は GitHub の Release だけで出した） |
 
@@ -121,6 +121,8 @@ flowchart LR
 | M7-10 | [#34](https://github.com/TaekangKwon/XSheet/issues/34) | v0.5.0 を出す（examples・README・受け入れの確認） | M7-2・M7-4〜M7-9 | タグと Release（ユーザーの指示で） |
 
 ### M7 Moobius の追加の依頼 R8・R9（v0.6.0・[ADR-0008](adr/0008-align-wrap-spill.md)）
+
+**実装済み（2026-11-16・ブランチ feat/r8-r9-align）**：M7-11〜M7-14 と M7-15 の実機の確認・文書。残りは依頼の自己テスト・push と PR・v0.6.0（ユーザーの指示で）。
 
 順は M7-11 → M7-12 → M7-13 → M7-14 → M7-15。M7-11〜M7-14 は自分だけで進め、ユーザーの確認（実機・依頼の自己テスト・版を出す）は M7-15 にまとめる。GitHub の Issue はまだ作っていない（作るかはユーザーの指示）。
 

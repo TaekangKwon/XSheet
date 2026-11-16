@@ -265,3 +265,9 @@
 - zip を展開した `viewer2.html` を開発サーバー経由で開き、検索・タブを替えた後の探し直し・組み込みの表の切り替え・倍率・クリックしたセルを確かめた（内蔵ブラウザは file:// のスクリプトを動かせない）。テスト 2302・typecheck・lint・format が通る。CHANGELOG の Unreleased・02 §8・guide/standalone.md に書いた。
 - 続き：ユーザーの指示で v0.5.0 の Release の zip を差し替えた（`gh release upload --clobber`）。タグ v0.5.0 の `dist`・`standalone.html`・`NOTICE`・`LICENSE` から作り、`viewer2.html` だけを足した（12 ファイル・367,028 B。最初の zip の 363,008 B との差 4,020 B は viewer2.html の圧縮後の大きさと見出しの分と一致＝ほかは同じ）。今の作業ツリーの dist は使っていない（`xsheet.d.ts` に `pickMessages`・`resolveTarget` が出るため）。Release の説明の zip の表に viewer2.html の行を足した。タグは変えていない。
 - 続き：view2 のために `view.ts` から export した `pickMessages`・`resolveTarget` が単独版の `xsheet.d.ts` に出ていたので、公開の型から参照されない `src/facade/view-shared.ts` に移した（`view.ts` の export は v0.5.0 と同じに戻った）。ビルドした `xsheet.d.ts` は v0.5.0 のタグと同じ。`xsheet.min.js`・`xsheet.mjs` は大きさが同じでモジュールの並びだけ違う。テスト 2302・typecheck・lint・format・size が通る。trial/viewer2 にコミットした（push・PR はまだ）。
+
+## 2026-11-16 Moobius の追加の依頼 R8・R9（M7-11〜M7-14・ADR-0008・ブランチ feat/r8-r9-align）
+- ADR-0008 を書き、R8（最後の列からのはみ出しの分だけ表を広げる。幅は文字数から多めに見積もり、描いた行と移動先の行で広げる）と R9（`<alignment>` を読み `CellFormat` に `hAlign`・`vAlign`・`wrap`。配置のクラス・折り返し・左と両側へのはみ出し・判定と移動の横の位置）を実装した。新しいファイルは `core/cell-align.ts`・`render/cell-align.ts`・`render/spill-extent.ts`、写したファイルには `// XSheet:` の口だけ。
+- `make-xlsx` の xf の子の既定を `<alignment vertical="top"/>` から `<protection>` に替え、`xfAlignments` を足した。単独版 `xsheet.mjs` の大きさの上限を 94,000 → 104,000（02 §8）。
+- 依頼のサンプル `compare_features.xlsx`（リポジトリの外。確かめるときだけ `.screenshots/r8r9/` に写す）を開発サーバーの viewer2 で開き、01_書式 C22〜C31・04_結合 B5:D7・B9:E9・06_検索 BH3・BH1500（100%・150%）の見え方・移動・`cellAt`・`highlightAt` を確かめた。依頼の自己テストは手元に無く、まだ回していない。
+- テスト 2334・typecheck・lint・build・size・check:standalone・check:consumer が通る。コミットは Issue ごと（push・PR はまだ。GitHub の Issue も作っていない）。

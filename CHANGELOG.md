@@ -4,9 +4,17 @@
 
 ## [Unreleased]
 
+Moobius の追加の依頼 R8・R9（[ADR-0008](docs/adr/0008-align-wrap-spill.md)）。
+
 ### 追加
 
+- セルの横・縦の配置と折り返しを描く（R9。[ADR-0008](docs/adr/0008-align-wrap-spill.md) §1〜§3）。`CellFormat` に `hAlign`（`left`・`center`・`right`。`distributed`・`fill`・`justify` は `left`、`centerContinuous` は `center`）・`vAlign`（`top`・`center`。下は持たない）・`wrap` を足した。標準（`general`）は今までどおり型で決める。折り返すセルは列幅（結合なら結合の幅）で折り返し、文字の中の改行を残し、はみ出さない（行の高さは変えず、収まらない分は切る）。右寄せの文字列は左へ、中央の文字列は両側へはみ出す。結合セルは配置を結合の範囲全体に当てる。ハイライト・移動（`focusHighlight`）・位置の判定（`cellAt`・`highlightAt`）も配置に合わせた。入れ物のクラス `is-h-center`・`is-h-right`・`is-v-top`・`is-v-center`・`is-wrap` を足した。インデント・文字の回転・縮小して全体を表示は描かない。
+
 - 単独版の zip に確認用のビューア `viewer2.html`（`examples/standalone-viewer2.html`）を足した。[ADR-0007](docs/adr/0007-moobius-viewer-api.md) の未決の 2 つ（表示に 0.5.0 の操作を足す・組み込みの日付の書式の既定を日本語版 Excel の表にする）を、公開の API（`renderWorkbook`・`openXlsx`・`findText`）だけで試せる。ライブラリの API は変えていない。v0.5.0 の Release の zip も、この `viewer2.html` を足したものに差し替えた（2026-11-13。ほかのファイルは最初の zip と同じ）。
+
+### 修正
+
+- 最後の列からはみ出す文字が切れていた（R8。[ADR-0008](docs/adr/0008-align-wrap-spill.md) §4）。データが表示枠より右へ続くシートでは表が最後のデータ列で終わり、その列の文字と、そこにある一致へは移動も判定もできなかった。描いた行と移動先の行の文字が届く列まで表を広げる（幅は文字数から多めに見積もるので、右に空の列が少し増えることがある）。幅に合わせる倍率（`{ fit: 'width' }`）の計算には含めない。
 
 ## [0.5.0] - 2026-11-13
 
