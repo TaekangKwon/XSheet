@@ -7,6 +7,7 @@
  * DOM 非依存の純関数。
  */
 import type { CellFormat, Geometry } from '../core/index';
+import { isWrapped, resolveHAlign } from './cell-align';
 import type { GridRow } from './grid';
 
 /** 表の文字の大きさ（px・倍率 1）。`style.css` の `.xs-grid` の `font-size` と同じ値 */
@@ -67,6 +68,7 @@ function hasValue(cell: GridRow['cells'][number]): boolean {
 /**
  * 行の文字がはみ出して届く列（1 始まり）の最大。はみ出す文字の無い行だけなら 0。
  * 行の「値のある最後のセル」だけを見る（それより左のセルは、右に値があるので最後の列を越えない）。
+ * 右寄せ・折り返しのセルは右へはみ出さない。中央はセルの中心から文字の幅の半分だけ右へ届く（ADR-0008 §3）。
  *
  * @param geo 倍率 1 の寸法（表の範囲より右の列も既定の幅で延びるもの）
  * @param rows 調べる行（`GridRow`。`cells[i]` は列 i + 1）
@@ -95,8 +97,16 @@ export function spillReachCols(
       continue;
     }
     const f = row.formats?.[i];
-    const width = estimateCellTextWidth(cell.text, f === undefined ? undefined : formats[f]);
-    const reach = geo.colAt(geo.colLeft(i + 1) + width);
+    const format = f === undefined ? undefined : formats[f];
+    const h = resolveHAlign(cell.kind, format);
+    if (h === 'right' || isWrapped(cell.kind, format)) {
+      continue;
+    }
+    const width = estimateCellTextWidth(cell.text, format);
+    const left = geo.colLeft(i + 1);
+    const reach = geo.colAt(
+      h === 'center' ? left + (geo.colWidth(i + 1) + width) / 2 : left + width,
+    );
     if (reach > max) max = reach;
   }
   return max;

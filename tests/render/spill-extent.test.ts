@@ -71,6 +71,17 @@ describe('はみ出しが届く列', () => {
     expect(spillReachCols(geo, [], [])).toBe(0);
   });
 
+  it('右寄せ・折り返しは右へ届かない。中央はセルの中心から幅の半分', () => {
+    const rows: Pick<GridRow, 'cells' | 'formats'>[] = [
+      { cells: [t('あ'.repeat(20), 's')], formats: [0] },
+    ];
+    expect(spillReachCols(geo, rows, [{ hAlign: 'right' }])).toBe(0);
+    expect(spillReachCols(geo, rows, [{ wrap: true }])).toBe(0);
+    // 中心 32px から (260 + 8) / 2 = 134px → 166px は列 3
+    expect(spillReachCols(geo, rows, [{ hAlign: 'center' }])).toBe(3);
+    expect(spillReachCols(geo, rows, [{}])).toBe(5); // 268px は列 5
+  });
+
   it('非表示の列の文字は数えない', () => {
     const g = createGeometry(
       { ...emptyLayout(), cols: [{ min: 1, max: 1, width: 10, hidden: true }] },
