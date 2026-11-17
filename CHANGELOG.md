@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-17
+
 Moobius の追加の依頼 R8・R9（[ADR-0008](docs/adr/0008-align-wrap-spill.md)）と、リッチテキストの部分の書式（[ADR-0009](docs/adr/0009-rich-text-runs.md)）。
 
 ### 追加
@@ -126,7 +128,8 @@ InterHub のグラフ（ADR-0031・ISSUE-101〜111）を取り込んだ（M7）�
 - 表示の状態をモジュール変数ではなく表示ごとのインスタンスに持ち、同じページに複数の表示を置けるようにした。
 - 形の評価器を描画側から独立させ（`xsheet/geom`）、core が描画に依存する逆転をなくした。
 
-[Unreleased]: https://github.com/TaekangKwon/XSheet/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/TaekangKwon/XSheet/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.6.0
 [0.5.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.5.0
 [0.4.1]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.4.1
 [0.4.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.4.0
