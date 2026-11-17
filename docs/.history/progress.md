@@ -282,3 +282,7 @@
 - #49（R8・R9）と #50（リッチテキストの部分の書式）をマージし、#51 で版を 0.6.0・CHANGELOG の日付を 2026-11-17 にした。#49 の CI は誤ってコミットした `.vitest/json/output.json` で format:check が落ちていたので、外して `.gitignore` に足した（07b36f2）。
 - `main`（73ac532）から dist を含めたタグ専用のコミット（4220996）を作り、注釈付きタグ `v0.6.0` を push した。Release「XSheet 0.6.0」に `xsheet-0.6.0-standalone.zip`（373,466 B）を添付した。
 - zip の `xsheet.min.js` で依頼のサンプルを開き、06_検索 B9 の部分の書式・一致の片・`cellAt`・`highlightAt` を確かめた。`viewer.html`・`viewer2.html` が読み込める。npm への公開は保留のまま。
+
+## 2026-11-17 v0.6.0 の後の整理（ブランチ docs/after-v0.6.0）
+- 依頼の自己テスト（R1〜R9）は Moobius の担当が回すので、ユーザーの判断で XSheet の側は完了とした（04 の M7 R8・R9 の節）。
+- M7-11〜M7-18 の GitHub の Issue は作らない（作業は #49・#50 で済み、PR と ADR-0008・0009 に記録がある）。
