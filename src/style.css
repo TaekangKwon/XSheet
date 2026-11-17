@@ -708,8 +708,9 @@
    セルの文字を一致の範囲で分けた全体を span.xs-hits 1 つで包む（.xs-cell・.xs-text は flex なので、
    包まずに分けると各片が別の flex 項目になり、片の端の空白が消える）。xs-hits は包む前の文字と同じ flex 項目のふるまい。
    片（span.xs-hit）には背景だけを付け、行の高さ・列の幅を変えない。### のセルは入れ物（.xs-cell）ごと光らせる。 */
-.xs-hits {
-  flex: 0 1 auto;
+.xs-hits,
+.xs-runs {
+  flex: 0 1 auto; /* XSheet: リッチテキストの区切りの包み（ADR-0009 §2）も同じ */
 }
 
 .xs-hit {
