@@ -277,3 +277,8 @@
 - 依頼のサンプル 06_検索 B9 を Excel の画面と見比べ、部分の色・太字が描けていなかったので、ユーザーの指示で足した。ブランチは feat/r8-r9-align の上に積んだ。
 - core：`<r>` の `<rPr>` を読み `CellView.runs`（`TextRun`・`RunFont`）を足した（新しいファイル `core/rich-text.ts`、写したファイルには `// XSheet:` の口）。render：`render/rich-text.ts` で区切りを `span.xs-runs` に描き、検索の一致の片・移動・判定・はみ出しの見積もりを区切りの書式に合わせた。
 - 実機で B9 の見え方・一致・`cellAt`・`highlightAt` を確かめ、R1〜R9 の再現ページも NG 0。テスト 2349・typecheck・lint・build・size・check:standalone・check:consumer が通る（push・PR はまだ）。
+
+## 2026-11-17 v0.6.0 を出した（#49・#50・#51）
+- #49（R8・R9）と #50（リッチテキストの部分の書式）をマージし、#51 で版を 0.6.0・CHANGELOG の日付を 2026-11-17 にした。#49 の CI は誤ってコミットした `.vitest/json/output.json` で format:check が落ちていたので、外して `.gitignore` に足した（07b36f2）。
+- `main`（73ac532）から dist を含めたタグ専用のコミット（4220996）を作り、注釈付きタグ `v0.6.0` を push した。Release「XSheet 0.6.0」に `xsheet-0.6.0-standalone.zip`（373,466 B）を添付した。
+- zip の `xsheet.min.js` で依頼のサンプルを開き、06_検索 B9 の部分の書式・一致の片・`cellAt`・`highlightAt` を確かめた。`viewer.html`・`viewer2.html` が読み込める。npm への公開は保留のまま。
