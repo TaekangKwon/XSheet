@@ -215,7 +215,7 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
 
 | 型 | 主なフィールド |
 | --- | --- |
-| `CellView` | `text`（表示形式を適用した文字列）・`kind?`（`n`/`s`/`b`/`e`/`d`）・`colSpan`・`rowSpan` |
+| `CellView` | `text`（表示形式を適用した文字列）・`kind?`（`n`/`s`/`b`/`e`/`d`）・`colSpan`・`rowSpan`・`runs?`（リッチテキストの区切り `TextRun`＝`text`・`font?`（`RunFont`）。M7-16・ADR-0009 §1） |
 | `SheetRow` | `r`・`cells`（`undefined`＝空、`null`＝結合で隠れる）・`borders?`・`formats?`（表の番号） |
 | `SheetLayout` | `cols: ColLayout[]`（`min`・`max`・`width`（文字数）・`hidden`・`xf?`）・`rows: RowLayout[]`（`ht`（pt）・`hidden`・`custom`）・`defaultColWidth`・`baseColWidth`・`defaultRowHeight`・`zeroHeight`・`mdw`・`fontRowPx` |
 | `CellFormat` | `fill?`・`color?`（`Rgba`）・`bold?`・`italic?`・`strike?`・`underline?`（`single`/`double`）・`sizeRatio?`（0.5〜4）・`hAlign?`（`left`/`center`/`right`）・`vAlign?`（`top`/`center`）・`wrap?`（M7-12・ADR-0008 §1） |

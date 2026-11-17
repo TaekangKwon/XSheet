@@ -4,9 +4,11 @@
 
 ## [Unreleased]
 
-Moobius の追加の依頼 R8・R9（[ADR-0008](docs/adr/0008-align-wrap-spill.md)）。
+Moobius の追加の依頼 R8・R9（[ADR-0008](docs/adr/0008-align-wrap-spill.md)）と、リッチテキストの部分の書式（[ADR-0009](docs/adr/0009-rich-text-runs.md)）。
 
 ### 追加
+
+- セルの中の一部の文字だけに付けた書式（リッチテキスト）を描く（[ADR-0009](docs/adr/0009-rich-text-runs.md)）。`CellView` に `runs`（区切りの文字 `text` と書式 `font`。型 `TextRun`・`RunFont`）を足した。共有文字列と inlineStr の `<r>` の `<rPr>` から、色・太字・斜体・下線・取り消し線・文字の大きさを読む。`<rPr>` のある区切りはセルの書式を継がずにその書式で描く。区切りは `span.xs-runs` 1 つで包む。検索の一致の片（`span.xs-hit`）は区切りをまたいでも 1 つのまま、移動（`focusHighlight`）・位置の判定・最後の列からのはみ出しの幅も区切りの書式で測る。フォント名・上付き・下付きは描かない。セルの書式の下線・取り消し線は、区切りの書式で消せない。
 
 - セルの横・縦の配置と折り返しを描く（R9。[ADR-0008](docs/adr/0008-align-wrap-spill.md) §1〜§3）。`CellFormat` に `hAlign`（`left`・`center`・`right`。`distributed`・`fill`・`justify` は `left`、`centerContinuous` は `center`）・`vAlign`（`top`・`center`。下は持たない）・`wrap` を足した。標準（`general`）は今までどおり型で決める。折り返すセルは列幅（結合なら結合の幅）で折り返し、文字の中の改行を残し、はみ出さない（行の高さは変えず、収まらない分は切る）。右寄せの文字列は左へ、中央の文字列は両側へはみ出す。結合セルは配置を結合の範囲全体に当てる。ハイライト・移動（`focusHighlight`）・位置の判定（`cellAt`・`highlightAt`）も配置に合わせた。入れ物のクラス `is-h-center`・`is-h-right`・`is-v-top`・`is-v-center`・`is-wrap` を足した。インデント・文字の回転・縮小して全体を表示は描かない。
 
