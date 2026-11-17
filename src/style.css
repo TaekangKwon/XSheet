@@ -211,6 +211,35 @@
   justify-content: safe center;
 }
 
+/* XSheet: 指定の配置と折り返し（src/render/cell-align.ts・ADR-0008 §2）。
+   文字列の中央・右は safe を付けない（文字の中心・右端をセルに合わせ、はみ出せない側を切る）。
+   縦は入れ物と、はみ出しの文字の span（.is-spill .xs-text も flex）の両方に当てる。
+   折り返しは入れ物の幅（列幅・結合の幅）で行い、文字の中の改行も残す。行の高さは変えず、収まらない分は切る。 */
+.xs-cell.is-h-center {
+  justify-content: center;
+  text-align: center;
+}
+
+.xs-cell.is-h-right {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.xs-cell.is-v-top,
+.xs-cell.is-v-top .xs-text {
+  align-items: flex-start;
+}
+
+.xs-cell.is-v-center,
+.xs-cell.is-v-center .xs-text {
+  align-items: center;
+}
+
+.xs-cell.is-wrap {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .xs-grid .xs-rownum .xs-cell {
   align-items: center;
   justify-content: flex-end;

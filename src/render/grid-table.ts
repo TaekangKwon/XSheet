@@ -7,6 +7,8 @@
  */
 import type { CellFormat, Geometry } from '../core/index';
 import { formatClassName, spillInkGradient } from './format-css';
+// XSheet: 配置と折り返し（ADR-0008 §2・§3）
+import { alignClasses, spillAround } from './cell-align';
 // XSheet: 検索の一致のハイライト（ADR-0007 §2）
 import { decorateCell, type GridHits } from './highlight';
 import {
@@ -242,13 +244,16 @@ export function buildGridTable(
           const shown = fitNumberText(cell.text, cell.kind, width, mdw, fmt?.sizeRatio ?? 1);
           const box = cellBox(shown, cellInnerHeight(spanHeight(geo, rows, i, cell.rowSpan)));
           const align = cellAlignClass(cell.kind);
-          if (align !== '') {
+          if (align !== '' && fmt?.hAlign === undefined) {
             box.classList.add(align);
           }
+          box.classList.add(...alignClasses(cell.kind, fmt)); // XSheet: 指定の配置と折り返し（ADR-0008 §2）
           if (shown !== cell.text) {
             box.title = cell.text; // 元の値（ホバーで見える）
           }
-          const columns = spillColumns(row.cells, k, n); // 描く範囲の右端で切る
+          // XSheet: 右寄せ・中央は左・両側へ。折り返しははみ出さない（cell-align.ts・ADR-0008 §3）
+          const around = spillAround(box, row, k, n, geo, c, formats, cell.text);
+          const columns = around ? 1 : spillColumns(row.cells, k, n); // 描く範囲の右端で切る
           if (columns > 1) {
             spillOut(box, cell.text, spillWidth(geo, c, columns));
             if (spillOverFill(formats, row.formats, k, columns)) {

@@ -29,7 +29,7 @@ It deliberately does one thing. [SheetJS](https://sheetjs.com/) reads and writes
 
 | Area | Supported |
 | --- | --- |
-| Cells | Values with their number formats, column widths and row heights, merged cells, borders, fills, font styling — matched to Excel 16 (target: within 1 px for sizes and drawing positions) |
+| Cells | Values with their number formats, column widths and row heights, merged cells, borders, fills, font styling, horizontal and vertical alignment, wrapped text — matched to Excel 16 (target: within 1 px for sizes and drawing positions) |
 | Drawings | Pictures, shapes (all 176 preset shapes and custom geometry), lines and connectors, groups, text in shapes — on a layer above the cells |
 | Charts | Column and bar (clustered, stacked, 100 % stacked), line with markers, pie, doughnut — with title, legend, category and value axes and gridlines, drawn as SVG from the values saved in the file |
 | Big sheets | A sheet with a million cells opens; only the visible part is drawn, and more is drawn as you scroll |
@@ -346,7 +346,7 @@ To report a vulnerability, see [SECURITY.md](SECURITY.md).
 - **`.xlsx` only.** No `.xls` (BIFF), `.ods` or `.csv`. Route `.xls` to another library such as SheetJS.
 - **No formula evaluation.** The values Excel saved in the file are shown.
 - **Charts outside the supported set** (area, scatter, combo, secondary axis, 3-D, the Excel 2016+ chart types, …) show as a dashed frame with the chart type's name.
-- **Not yet drawn:** conditional formatting, table styles, alignment and wrapping, font names, partial rich-text formatting ([docs/04_roadmap.md](docs/04_roadmap.md) M7).
+- **Not yet drawn:** conditional formatting, table styles, indent, text rotation and shrink to fit, font names, partial rich-text formatting ([docs/04_roadmap.md](docs/04_roadmap.md) M7).
 - **Some rules are still provisional.** A few border and number-format cases are pending a check against Excel (known differences: [docs/05_quality.md](docs/05_quality.md)).
 
 ## Browser and runtime support

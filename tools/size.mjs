@@ -43,7 +43,7 @@ const CHUNK_LIMITS = {
  */
 const STANDALONE_LIMITS = {
   'xsheet.min.js': 144_000,
-  'xsheet.mjs': 94_000,
+  'xsheet.mjs': 104_000,
   'xsheet-geom.mjs': 34_000,
   'xsheet-chart.mjs': 28_000,
 };

@@ -26,6 +26,9 @@ docs/research/
 Thumbs.db
 desktop.ini
 
+# vitest の出力（拡張機能などが書く結果の JSON）
+.vitest/
+
 # Playwright の出力（性能の計測・照合の撮影）
 .playwright-cli/
 .screenshots/

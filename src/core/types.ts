@@ -104,6 +104,16 @@ export interface CellFormat {
   underline?: 'single' | 'double';
   /** 文字サイズ ÷ 既定のフォント（先頭の `<font>`）のサイズ。0.5〜4・0.01 単位。1 なら持たない */
   sizeRatio?: number;
+  // XSheet: 配置と折り返し（ADR-0008 §1）
+  /**
+   * 横の配置。標準（`general`）は持たない（型で決まる：数値・日付は右、真偽・エラーは中央、文字列は左）。
+   * `distributed`・`fill`・`justify` は `left`、`centerContinuous` は `center` として持つ
+   */
+  hAlign?: 'left' | 'center' | 'right';
+  /** 縦の配置。下（`bottom`・既定）は持たない。`justify`・`distributed` は `top` として持つ */
+  vAlign?: 'top' | 'center';
+  /** 折り返して全体を表示する（`wrapText`）。列幅（結合なら結合の幅）で折り返し、文字の中の改行も残す */
+  wrap?: true;
 }
 
 /** 展開した 1 行 */

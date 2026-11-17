@@ -218,7 +218,7 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
 | `CellView` | `text`（表示形式を適用した文字列）・`kind?`（`n`/`s`/`b`/`e`/`d`）・`colSpan`・`rowSpan` |
 | `SheetRow` | `r`・`cells`（`undefined`＝空、`null`＝結合で隠れる）・`borders?`・`formats?`（表の番号） |
 | `SheetLayout` | `cols: ColLayout[]`（`min`・`max`・`width`（文字数）・`hidden`・`xf?`）・`rows: RowLayout[]`（`ht`（pt）・`hidden`・`custom`）・`defaultColWidth`・`baseColWidth`・`defaultRowHeight`・`zeroHeight`・`mdw`・`fontRowPx` |
-| `CellFormat` | `fill?`・`color?`（`Rgba`）・`bold?`・`italic?`・`strike?`・`underline?`（`single`/`double`）・`sizeRatio?`（0.5〜4） |
+| `CellFormat` | `fill?`・`color?`（`Rgba`）・`bold?`・`italic?`・`strike?`・`underline?`（`single`/`double`）・`sizeRatio?`（0.5〜4）・`hAlign?`（`left`/`center`/`right`）・`vAlign?`（`top`/`center`）・`wrap?`（M7-12・ADR-0008 §1） |
 | `CellBorder` | `left?`・`right?`・`top?`・`bottom?`・`diagonal?`（`BorderEdge`＝13 線種＋色）・`diagonalUp`・`diagonalDown` |
 | `SheetDrawing` | `anchor`（twoCell/oneCell/absolute）・`kind`（image/chart/smartart/shape/textbox/group/line）・`text?`・`geom?`（preset か custom）・`outline?`・`fillColor?`・`outlineColor?`・`line?`・`group?`・回転と反転 |
 | `DrawingText` | 段落（揃え・箇条書き）→ ラン（文字・サイズ・太字など・色）・縦の揃え・余白・縦書き |
@@ -357,10 +357,11 @@ dist/
 | ファイル | 圧縮済み | gzip | 上限 |
 | --- | ---: | ---: | ---: |
 | `xsheet.min.js`（形の表・グラフの描画を含む） | 470,375 | 130,861 | 144,000 |
-| `xsheet.mjs`（最初に読む分） | 258,152 | 85,931 | 94,000 |
+| `xsheet.mjs`（最初に読む分） | 258,152 | 85,931 | 104,000 |
 | `xsheet-geom.mjs`（図形を描くときだけ） | 176,674 | 30,588 | 34,000 |
 | `xsheet-chart.mjs`（グラフを描くときだけ） | 67,545 | 25,031 | 28,000 |
 
+- `xsheet.mjs` の上限は M7-15（2026-11-16）で 94,000 から 104,000 にした。ADR-0007 の 0.5.0 の操作と ADR-0008 の配置・折り返し・最後の列からのはみ出し（`cell-align.ts`・`spill-extent.ts`）で 94,470（圧縮済み 282,683）になったため。余裕は約 1 割。
 - `xsheet-chart.mjs` は部品ごとに別に束ねるため、軸の文字の書式（`formatNumberByCode`・ssf）と色の変換を `xsheet.mjs` と重ねて持つ（約 10 KB）。ssf の `format` は状態を持たないので、写しが 2 つでも結果は同じ（曜日の置き換え `format-ja.ts` も 2 つ持つ。覚えておくのは書式の字句の分解だけで、結果は変わらない）。グラフの無いブックでは読まないので、最初に読む分を軽くするほうを採った（ADR-0003 §1）。
 
 - ADR-0003 §1 の見込み（約 110 KB）どおり。B を使う側のビルド（最初の JS が gzip 78,051・形の表 30,477）より、単独版は依存を丸ごと持つぶん少し大きい。

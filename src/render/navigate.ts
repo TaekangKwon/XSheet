@@ -8,9 +8,10 @@
  *   描いた行（`GridRow`）から引く。
  * 見出し（列見出しの高さ・行番号の列の幅）は引数でもらう（拡大縮小・見出しを隠すで変わるため。ADR-0007 §5・§7）。
  */
-import type { Geometry, TextMatch, XlsxSheet } from '../core/index';
+import type { CellFormat, Geometry, TextMatch, XlsxSheet } from '../core/index';
+import { isWrapped, resolveHAlign, spillSides } from './cell-align';
 import { formatClassName } from './format-css';
-import { spillColumns, type GridRow } from './grid';
+import type { GridRow } from './grid';
 import { hitIndexOf, markCurrent, type GridHits } from './highlight';
 
 /** スクロール枠の今の状態と見出しの寸法（px） */
@@ -119,13 +120,19 @@ function isEmpty(cell: GridRow['cells'][number]): boolean {
 /**
  * 描いた行から、行 r・列 c を覆う結合の左上か、c へはみ出す文字のセルを引く。どちらでもなければ (r, c)。
  * - 結合：同じ行の左、無ければ上の行を、結合で隠れるセル（null）の続く間だけ辿る。
- * - はみ出し：左の空のセルを辿り、最初の値のあるセルの文字が c まで届くか（`spillColumns`）を見る。
- *   描く列の範囲（firstCol）より左のセルは、描くときと同じくはみ出しの元にしない。
+ * - はみ出し：左の空のセルを辿り、最初の値のあるセルの文字が右へ c まで届くかを見る。届かなければ右の空のセルを辿り、
+ *   最初の値のあるセル（右寄せ・中央）の文字が左へ c まで届くかを見る（`spillSides`。ADR-0008 §3）。
+ *   左右どちらの元も c へ届きうるとき（左の文字列と右の右寄せ・中央の間の空のセル）は、`reaches` で左の元の文字が
+ *   c まで実際に届くかを見て、届かなければ右の元にする（`reaches` が無ければ左の元）。
+ *   描く列の範囲（firstCol〜lastCol）の外のセルは、描くときと同じくはみ出しの元にしない。
  * 描いた範囲より上で始まる結合は、描いた範囲の最初の行を左上として返す（描いた行には元の行が無いため）。
  *
  * @param rows 描いた行（見える行だけ。上から順。`cells[i]` は列 i + 1）
  * @param cols 表の列数（はみ出しを数える右端）
  * @param firstCol 描いた最初の列
+ * @param formats 書式の表（`XlsxSheet.formats`。配置を引く。無ければすべて標準）
+ * @param lastCol 描いた最後の列（右寄せ・中央の元を探す右端。無ければ cols）
+ * @param reaches 行の k 番目（0 始まり）のセルの文字が、右へ列 c（1 始まり）まで届くか（文字の幅を測る）
  */
 export function resolveDrawnCell(
   rows: readonly GridRow[],
@@ -133,6 +140,9 @@ export function resolveDrawnCell(
   c: number,
   cols: number,
   firstCol = 1,
+  formats: readonly CellFormat[] = [],
+  lastCol = cols,
+  reaches?: (row: GridRow, k: number, c: number) => boolean,
 ): { r: number; c: number } {
   const i0 = rows.findIndex((row) => row.r === r);
   if (i0 < 0) return { r, c };
@@ -149,13 +159,23 @@ export function resolveDrawnCell(
     if (cells[c - 1] !== null) break; // この行の列 c は隠れていない（これより上の結合は届かない）
   }
   // はみ出し
-  const cells = rows[i0]!.cells;
+  const { cells, formats: fi } = rows[i0]!;
   if (!isEmpty(cells[c - 1])) return { r, c };
+  const lo = Math.max(0, firstCol - 1);
+  const formatAt = (i: number): CellFormat | undefined => {
+    const f = fi?.[i];
+    return f === undefined ? undefined : formats[f];
+  };
   let k = c - 2;
-  while (k >= firstCol - 1 && isEmpty(cells[k])) k--;
-  if (k >= firstCol - 1 && k >= 0 && spillColumns(cells, k, cols) > c - 1 - k) {
-    return { r, c: k + 1 };
-  }
+  while (k >= lo && isEmpty(cells[k])) k--;
+  const fromLeft = k >= lo && spillSides(cells, k, formatAt(k), lo, cols).right >= c - 1 - k;
+  // 右寄せ・中央の文字の左へのはみ出し（ADR-0008 §3）
+  const hi = Math.min(cols, lastCol);
+  let j = c;
+  while (j < hi && isEmpty(cells[j])) j++;
+  const fromRight = j < hi && spillSides(cells, j, formatAt(j), lo, cols).left >= j - (c - 1);
+  if (fromLeft && (!fromRight || !reaches || reaches(rows[i0]!, k, c))) return { r, c: k + 1 };
+  if (fromRight) return { r, c: j + 1 };
   return { r, c };
 }
 
@@ -206,14 +226,16 @@ export interface NavigationHost {
   origin(): { x: number; y: number };
   /** 表の列数 */
   cols(): number;
-  /** 描いた行と、描いた最初の列（まだ描いていなければ rows は空） */
-  drawn(): { rows: readonly GridRow[]; firstCol: number };
+  /** 描いた行と、描いた最初・最後の列（まだ描いていなければ rows は空） */
+  drawn(): { rows: readonly GridRow[]; firstCol: number; lastCol?: number };
   /** ハイライト（無ければ null） */
   hits(): GridHits | null;
   /** 描いた表（無ければ null） */
   table(): HTMLTableElement | null;
   /** 今のスクロール位置で描く（描いた範囲に収まっていれば何もしない） */
   draw(): void;
+  /** 行 r へ移動する前に、その行の文字が最後の列からはみ出す分だけ表を広げる（ADR-0008 §4。無ければ何もしない） */
+  prepare?(r: number): void;
 }
 
 /** {@link createNavigation} の戻り値（`SheetView` の §3・§4 の操作） */
@@ -228,8 +250,10 @@ export interface Navigation {
 /** 結合の高さを調べるために、対象の行から読む行数（これより高い結合は、ここまでの高さとして扱う） */
 const MERGE_READ_ROWS = 100;
 
-/** セルの左右の余白（`style.css` の `.xs-cell` の padding-left） */
+/** セルの左右の余白（`style.css` の `.xs-cell` の padding-left・padding-right） */
 const CELL_PAD_LEFT = 3;
+/** 列の右端の罫線（入れ物の幅は列幅からこれを引いたもの） */
+const BORDER = 1;
 
 /**
  * 移動・判定（ADR-0007 §3・§4）を作る。状態は持たず、呼ぶたびに host から今の表示を引く（測る入れ物だけを持つ）。
@@ -273,6 +297,7 @@ export function createNavigation(host: NavigationHost): Navigation {
 
   /** 行 r・列 c（横は range）が見える所へのスクロール */
   const reveal = (r: number, range: XRange | null, c: number, smooth: boolean): void => {
+    host.prepare?.(r); // 表の幅（スクロールの上限）を先に広げる（ADR-0008 §4）
     const geo = host.geometry();
     if (!geo) return;
     const view = viewBox();
@@ -283,20 +308,55 @@ export function createNavigation(host: NavigationHost): Navigation {
   };
 
   /**
-   * 一致の横の範囲。左揃えの文字（文字列）は、一致の前までと一致の終わりまでの文字の幅を、同じ書式で測って出す
-   * （はみ出す文字の中の一致にも届く）。測れない（幅 0）・文字列でないときはセルの範囲。
+   * 一致の横の範囲。文字列は、一致の前までと一致の終わりまでの文字の幅を、同じ書式で測って出す
+   * （はみ出す文字の中の一致にも届く）。文字の左端は配置で決める（ADR-0008 §5）：左寄せ・標準＝セルの左端＋余白、
+   * 右寄せ＝セルの右端−余白−文字の幅、中央＝セルの中心−文字の幅の半分。
+   * 測れない（幅 0）・文字列でない・折り返すセルはセルの範囲（折り返した文字はセルの中にある）。
    */
   const matchRange = (m: TextMatch): XRange | null => {
     const geo = host.geometry();
     const info = cellInfo(m.r, m.c);
     if (!geo || !info || info.cell.kind !== 's') return null;
+    const format = info.format === undefined ? undefined : host.sheet()?.formats[info.format];
+    if (isWrapped(info.cell.kind, format)) return null;
     const text = info.cell.text;
     const cls = info.format === undefined ? '' : formatClassName(info.format);
     const a = measure.width(text.slice(0, Math.min(m.start, text.length)), cls);
     const b = measure.width(text.slice(0, Math.min(m.end, text.length)), cls);
     if (!(b > 0)) return null;
-    const x = geo.colLeft(m.c) + CELL_PAD_LEFT;
-    return { left: x + a, right: Math.ceil(x + b), cellLeft: geo.colLeft(m.c) };
+    const cellLeft = geo.colLeft(m.c);
+    const cellRight = geo.colLeft(m.c + Math.max(1, info.cell.colSpan)) - BORDER; // 入れ物の右端
+    const h = resolveHAlign(info.cell.kind, format);
+    let x = cellLeft + CELL_PAD_LEFT;
+    if (h !== 'left') {
+      const w = measure.width(text, cls);
+      x = h === 'right' ? cellRight - CELL_PAD_LEFT - w : (cellLeft + cellRight) / 2 - w / 2;
+    }
+    return {
+      left: x + a,
+      right: Math.ceil(x + b),
+      cellLeft: Math.min(cellLeft, Math.floor(x)),
+    };
+  };
+
+  /**
+   * 行の k 番目のセルの文字が、右へ列 c まで届くか（左右どちらの元も届きうるときだけ呼ばれる）。
+   * 文字の右端は配置で出す（左寄せ・標準＝左端＋余白＋幅、中央＝中心＋幅の半分）。測れない（幅 0）ときは届くとみなす。
+   */
+  const reaches = (row: GridRow, k: number, c: number): boolean => {
+    const geo = host.geometry();
+    const cell = row.cells[k];
+    if (!geo || !cell) return true;
+    const fi = row.formats?.[k];
+    const format = fi === undefined ? undefined : host.sheet()?.formats[fi];
+    const w = measure.width(cell.text, fi === undefined ? '' : formatClassName(fi));
+    if (!(w > 0)) return true;
+    const left = geo.colLeft(k + 1);
+    const end =
+      resolveHAlign(cell.kind, format) === 'center'
+        ? left + (geo.colWidth(k + 1) + w) / 2
+        : left + CELL_PAD_LEFT + w;
+    return end > geo.colLeft(c);
   };
 
   return {
@@ -334,7 +394,16 @@ export function createNavigation(host: NavigationHost): Navigation {
       );
       if (!at) return null;
       const d = host.drawn();
-      return resolveDrawnCell(d.rows, at.r, at.c, host.cols(), d.firstCol);
+      return resolveDrawnCell(
+        d.rows,
+        at.r,
+        at.c,
+        host.cols(),
+        d.firstCol,
+        host.sheet()?.formats, // 配置で左・両側へのはみ出しを引く（ADR-0008 §3）
+        d.lastCol,
+        reaches,
+      );
     },
     highlightAt(clientX, clientY) {
       if (!host.hits() || this.cellAt(clientX, clientY) === null) return -1;
