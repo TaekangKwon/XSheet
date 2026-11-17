@@ -122,7 +122,7 @@ flowchart LR
 
 ### M7 Moobius の追加の依頼 R8・R9（v0.6.0・[ADR-0008](adr/0008-align-wrap-spill.md)）
 
-**完了（2026-11-17・[#49](https://github.com/TaekangKwon/XSheet/pull/49) でマージ）**：M7-11〜M7-15。依頼の資料の確認項目を再現したページで 65 項目 NG 0（ADR-0008 §6）。残りは依頼の自己テスト（Moobius の側）・v0.6.0（ユーザーの指示で）。
+**完了（2026-11-17・[#49](https://github.com/TaekangKwon/XSheet/pull/49) でマージ・v0.6.0 で出した）**：M7-11〜M7-15。依頼の資料の確認項目を再現したページで 65 項目 NG 0（ADR-0008 §6）。残りは依頼の自己テスト（Moobius の側）。
 
 順は M7-11 → M7-12 → M7-13 → M7-14 → M7-15。M7-11〜M7-14 は自分だけで進め、ユーザーの確認（実機・依頼の自己テスト・版を出す）は M7-15 にまとめる。GitHub の Issue はまだ作っていない（作るかはユーザーの指示）。
 
@@ -136,7 +136,7 @@ flowchart LR
 
 ### M7 リッチテキストの部分の書式（v0.6.0・[ADR-0009](adr/0009-rich-text-runs.md)）
 
-依頼のサンプル（06_検索 B9）を Excel の画面と見比べて、ユーザーが追加を指示した（2026-11-17・ブランチ feat/rich-runs）。順は M7-16 → M7-17 → M7-18。GitHub の Issue はまだ作っていない。
+**完了（2026-11-17・[#50](https://github.com/TaekangKwon/XSheet/pull/50) でマージ・v0.6.0 で出した）**：依頼のサンプル（06_検索 B9）を Excel の画面と見比べて、ユーザーが追加を指示した。順は M7-16 → M7-17 → M7-18。GitHub の Issue は作っていない。
 
 | Issue | GitHub | 内容 | 依存 | 完了の条件 |
 | --- | --- | --- | --- | --- |
