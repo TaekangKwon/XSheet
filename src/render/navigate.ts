@@ -13,6 +13,7 @@ import { isWrapped, resolveHAlign, spillSides } from './cell-align';
 import { formatClassName } from './format-css';
 import type { GridRow } from './grid';
 import { hitIndexOf, markCurrent, type GridHits } from './highlight';
+import { runSlicer } from './rich-text';
 
 /** スクロール枠の今の状態と見出しの寸法（px） */
 export interface ViewBox {
@@ -184,14 +185,15 @@ export function resolveDrawnCell(
  * 表示の根の中に置き、使い回す。
  */
 export function createTextMeasure(root: HTMLElement): {
-  width(text: string, formatClass: string): number;
+  /** nodes があれば文字の代わりにそれを入れて測る（リッチテキストの区切り。ADR-0009 §3） */
+  width(text: string, formatClass: string, nodes?: readonly Node[]): number;
   dispose(): void;
 } {
   let table: HTMLTableElement | null = null;
   let td: HTMLTableCellElement | null = null;
   let span: HTMLSpanElement | null = null;
   return {
-    width(text, formatClass) {
+    width(text, formatClass, nodes) {
       if (!table || !td || !span) {
         table = document.createElement('table');
         table.className = 'xs-grid xs-measure';
@@ -202,7 +204,8 @@ export function createTextMeasure(root: HTMLElement): {
         root.append(table);
       }
       td.className = formatClass;
-      span.textContent = text;
+      if (nodes) span.replaceChildren(...nodes);
+      else span.textContent = text;
       return span.getBoundingClientRect().width;
     },
     dispose() {
@@ -321,15 +324,18 @@ export function createNavigation(host: NavigationHost): Navigation {
     if (isWrapped(info.cell.kind, format)) return null;
     const text = info.cell.text;
     const cls = info.format === undefined ? '' : formatClassName(info.format);
-    const a = measure.width(text.slice(0, Math.min(m.start, text.length)), cls);
-    const b = measure.width(text.slice(0, Math.min(m.end, text.length)), cls);
+    // リッチテキストは区切りの書式で測る（ADR-0009 §3）
+    const slice = info.cell.runs ? runSlicer(text, info.cell.runs, format) : undefined;
+    const upTo = (to: number) => measure.width(text.slice(0, to), cls, slice?.(0, to));
+    const a = upTo(Math.min(m.start, text.length));
+    const b = upTo(Math.min(m.end, text.length));
     if (!(b > 0)) return null;
     const cellLeft = geo.colLeft(m.c);
     const cellRight = geo.colLeft(m.c + Math.max(1, info.cell.colSpan)) - BORDER; // 入れ物の右端
     const h = resolveHAlign(info.cell.kind, format);
     let x = cellLeft + CELL_PAD_LEFT;
     if (h !== 'left') {
-      const w = measure.width(text, cls);
+      const w = upTo(text.length);
       x = h === 'right' ? cellRight - CELL_PAD_LEFT - w : (cellLeft + cellRight) / 2 - w / 2;
     }
     return {
@@ -349,7 +355,10 @@ export function createNavigation(host: NavigationHost): Navigation {
     if (!geo || !cell) return true;
     const fi = row.formats?.[k];
     const format = fi === undefined ? undefined : host.sheet()?.formats[fi];
-    const w = measure.width(cell.text, fi === undefined ? '' : formatClassName(fi));
+    const nodes = cell.runs
+      ? runSlicer(cell.text, cell.runs, format)(0, cell.text.length) // ADR-0009 §3
+      : undefined;
+    const w = measure.width(cell.text, fi === undefined ? '' : formatClassName(fi), nodes);
     if (!(w > 0)) return true;
     const left = geo.colLeft(k + 1);
     const end =

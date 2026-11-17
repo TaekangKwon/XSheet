@@ -6,7 +6,7 @@
  * - 調べるのは描いた行と移動先の行だけ（シートを開くときに全行を読まない）。広げた列数は表示（`sheet-view.ts`）が持つ。
  * DOM 非依存の純関数。
  */
-import type { CellFormat, Geometry } from '../core/index';
+import type { CellFormat, Geometry, TextRun } from '../core/index';
 import { isWrapped, resolveHAlign } from './cell-align';
 import type { GridRow } from './grid';
 
@@ -31,25 +31,47 @@ function isFullWidth(cp: number): boolean {
   return true;
 }
 
-/**
- * 文字の幅の見積もり（px・倍率 1）。多めに出す。
- * @param text 表示する文字（1 行。改行は空白として数える）
- * @param format セルの書式（文字の大きさの比・太字・斜体）
- */
-export function estimateCellTextWidth(text: string, format?: CellFormat): number {
+/** 文字の幅（em）。全角は 1em・ほかは 0.7em。budget 文字を超えた分は全角として足す（UTF-16 の長さで数える） */
+function textEm(text: string, budget: number): number {
   let em = 0;
   let n = 0;
   for (const ch of text) {
-    if (n >= MAX_SCAN_CHARS) {
-      em += (text.length - n) * FULL_EM; // 残りは全角として多めに足す（UTF-16 の長さで数える）
+    if (n >= budget) {
+      em += (text.length - n) * FULL_EM;
       break;
     }
     em += isFullWidth(ch.codePointAt(0)!) ? FULL_EM : HALF_EM;
     n += ch.length;
   }
-  const ratio = format?.sizeRatio ?? 1;
-  const style = format?.bold || format?.italic ? STYLE_FACTOR : 1;
-  return em * GRID_FONT_PX * ratio * style + PAD_PX;
+  return em;
+}
+
+/** 書式（セルの書式・区切りの書式）の幅の倍率：文字の大きさの比 × 太字・斜体の広がり */
+function fontFactor(f: Pick<CellFormat, 'sizeRatio' | 'bold' | 'italic'> | undefined): number {
+  return (f?.sizeRatio ?? 1) * (f?.bold || f?.italic ? STYLE_FACTOR : 1);
+}
+
+/**
+ * 文字の幅の見積もり（px・倍率 1）。多めに出す。
+ * @param text 表示する文字（1 行。改行は空白として数える）
+ * @param format セルの書式（文字の大きさの比・太字・斜体）
+ * @param runs リッチテキストの区切り（`<rPr>` のある区切りはその書式で数える。ADR-0009 §3）
+ */
+export function estimateCellTextWidth(
+  text: string,
+  format?: CellFormat,
+  runs?: readonly TextRun[],
+): number {
+  if (runs === undefined || runs.length === 0) {
+    return textEm(text, MAX_SCAN_CHARS) * GRID_FONT_PX * fontFactor(format) + PAD_PX;
+  }
+  let px = 0;
+  let budget = MAX_SCAN_CHARS;
+  for (const run of runs) {
+    px += textEm(run.text, Math.max(0, budget)) * GRID_FONT_PX * fontFactor(run.font ?? format);
+    budget -= run.text.length;
+  }
+  return px + PAD_PX;
 }
 
 /** 値のあるセルか（`grid.ts` の空のセルの判定の逆。null＝結合で隠れるセルも値ありとして止める） */
@@ -102,7 +124,7 @@ export function spillReachCols(
     if (h === 'right' || isWrapped(cell.kind, format)) {
       continue;
     }
-    const width = estimateCellTextWidth(cell.text, format);
+    const width = estimateCellTextWidth(cell.text, format, cell.runs);
     const left = geo.colLeft(i + 1);
     const reach = geo.colAt(
       h === 'center' ? left + (geo.colWidth(i + 1) + width) / 2 : left + width,

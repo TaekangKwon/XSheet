@@ -272,3 +272,8 @@
 - 依頼のサンプル `compare_features.xlsx`（リポジトリの外。確かめるときだけ `.screenshots/r8r9/` に写す）を開発サーバーの viewer2 で開き、01_書式 C22〜C31・04_結合 B5:D7・B9:E9・06_検索 BH3・BH1500（100%・150%）の見え方・移動・`cellAt`・`highlightAt` を確かめた。依頼の自己テストは手元に無く、まだ回していない。
 - テスト 2334・typecheck・lint・build・size・check:standalone・check:consumer が通る。コミットは Issue ごと（push・PR はまだ。GitHub の Issue も作っていない）。
 - 続き：依頼の自己テストは手元に無いので、依頼の資料の確認項目を再現したページ（`.screenshots/r8r9/selftest.html`・Git 管理外）で 65 項目を回した。`cellAt` が左の短い文字列（A30）を返す誤りを直し（`resolveDrawnCell` の `reaches`）、NG 0。テスト 2335。
+
+## 2026-11-17 リッチテキストの部分の書式（M7-16〜M7-18・ADR-0009・ブランチ feat/rich-runs）
+- 依頼のサンプル 06_検索 B9 を Excel の画面と見比べ、部分の色・太字が描けていなかったので、ユーザーの指示で足した。ブランチは feat/r8-r9-align の上に積んだ。
+- core：`<r>` の `<rPr>` を読み `CellView.runs`（`TextRun`・`RunFont`）を足した（新しいファイル `core/rich-text.ts`、写したファイルには `// XSheet:` の口）。render：`render/rich-text.ts` で区切りを `span.xs-runs` に描き、検索の一致の片・移動・判定・はみ出しの見積もりを区切りの書式に合わせた。
+- 実機で B9 の見え方・一致・`cellAt`・`highlightAt` を確かめ、R1〜R9 の再現ページも NG 0。テスト 2349・typecheck・lint・build・size・check:standalone・check:consumer が通る（push・PR はまだ）。

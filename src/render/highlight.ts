@@ -132,6 +132,7 @@ export function hitIndexOf(el: Element | null): number {
  * @param shown 表示した文字（収まらない数値は `###`）
  * @param hits このセルの一致（無ければ何もしない）
  * @param current 今のヒットの番号
+ * @param slice 区切りで分けるノードの作り手（リッチテキスト。ADR-0009 §2）。無ければ平文のテキストノード
  */
 export function decorateCell(
   box: HTMLElement,
@@ -139,6 +140,9 @@ export function decorateCell(
   shown: string,
   hits: readonly CellHit[] | undefined,
   current: number,
+  slice: (from: number, to: number) => Node[] = (from, to) => [
+    document.createTextNode(text.slice(from, to)),
+  ],
 ): void {
   if (!hits || hits.length === 0) {
     return;
@@ -170,10 +174,10 @@ export function decorateCell(
       continue;
     }
     if (start > pos) {
-      wrap.append(document.createTextNode(text.slice(pos, start)));
+      wrap.append(...slice(pos, start));
     }
     const piece = document.createElement('span');
-    piece.textContent = text.slice(start, end);
+    piece.append(...slice(start, end));
     markHit(piece, group, current);
     if (ink) {
       piece.classList.add('is-ink');
@@ -185,7 +189,7 @@ export function decorateCell(
     return; // 文字の範囲に入る一致が無い
   }
   if (pos < text.length) {
-    wrap.append(document.createTextNode(text.slice(pos)));
+    wrap.append(...slice(pos, text.length));
   }
   target.replaceChildren(wrap);
 }

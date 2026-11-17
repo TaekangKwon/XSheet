@@ -48,6 +48,30 @@ export interface CellView {
   kind?: CellKind;
   colSpan: number;
   rowSpan: number;
+  // XSheet: リッチテキストの部分の書式（ADR-0009 §1）
+  /**
+   * リッチテキストの区切り（共有文字列・inlineStr の `<r>`）。`text` を連結すると `CellView.text`。
+   * `<rPr>` のある区切りが 1 つも無い文字列は持たない
+   */
+  runs?: readonly TextRun[];
+}
+
+// XSheet: リッチテキストの部分の書式（ADR-0009 §1）
+/**
+ * リッチテキストの区切りの書式（`<rPr>`）。区切りはセルの書式を継がず、これだけで描く
+ * （持たない項目は既定＝太字なし・自動の色・既定の大きさ）。フォント名・上付き・下付きは持たない
+ */
+export type RunFont = Pick<
+  CellFormat,
+  'color' | 'bold' | 'italic' | 'strike' | 'underline' | 'sizeRatio'
+>;
+
+/** リッチテキストの 1 つの区切り（XSheet: ADR-0009 §1） */
+export interface TextRun {
+  /** 区切りの文字（空にならない） */
+  text: string;
+  /** `<rPr>` のある区切りの書式。無ければセルの書式のまま */
+  font?: RunFont;
 }
 
 /** セルの罫線の線種（SpreadsheetML の `ST_BorderStyle` から `none` を除いた 13 種。ADR-0029 §決定 3） */

@@ -6,12 +6,17 @@
  * - 1 件ずつの展開は引かれたときに行う（索引だけ先に作る）。
  */
 import { NS, decodeText, forEachElement } from './xml';
+// XSheet: リッチテキストの区切り（ADR-0009 §1）
+import { mayHaveRuns } from './rich-text';
 
 /** 共有文字列の表 */
 export interface SharedStrings {
   readonly count: number;
   /** i 番目（0 始まり）の文字列。範囲外は空文字 */
   get(i: number): string;
+  // XSheet: リッチテキストの区切り（ADR-0009 §1）
+  /** i 番目の `<si>` の中身。区切りの書式（`<rPr>`）を持ちうるときだけ返す */
+  rich?(i: number): string | undefined;
 }
 
 // ふりがな <rPh>…</rPh> の開きタグ。閉じは indexOf で探す（`[\s\S]*?` だと、閉じの無い <rPh を並べた細工で二乗時間になる）
@@ -63,6 +68,11 @@ export function parseSharedStrings(xml: string | null): SharedStrings {
     get(i) {
       const inner = inners[i];
       return inner === undefined ? '' : richTextToPlain(inner);
+    },
+    // XSheet: リッチテキストの区切り（ADR-0009 §1）
+    rich(i) {
+      const inner = inners[i];
+      return inner !== undefined && mayHaveRuns(inner) ? inner : undefined;
     },
   };
 }

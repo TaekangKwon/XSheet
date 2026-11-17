@@ -11,6 +11,8 @@ import { formatClassName, spillInkGradient } from './format-css';
 import { alignClasses, spillAround } from './cell-align';
 // XSheet: 検索の一致のハイライト（ADR-0007 §2）
 import { decorateCell, type GridHits } from './highlight';
+// XSheet: リッチテキストの区切り（ADR-0009 §2）
+import { applyRuns } from './rich-text';
 import {
   cellAlignClass,
   cellInnerHeight,
@@ -261,9 +263,11 @@ export function buildGridTable(
               inkSpill(box, formats, row.formats, k, geo, c, columns);
             }
           }
+          // XSheet: リッチテキストの区切り（rich-text.ts・ADR-0009 §2）
+          const slice = applyRuns(box, cell.text, shown, cell.runs, fmt);
           // XSheet: 検索の一致を光らせる口（highlight.ts・ADR-0007 §2）
           if (hits) {
-            decorateCell(box, cell.text, shown, hits.at(row.r, c + 1), hits.current);
+            decorateCell(box, cell.text, shown, hits.at(row.r, c + 1), hits.current, slice);
           }
           td.append(box);
         }
