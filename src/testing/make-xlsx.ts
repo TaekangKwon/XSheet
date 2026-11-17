@@ -27,6 +27,9 @@ export interface CellObj {
   r?: string | null;
   /** タグへそのまま足す属性（例 ` __proto__="x"`） */
   attrs?: string;
+  // XSheet: リッチテキストの区切り（ADR-0009）
+  /** inlineStr の `<is>` の中身の XML 断片（例 `<r><rPr><b/></rPr><t>ab</t></r>`）。`v` より優先 */
+  is?: string;
 }
 
 /**
@@ -223,6 +226,9 @@ function buildSheetData(
             (o.t && o.t !== 'n' ? ` t="${o.t}"` : '') +
             (o.attrs ?? '');
           const f = o.f !== undefined ? `<${q('f')}>${esc(o.f)}</${q('f')}>` : '';
+          if (o.t === 'inlineStr' && o.is !== undefined) {
+            return `<${q('c')}${attrs}><${q('is')}>${o.is}</${q('is')}></${q('c')}>`; // XSheet: ADR-0009
+          }
           if (o.t === 'inlineStr') {
             return `<${q('c')}${attrs}><${q('is')}><${q('t')} xml:space="preserve">${esc(o.v ?? '')}</${q('t')}></${q('is')}></${q('c')}>`;
           }

@@ -14,6 +14,8 @@ import { type Rgba, mixColors, mixColorsLinear } from './color';
 import { parseIndexedColors, resolveCellColor } from './cell-color';
 // XSheet: 配置と折り返し（ADR-0008 §1）
 import { alignKey, readXfAlignments } from './cell-align';
+// XSheet: リッチテキストの区切りの書式（ADR-0009 §1）
+import type { RunFontReader } from './rich-text';
 import { MAX_GRADIENT_STOPS, type XlsxLimits } from './limits';
 import type { Theme } from './theme';
 import type { CellFormat } from './types';
@@ -25,6 +27,9 @@ export interface FormatTable {
   readonly formats: readonly CellFormat[];
   /** cellXfs の位置（セルの `s`）→ 書式の番号。書式なし・不正・上限の外は -1 */
   readonly xfFormat: Int32Array;
+  // XSheet: リッチテキストの区切りの書式（ADR-0009 §1）
+  /** `<rPr>` の中身 → 区切りの書式（`<font>` と同じ読み方）。書式の表が空のときは無い（区切りの書式を読まない） */
+  readonly readRunFont?: RunFontReader;
 }
 
 /** 書式の無い表（styles.xml が無い・壊れているとき。共有する・変更しない） */
@@ -263,6 +268,11 @@ export function parseCellFormats(
     });
   }
 
+  // XSheet: リッチテキストの区切りの書式（ADR-0009 §1。大きさの基準は先頭の <font> の sz）
+  const firstFont = fontBlock?.body ? findElement(fontBlock.body, 'font') : null;
+  const runBase = firstFont?.body ? fontSize(firstFont.body) : null;
+  const readRunFont: RunFontReader = (body) => readFont(body, runBase, theme, palette);
+
   const formats: CellFormat[] = [];
   const keyToIndex = new Map<string, number>();
   const xfFormat: number[] = [];
@@ -299,7 +309,7 @@ export function parseCellFormats(
     }
     xfFormat.push(idx);
   }
-  return { formats, xfFormat: Int32Array.from(xfFormat) };
+  return { formats, xfFormat: Int32Array.from(xfFormat), readRunFont };
 }
 
 /** 書式の重複の除去のキー（数値だけで組む：塗り｜文字の色｜装飾のビット｜サイズ比×100） */

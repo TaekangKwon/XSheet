@@ -20,6 +20,8 @@ import {
   type XlsxLimits,
 } from './limits';
 import { type SharedStrings, richTextToPlain } from './shared-strings';
+// XSheet: リッチテキストの区切り（ADR-0009 §1）
+import { readRuns } from './rich-text';
 import {
   type CellKind,
   type CellView,
@@ -192,6 +194,19 @@ export function createSheet(xml: string, ctx: SheetContext): ReleasableSheet {
     return text.length > MAX_CELL_TEXT ? text.slice(0, MAX_CELL_TEXT) : text;
   };
 
+  // XSheet: リッチテキストの区切り（rich-text.ts・ADR-0009 §1）。共有文字列と inlineStr だけ
+  const readRunFont = ctx.formatTable.readRunFont;
+  const runsOf = (attrs: Attrs, body: string, text: string): ReturnType<typeof readRuns> => {
+    if (readRunFont === undefined) return undefined;
+    let inner: string | undefined;
+    if (attrs.t === 'inlineStr') inner = bodyOf(body, IS_OPEN, 'is');
+    else if (attrs.t === 's') {
+      const idx = Number(bodyOf(body, V_OPEN, 'v'));
+      inner = Number.isInteger(idx) ? ctx.strings.rich?.(idx) : undefined;
+    }
+    return inner === undefined ? undefined : readRuns(inner, text, readRunFont);
+  };
+
   /** `<c t>` からセルの型を決める（t 無し・`n`・未知の値は数値） */
   const kindOf = (t: string | undefined): CellKind => {
     switch (t) {
@@ -260,7 +275,11 @@ export function createSheet(xml: string, ctx: SheetContext): ReleasableSheet {
     eachCell(seg, (col, attrs, body) => {
       if (col > cells.length) return;
       const text = cellText(attrs, body);
-      if (text !== '') cells[col - 1] = { text, kind: kindOf(attrs.t), colSpan: 1, rowSpan: 1 };
+      if (text !== '') {
+        cells[col - 1] = { text, kind: kindOf(attrs.t), colSpan: 1, rowSpan: 1 };
+        const runs = runsOf(attrs, body, text); // XSheet: リッチテキストの区切り（ADR-0009 §1）
+        if (runs !== undefined) cells[col - 1]!.runs = runs;
+      }
       // 空文字の文字列（数式の結果が ""）は、見た目は空のまま、値のあるセルとして残す（右隣へのはみ出しを止める）
       else if (isEmptyString(attrs, body))
         cells[col - 1] = { text, kind: 's', colSpan: 1, rowSpan: 1 };
