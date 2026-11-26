@@ -7,6 +7,9 @@ import type { XlsxLimits } from './limits';
 import type { XlsxPackage } from './open';
 import { type Attrs, NS, attrByLocalName, looksStrict, parseAttrs } from './xml';
 import { XlsxError } from './types';
+// XSheet: 印刷範囲（ADR-0010 §3）
+import type { CellRange } from './types';
+import { readPrintAreas } from './print-area';
 
 /** workbook の中の 1 シート */
 export interface WorkbookSheet {
@@ -18,6 +21,9 @@ export interface WorkbookSheet {
   path: string | null;
   /** 普通のワークシートか（グラフシートなどは false） */
   isWorksheet: boolean;
+  // XSheet: 印刷範囲（ADR-0010 §3）
+  /** 印刷範囲。無ければ持たない */
+  printArea?: readonly CellRange[];
 }
 
 /** 読んだ workbook */
@@ -128,6 +134,10 @@ export async function loadWorkbook(pkg: XlsxPackage, limits: XlsxLimits): Promis
       isWorksheet: rel ? typeIs(rel.type, 'worksheet') : true,
     });
   }
+
+  // XSheet: 印刷範囲（ADR-0010 §3）
+  for (const [i, ranges] of readPrintAreas(wbXml, sheets.length, limits.maxPrintAreas))
+    sheets[i]!.printArea = ranges;
 
   let sharedStringsPath: string | null = null;
   let stylesPath: string | null = null;

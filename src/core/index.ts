@@ -40,6 +40,7 @@ export type {
   CellBorder,
   CellFormat,
   CellKind,
+  CellRange,
   CellView,
   ChartAxis,
   ChartBox,
@@ -261,6 +262,8 @@ export async function openXlsx(
     index: s.index,
     name: s.name,
     hidden: s.hidden,
+    // XSheet: 印刷範囲（ADR-0010 §3）
+    ...(s.printArea ? { printArea: s.printArea } : {}),
   }));
 
   return {

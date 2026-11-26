@@ -164,6 +164,9 @@ export interface XlsxSpec {
   /** styles.xml の先頭の font（最大桁幅 MDW の算出元）。省略すると `<fonts>` を入れない */
   font?: { name: string; size: number };
   date1904?: boolean;
+  // XSheet: 印刷範囲（ADR-0010 §3）
+  /** workbook.xml の `<definedNames>`（例 `{ name: '_xlnm.Print_Area', localSheetId: 0, ref: "'S 1'!$A$1:$C$3" }`。`ref` はエスケープして入れる）。省くと入れない */
+  definedNames?: { name: string; localSheetId?: number; ref: string }[];
   /** spreadsheetml の要素に付ける名前空間の接頭辞（例 `x` → `<x:c>`） */
   prefix?: string;
   /** すべてのセルの r 属性を省く */
@@ -333,9 +336,18 @@ export async function buildXlsx(spec: XlsxSpec): Promise<Uint8Array> {
         `<${q('sheet')} name="${esc(s.name)}" sheetId="${10 + i}"${s.state ? ` state="${s.state}"` : ''} r:id="rId${i + 1}"/>`,
     )
     .join('');
+  // XSheet: 印刷範囲（ADR-0010 §3）
+  const definedNames = spec.definedNames
+    ? `<${q('definedNames')}>${spec.definedNames
+        .map(
+          (d) =>
+            `<${q('definedName')} name="${esc(d.name)}"${d.localSheetId === undefined ? '' : ` localSheetId="${d.localSheetId}"`}>${esc(d.ref)}</${q('definedName')}>`,
+        )
+        .join('')}</${q('definedNames')}>`
+    : '';
   z.file(
     'xl/workbook.xml',
-    `${HEAD}<${q('workbook')} ${nsDecl} xmlns:r="${REL}"><${q('workbookPr')}${spec.date1904 ? ' date1904="1"' : ''}/><${q('sheets')}>${sheetEls}</${q('sheets')}></${q('workbook')}>`,
+    `${HEAD}<${q('workbook')} ${nsDecl} xmlns:r="${REL}"><${q('workbookPr')}${spec.date1904 ? ' date1904="1"' : ''}/><${q('sheets')}>${sheetEls}</${q('sheets')}>${definedNames}</${q('workbook')}>`,
   );
 
   const hasSst = !spec.noSharedStrings && spec.sharedStrings !== undefined;

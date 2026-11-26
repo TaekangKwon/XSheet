@@ -26,6 +26,21 @@ export interface SheetInfo {
   name: string;
   /** state が hidden または veryHidden */
   hidden: boolean;
+  // XSheet: 印刷範囲（ADR-0010 §3）
+  /**
+   * 印刷範囲（`_xlnm.Print_Area`。定義の順）。無いシートは持たない。
+   * 列だけの範囲（`$A:$C`）は行が 1〜1,048,576、行だけの範囲（`$1:$5`）は列が 1〜16,384 になる
+   */
+  printArea?: readonly CellRange[];
+}
+
+// XSheet: 印刷範囲（ADR-0010 §3）
+/** セルの範囲（1 始まり・両端を含む。`r1 <= r2`・`c1 <= c2`） */
+export interface CellRange {
+  readonly r1: number;
+  readonly c1: number;
+  readonly r2: number;
+  readonly c2: number;
 }
 
 /**

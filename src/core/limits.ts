@@ -68,6 +68,9 @@ export interface XlsxLimits {
   maxChartTextChars: number;
   /** 1 シートで読んだグラフの点の合計。超えたら、以後そのシートの新しいグラフは `too-large` */
   maxSheetChartPoints: number;
+  // XSheet: 印刷範囲（ADR-0010 §3）
+  /** 1 シートの印刷範囲（`_xlnm.Print_Area` のカンマで並ぶ範囲）の数。超えた分は読まない */
+  maxPrintAreas: number;
 }
 
 /**
@@ -174,6 +177,10 @@ export const MAX_CHART_TEXT_CHARS = 200_000;
 /** 1 シートで読んだグラフの点の合計の上限（グラフ 10 個分。超えたら以後の新しいグラフは破線枠） */
 export const MAX_SHEET_CHART_POINTS = 1_000_000;
 
+// XSheet: 印刷範囲（ADR-0010 §3）
+/** 1 シートの印刷範囲の数の上限（範囲ごとにページを分けるので、ページの数が増えすぎないようにする） */
+export const MAX_PRINT_AREAS = 1_000;
+
 /** 既定の上限の組 */
 export const DEFAULT_LIMITS: Readonly<XlsxLimits> = Object.freeze({
   maxSheetXmlBytes: MAX_SHEET_XML_BYTES,
@@ -205,6 +212,8 @@ export const DEFAULT_LIMITS: Readonly<XlsxLimits> = Object.freeze({
   maxChartPoints: MAX_CHART_POINTS,
   maxChartTextChars: MAX_CHART_TEXT_CHARS,
   maxSheetChartPoints: MAX_SHEET_CHART_POINTS,
+  // XSheet: 印刷範囲（ADR-0010 §3）
+  maxPrintAreas: MAX_PRINT_AREAS,
 });
 
 /** 書式コードの長さの上限（文字数）。非信頼の styles.xml から来る書式を ssf へ渡す前の ReDoS 対策 */
