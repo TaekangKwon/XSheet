@@ -277,6 +277,7 @@ container.addEventListener('click', (e) => {
 | `setZoom(zoom)`, `zoom` | Change the zoom (same values as the `zoom` option) or read it. The top-left cell stays in place. The headers keep their size (row numbers get a smaller font below 100%), and line widths do not change |
 | `showSheet(index)` | Switch sheets without rebuilding the view: the zoom is kept and the highlights are cleared. `renderSheet` has it too |
 | `activeSheet` | The index (`SheetInfo.index`) of the selected sheet; it changes as soon as a tab is clicked or `showSheet` is called. `null` when the file could not be opened |
+| `scrollElement` | The element that scrolls the grid (v0.7.0). Read or set its `scrollTop` / `scrollLeft` and listen for its `scroll` event, for example to scroll two views together. It stays the same element until `destroy`; `null` when the file could not be opened and after `destroy`. Do not change its size, style or children. Switching sheets scrolls it back to the top-left, and changing the zoom moves it so that the top-left cell stays in place |
 
 - Do not scale the view with a CSS `transform`; `cellAt` and `highlightAt` would point at the wrong cells. Use `setZoom`.
 

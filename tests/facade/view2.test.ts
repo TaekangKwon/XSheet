@@ -143,3 +143,12 @@ describe('view2：0.5.0 の操作（ADR-0007 §7）', () => {
     expect((await v.find('apple')).matches).toEqual([]);
   });
 });
+
+describe('view2：スクロール枠（ADR-0010 §1）', () => {
+  it('scrollElement は表示の div.xs-body で、destroy の後は null', async () => {
+    const { el, v } = await open();
+    expect(v.scrollElement).toBe(el.querySelector('.xs-sheet > .xs-body'));
+    v.destroy();
+    expect(v.scrollElement).toBeNull();
+  });
+});

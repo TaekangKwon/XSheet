@@ -291,3 +291,8 @@
 - #53（スクロールの位置）・#54（印刷）を InterX-Viewer の `ScrollCapability`（縦の割合）と照らして検討し、ADR-0010 を書いた。ユーザーが推奨どおりに決めた（accepted）。
 - R16 は `scrollElement` を出すだけ。R15 は `renderForPrint` で XSheet がページに切り分けて描く（目盛り線・見出しは既定で出さない、用紙は A4 縦・標準の余白、セルの上限は仮に 200,000）。
 - 印刷範囲は次の版。04 に M7-19〜M7-21（v0.7.0）を載せた。
+
+## 2026-11-26 M7-19：scrollElement（#53・ブランチ feat/m7-19-scroll-element）
+- `SheetView`・`WorkbookView`・`view2` に `scrollElement`（`div.xs-body`。表の無い表示・destroy の後は null）を足した（ADR-0010 §1）。
+- テスト `tests/render/scroll-element.test.ts`・view2 の 1 件。README 3 つと 02 §3 に足した。全体 110 ファイル・2,355 件が通る。
+- 例のページ `examples/scroll-sync.html` で、左右どちらをホイールで動かしても相手が縦の割合で付いて来て、送り返しが起きないことを内蔵ブラウザで確かめた（ref-colors.xlsx）。

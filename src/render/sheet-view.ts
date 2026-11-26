@@ -126,6 +126,8 @@ export interface SheetViewInstance {
   setZoom(zoom: Zoom): void;
   /** XSheet: 今の倍率（fit のときは計算した値） */
   readonly zoom: number;
+  /** XSheet: スクロール枠（`div.xs-body`）。作ってから destroy まで同じ要素で、destroy の後は null（ADR-0010 §1） */
+  readonly scrollElement: HTMLElement | null;
   /** リスナ・ResizeObserver・rAF・blob URL・シートを放し、根を `container` から外す。何度呼んでもよい。ブックは閉じない */
   destroy(): void;
 }
@@ -700,6 +702,10 @@ export function createSheetView(
     },
     get zoom() {
       return zoom;
+    },
+    // XSheet: ADR-0010 §1
+    get scrollElement() {
+      return closed ? null : body;
     },
     destroy,
   };

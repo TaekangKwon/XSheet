@@ -94,6 +94,7 @@ function messageView(root: HTMLElement): WorkbookView {
     },
     zoom: 1,
     activeSheet: null,
+    scrollElement: null, // XSheet: 表が無いのでスクロール枠も無い（ADR-0010 §1）
     destroy: () => {
       root.replaceChildren();
       root.remove();
@@ -241,6 +242,10 @@ export async function renderWorkbook(
     },
     get activeSheet() {
       return selected;
+    },
+    // XSheet: ADR-0010 §1
+    get scrollElement() {
+      return view.scrollElement;
     },
     destroy,
   };

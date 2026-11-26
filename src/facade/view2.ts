@@ -81,6 +81,8 @@ export interface Viewer2 {
   highlightAt(clientX: number, clientY: number): number;
   /** 倍率を替える（0.5〜2.0、または `{ fit: 'width' }`） */
   setZoom(zoom: Zoom): void;
+  /** スクロール枠（`renderWorkbook` の `scrollElement` と同じ。開けなかったファイル・destroy の後は null。ADR-0010 §1） */
+  readonly scrollElement: HTMLElement | null;
   /** 表示を外し、ブック・リスナ・blob URL を放す。何度呼んでもよい */
   destroy(): void;
 }
@@ -112,6 +114,7 @@ function discarded(): Viewer2 {
     cellAt: () => null,
     highlightAt: () => -1,
     setZoom: () => undefined,
+    scrollElement: null,
     destroy: () => undefined,
   };
 }
@@ -259,6 +262,9 @@ export async function view2(
     cellAt: (x, y) => wb.cellAt(x, y),
     highlightAt: (x, y) => wb.highlightAt(x, y),
     setZoom: (zoom) => wb.setZoom(zoom),
+    get scrollElement() {
+      return wb.scrollElement;
+    },
     destroy,
   };
   current.set(container, { token, viewer });

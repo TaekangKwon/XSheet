@@ -277,6 +277,7 @@ container.addEventListener('click', (e) => {
 | `setZoom(zoom)`・`zoom` | 倍率を変える（値は `zoom` オプションと同じ）・読む。左上のセルは動きません。見出しの大きさは変わらず（100% 未満では行番号の文字だけ小さくなります）、線の太さも変わりません |
 | `showSheet(index)` | 表示を作り直さずにシートを替えます。倍率は保ち、ハイライトは消します。`renderSheet` の戻り値にもあります |
 | `activeSheet` | 選んでいるシートの番号（`SheetInfo.index`）。タブを押したとき・`showSheet` を呼んだときにすぐ替わります。開けなかったファイルでは `null` |
+| `scrollElement` | 表をスクロールする要素（v0.7.0）。`scrollTop`・`scrollLeft` を読み書きし、`scroll` のイベントを受けられます（2 つの表を一緒に動かすときなど）。`destroy` まで同じ要素で、開けなかったファイルと `destroy` の後は `null`。大きさ・スタイル・子要素は替えないでください。シートを替えると左上に戻り、倍率を替えると左上のセルが残るように動きます |
 
 - 表示に CSS の `transform` で倍率を掛けないでください。`cellAt`・`highlightAt` が違うセルを指します。`setZoom` を使います。
 

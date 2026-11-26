@@ -122,6 +122,7 @@ export interface SheetView {
   readonly zoom: number;                // 今の倍率（fit は計算した値）
   showSheet(index: number): Promise<void>; // シートを替える（M7-9・ADR-0007 §7。倍率は保ち、ハイライトは消す）
   readonly activeSheet: number | null;  // 選んでいるシートの番号（ADR-0007 §7 版 1.1。showSheet ですぐ替わる・表の無い表示は null）
+  readonly scrollElement: HTMLElement | null; // スクロール枠 div.xs-body（M7-19・ADR-0010 §1。destroy まで同じ要素・表の無い表示と destroy の後は null）
   destroy(): void;                      // blob URL・リスナ・シートを放す（book は閉じない）
 }
 export function renderSheet(container: HTMLElement, book: XlsxBook, sheetIndex: number, options?: RenderOptions): Promise<SheetView>;

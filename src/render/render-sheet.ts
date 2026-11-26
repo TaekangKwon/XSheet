@@ -107,6 +107,14 @@ export interface SheetView {
    * XSheet: ADR-0007 §7（版 1.1）
    */
   readonly activeSheet: number | null;
+  /**
+   * スクロール枠（仮想化の窓 `div.xs-body`）。表示を作ってから `destroy` まで同じ要素で、表の無い表示（開けなかったブック・
+   * シートが 0 枚）と `destroy` の後は null。位置を読む・`scrollTop`・`scrollLeft` を替える・`scroll` のイベントを受けるのに使う。
+   * 大きさ・スタイル・子要素は替えないこと。シートを替えると左上に戻り、倍率を替えると見ていた左上のセルに合わせて動く
+   * （どちらも `scroll` のイベントが来る）。
+   * XSheet: ADR-0010 §1（M7-19）
+   */
+  readonly scrollElement: HTMLElement | null;
   /** リスナ・ResizeObserver・blob URL・シートを放し、表示を `container` から外す。何度呼んでもよい。ブックは閉じない */
   destroy(): void;
 }
@@ -166,6 +174,9 @@ export async function renderSheet(
     },
     get activeSheet() {
       return selected;
+    },
+    get scrollElement() {
+      return view.scrollElement;
     },
     destroy: () => view.destroy(),
   };

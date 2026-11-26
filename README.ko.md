@@ -277,6 +277,7 @@ container.addEventListener('click', (e) => {
 | `setZoom(zoom)`, `zoom` | 배율을 바꾸거나(값은 `zoom` 옵션과 같음) 읽음. 왼쪽 위 셀은 움직이지 않음. 머리글 크기는 그대로이고(100% 미만에서는 행 번호 글자만 작아짐), 선 굵기도 바뀌지 않음 |
 | `showSheet(index)` | 표시를 다시 만들지 않고 시트를 바꿈. 배율은 유지하고 하이라이트는 지움. `renderSheet`의 반환값에도 있음 |
 | `activeSheet` | 선택된 시트의 번호(`SheetInfo.index`). 탭을 누르거나 `showSheet`를 호출하면 바로 바뀜. 파일을 열 수 없었으면 `null` |
+| `scrollElement` | 표를 스크롤하는 요소(v0.7.0). `scrollTop`·`scrollLeft`를 읽고 쓰고, `scroll` 이벤트를 받을 수 있음(두 표를 함께 움직일 때 등). `destroy`까지 같은 요소이며, 파일을 열 수 없었을 때와 `destroy` 뒤에는 `null`. 크기·스타일·자식 요소는 바꾸지 말 것. 시트를 바꾸면 왼쪽 위로 돌아가고, 배율을 바꾸면 왼쪽 위 셀이 남도록 움직임 |
 
 - 표시 영역에 CSS `transform`으로 배율을 걸지 마세요. `cellAt`과 `highlightAt`이 엉뚱한 셀을 가리킵니다. `setZoom`을 쓰세요.
 
