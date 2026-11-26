@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-26
+
 InterX-Viewer の依頼 R15・R16（[ADR-0010](docs/adr/0010-scroll-element-and-print.md)）。今までの API の形は変えていない。
 
 ### 追加
@@ -146,7 +148,8 @@ InterHub のグラフ（ADR-0031・ISSUE-101〜111）を取り込んだ（M7）�
 - 表示の状態をモジュール変数ではなく表示ごとのインスタンスに持ち、同じページに複数の表示を置けるようにした。
 - 形の評価器を描画側から独立させ（`xsheet/geom`）、core が描画に依存する逆転をなくした。
 
-[Unreleased]: https://github.com/TaekangKwon/XSheet/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/TaekangKwon/XSheet/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.7.0
 [0.6.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.6.0
 [0.5.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.5.0
 [0.4.1]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.4.1
