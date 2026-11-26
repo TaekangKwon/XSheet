@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-26
+
+印刷範囲（[ADR-0010](docs/adr/0010-scroll-element-and-print.md) §3）と、セル・行・列の選択・キーボード・コピー（[ADR-0011](docs/adr/0011-selection.md)・#55〜#57）。今までの API の形は変えていない。
+
 ### 追加
 
 - 印刷範囲（`_xlnm.Print_Area`）を読む（[ADR-0010](docs/adr/0010-scroll-element-and-print.md) §3）。`SheetInfo.printArea`（型 `CellRange` の配列。印刷範囲のあるシートだけ）と、上限 `maxPrintAreas`（既定 1,000）を足した。
@@ -160,7 +164,8 @@ InterHub のグラフ（ADR-0031・ISSUE-101〜111）を取り込んだ（M7）�
 - 表示の状態をモジュール変数ではなく表示ごとのインスタンスに持ち、同じページに複数の表示を置けるようにした。
 - 形の評価器を描画側から独立させ（`xsheet/geom`）、core が描画に依存する逆転をなくした。
 
-[Unreleased]: https://github.com/TaekangKwon/XSheet/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/TaekangKwon/XSheet/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.8.0
 [0.7.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.7.0
 [0.6.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.6.0
 [0.5.0]: https://github.com/TaekangKwon/XSheet/releases/tag/v0.5.0
