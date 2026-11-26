@@ -187,6 +187,7 @@ describe('クリックで選ぶ', () => {
     const text = root.querySelector('td:not(.xs-rownum) .xs-cell')!;
     const range = document.createRange();
     range.selectNodeContents(text);
+    document.getSelection()!.removeAllRanges(); // 前のテストのフォーカスで残った位置を消す（addRange は範囲があると何もしない）
     document.getSelection()!.addRange(range);
     click(root, at(root, 2, 2).x, at(root, 2, 2).y);
     document.getSelection()!.removeAllRanges();

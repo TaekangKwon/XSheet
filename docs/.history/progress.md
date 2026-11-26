@@ -330,3 +330,8 @@
 - `src/render/selection.ts`（帯 `div.xs-sel`・クリック・見出しの `is-selected`・結合の範囲）と口 `selection-gate.ts`。`selection: 'row' | 'cell'` を指定した表示だけ遅れて読む（選択を render に入れると 66,530 で上限を超えたため）。`getSelection`・`setSelection`・`onSelectionChange` を SheetView・WorkbookView・view2 に。
 - CSS 変数 `--xs-sel-*` 4 個（ダーク 2 つ・examples・02 §6・theme の数を 20 個に）。examples に選択の切り替え。テスト `tests/render/selection.test.ts`（19 件）。全体 113 ファイル・2,424 件が通る。
 - 大きさ：render 65,162（上限 65,000 を 162 超える）・selection のチャンク 2,181。README は M7-26 でまとめて書く。
+
+## 2026-11-26 M7-25：キーボードで選択を移す（#56）
+- `selection-keys.ts`（行き先の計算：矢印・PageUp/PageDown・Home・Ctrl+Home/End・非表示を飛ばす・結合は範囲の端から）。`selection.ts` に keydown・`tabindex="0"`・クリックでフォーカス・最小の量のスクロール・`span.xs-live`（番地の読み上げ）。
+- 動かしたキー（端も）だけ preventDefault。Shift・Alt・End だけ・入力欄からのキーは取らない。ADR-0011 §4。CSS は `:focus-visible` の枠と `.xs-live`。
+- テスト `tests/render/selection-keys.test.ts`（10 件）。全体 114 ファイル・2,434 件が通る。selection のチャンク 3,382（render は 65,165 のまま）。

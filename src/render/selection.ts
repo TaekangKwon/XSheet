@@ -8,9 +8,13 @@
  * - 選んだ行の行番号・列の列記号は、表を描くたびに `is-selected` を付け直す（描いた行・列だけ）。
  * - クリック：セル → 指定（`'row'` は行の全体、`'cell'` はセル）、行番号 → 行の全体、列記号 → 列の全体。
  *   結合したセルは結合の範囲。動いた距離が小さいクリックだけを選択にし、文字をドラッグで選んでいるときは何もしない。
+ * - キーボード（M7-25）：スクロール枠に `tabindex="0"` を付け、クリックで選んだらフォーカスを移す。行き先は selection-keys.ts。
+ *   選択を動かしたキーだけ既定の動きを止め、見えない所へ動いたら最小の量だけスクロールする。
+ *   選択の番地（`C5`・`5:5`・`C:C`）を見えない `aria-live` の要素に入れて、支援技術に伝える。
  * DOM の要素は作るだけで、ユーザーのファイル内容は入れない。
  */
 import type { CellRange, colName, Geometry, XlsxSheet } from '../core/index';
+import { keyTarget, SELECTION_KEYS } from './selection-keys';
 
 // このファイルは遅れて読む部品なので、表示の部品を import しない（単独版の xsheet-selection.mjs に二重に入れないため。ADR-0011 §3）
 /** Excel の最大の行数・列数（grid.ts の `MAX_GRID_ROWS`・`MAX_GRID_COLS` と同じ） */
@@ -46,7 +50,9 @@ export type SelectionInput =
 
 /** 選択が見る表示の状態（`sheet-view.ts` が渡す。どれも呼んだ時点の値） */
 export interface SelectionHost {
-  /** スクロール枠（`div.xs-body`。クリックを受ける） */
+  /** 表示の根（`div.xs-sheet`。読み上げの要素を置く） */
+  readonly root: HTMLElement;
+  /** スクロール枠（`div.xs-body`。クリック・キーを受ける） */
   readonly body: HTMLElement;
   /** 帯を置く入れ物（`div.xs-wrap`）と、帯をその前に置く要素（図の層） */
   readonly wrapper: HTMLElement;
@@ -58,6 +64,8 @@ export interface SelectionHost {
   /** 表の行数・列数（帯はこの範囲で切る） */
   extent(): { rows: number; cols: number };
   table(): HTMLTableElement | null;
+  /** 今のスクロール位置で描く（描いた範囲に収まっていれば何もしない） */
+  draw(): void;
   /** 選択が変わった（同じ選択では呼ばない） */
   changed(selection: Selection | null, origin: SelectionOrigin): void;
   /** 列の記号（列記号の見出しを探す。selection-gate.ts が渡す） */
@@ -150,6 +158,11 @@ export function createSelection(
   band.hidden = true;
   /** 印を付けた見出しのセル（付け直す前に外す） */
   let marked: Element[] = [];
+  /** 選択の番地の読み上げ（見えない要素） */
+  const live = document.createElement('span');
+  live.className = 'xs-live';
+  live.setAttribute('aria-live', 'polite');
+  host.root.append(live);
 
   /** 行 r1〜r2 の全体（結合の行の範囲に広げない） */
   const rowSel = (r1: number, r2: number, c: number): Selection => ({
@@ -177,7 +190,84 @@ export function createSelection(
     if (sameSelection(value, next)) return;
     value = next;
     controller.layout();
+    live.textContent = next ? address(next) : '';
     host.changed(value, origin);
+  };
+
+  /** 選択の番地（`C5`・`B2:D4`・`5:5`・`C:D`） */
+  const address = (sel: Selection): string => {
+    const { r1, c1, r2, c2 } = sel.range;
+    if (sel.type === 'row') return `${r1}:${r2}`;
+    if (sel.type === 'column') return `${host.colName(c1)}:${host.colName(c2)}`;
+    const a = `${host.colName(c1)}${r1}`;
+    return r1 === r2 && c1 === c2 ? a : `${a}:${host.colName(c2)}${r2}`;
+  };
+
+  /** 選択（今のセル）が見える所まで、最小の量だけスクロールする（中央に寄せない。Excel と同じ） */
+  const reveal = (sel: Selection): void => {
+    const g = host.geometry();
+    if (!g) return;
+    const body = host.body;
+    const o = host.origin();
+    const ext = host.extent();
+    const fit = (pos: number, a: number, b: number, inner: number): number =>
+      b - a > inner || a < pos ? a : b > pos + inner ? b - inner : pos;
+    const [r1, r2] =
+      sel.type === 'column'
+        ? [sel.active.r, sel.active.r]
+        : [sel.range.r1, Math.min(sel.range.r2, ext.rows)];
+    const [c1, c2] =
+      sel.type === 'row'
+        ? [sel.active.c, sel.active.c]
+        : [sel.range.c1, Math.min(sel.range.c2, ext.cols)];
+    const top = fit(body.scrollTop, g.rowTop(r1), g.rowTop(r2 + 1), body.clientHeight - o.y);
+    const left = fit(body.scrollLeft, g.colLeft(c1), g.colLeft(c2 + 1), body.clientWidth - o.x);
+    if (top === body.scrollTop && left === body.scrollLeft) return;
+    body.scrollTop = top;
+    body.scrollLeft = left;
+    host.draw();
+  };
+
+  /** 今のセル (r, c) を、選択の種類のまま選ぶ */
+  const moveTo = (type: SelectionType, r: number, c: number): Selection => {
+    if (type === 'column') return colSel(c, c, r);
+    if (type === 'cell') return cellSel(r, c, false);
+    const row = cellSel(r, c, true);
+    return { ...row, active: { r: row.active.r, c } }; // 行の全体は、覚えている列をそのまま
+  };
+
+  const onKey = (e: KeyboardEvent): void => {
+    if (e.altKey || e.shiftKey || e.isComposing || !SELECTION_KEYS.has(e.key)) return;
+    const t = e.target as HTMLElement | null;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    const g = host.geometry();
+    const sh = host.sheet();
+    if (!g || !sh) return;
+    const body = host.body;
+    const ctrl = e.ctrlKey || e.metaKey;
+    let next: Selection;
+    if (!value) {
+      // 最初のキー：見えている左上のセルを選ぶ
+      next = moveTo(
+        mode === 'cell' ? 'cell' : 'row',
+        g.rowAt(body.scrollTop),
+        g.colAt(body.scrollLeft),
+      );
+    } else {
+      const to = keyTarget(e.key, ctrl, value, {
+        geo: g,
+        extent: host.extent(),
+        used: { rows: sh.rowCount, cols: sh.colCount },
+        pageHeight: body.clientHeight - host.origin().y,
+      });
+      if (to === undefined) return;
+      e.preventDefault();
+      if (to === null) return; // 端（ページはスクロールさせない）
+      next = moveTo(value.type, to.r, to.c);
+    }
+    e.preventDefault();
+    update(next, 'user');
+    reveal(next);
   };
 
   /** 見出しの印を付け直す（描いた行番号・列記号のうち、選択に入るもの） */
@@ -242,11 +332,16 @@ export function createSelection(
       e.clientX - rect.left - host.body.clientLeft,
       e.clientY - rect.top - host.body.clientTop,
     );
-    if (sel) update(sel, 'user');
+    if (sel) {
+      update(sel, 'user');
+      host.body.focus({ preventScroll: true }); // キーボードで続けて動かせるように
+    }
   };
   if (mode) {
     host.body.addEventListener('mousedown', onDown);
     host.body.addEventListener('click', onClick);
+    host.body.addEventListener('keydown', onKey);
+    host.body.tabIndex = 0;
   }
 
   const controller: SelectionController = {
@@ -315,6 +410,9 @@ export function createSelection(
     dispose() {
       host.body.removeEventListener('mousedown', onDown);
       host.body.removeEventListener('click', onClick);
+      host.body.removeEventListener('keydown', onKey);
+      host.body.removeAttribute('tabindex');
+      live.remove();
       marked = [];
       value = null;
       band.remove();

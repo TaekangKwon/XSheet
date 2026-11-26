@@ -695,6 +695,7 @@ export function createSheetView(
   // XSheet: セル・行・列の選択（ADR-0011）。帯は図の層の前に置く
   const selection = createSelectionGate(
     {
+      root,
       body,
       wrapper,
       before: layer.element,
@@ -703,6 +704,7 @@ export function createSheetView(
       origin: () => ({ x: headX(extent.rows), y: headY }),
       extent: () => extent,
       table: () => tableEl,
+      draw: () => draw(),
       changed: (sel, origin) => options.onSelectionChange?.(sel, origin),
     },
     options.selection,
