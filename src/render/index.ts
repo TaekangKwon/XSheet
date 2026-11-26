@@ -14,3 +14,4 @@ export {
 } from './render-sheet';
 export { renderWorkbook, type WorkbookOptions, type WorkbookView } from './render-workbook';
 export type { Zoom } from './zoom';
+export type { PrintOptions, PrintResult } from './print'; // XSheet: ADR-0010 §2

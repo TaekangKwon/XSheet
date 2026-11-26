@@ -10,8 +10,8 @@ export const css = readFileSync(join(process.cwd(), 'src/style.css'), 'utf8').re
   '\n',
 );
 
-/** 変数の既定値のブロックのセレクタ */
-export const DEFAULTS = ':where(:root, :host)';
+/** 変数の既定値のブロックのセレクタ（`.xs-print` は印刷の描画の根。ADR-0010 §2-4） */
+export const DEFAULTS = ':where(:root, :host, .xs-print)';
 
 /** セレクタ（行頭〜`{`）で始まる最初の規則の本文 */
 export function rule(selector: string): string {

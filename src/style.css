@@ -10,7 +10,8 @@
  * - `container` は高さが決まっていて、表示はその中でスクロールする（`.xs-body` がスクロール枠）。
  */
 
-:where(:root, :host) {
+/* XSheet: 印刷の描画の根（.xs-print）にも同じ既定値を直に定義し、祖先のダーク・上書きを受け継がずいつもライトにする（ADR-0010 §2-4） */
+:where(:root, :host, .xs-print) {
   /* 文字の色（塗りの無いセル・自動の文字・図形の色の省略） */
   --xs-fg: #1a1a1a;
   /* 面の地（タブ・ボタン） */
@@ -754,4 +755,57 @@
 
 .xs-layer {
   transform-origin: 0 0;
+}
+
+/* --- XSheet: 印刷の描画（print.ts・ADR-0010 §2）---
+   renderForPrint が target の子に置く div.xs-sheet.xs-print（中に書式の <style> と div.xs-print-page をページの数だけ）。
+   - テーマはいつもライト：変数の既定値のブロック（:where(…, .xs-print)）が .xs-print に直に当たるため、
+     祖先の data-xs-theme・使う側の上書きを受け継がない（§2-4）。
+   - 塗り・罫線の色を印刷で落とさない（print-color-adjust: exact）。
+   - ページは用紙の中身の大きさの固定の窓（JS が width・height を指定）。中身は境で切り、ページの後ろで改ページする。
+   - 目盛り線は既定で出さない（.is-gridlines で出す）。見出しの線は残す。
+   - 画面に出したままにするなら、使う側が @media screen で隠す（README の例）。 */
+.xs-sheet.xs-print {
+  display: block;
+  height: auto;
+  color-scheme: light;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+/* contain: strict：ページの外まで広がる図（幅に合わせて縮めた図の層の中身）を、Chrome・Edge が印刷の幅に数えて
+   全体を縮めて出していた（overflow: hidden・contain: paint では止まらない。M7-21 で PDF にして確かめた） */
+.xs-print-page {
+  position: relative;
+  box-sizing: border-box;
+  overflow: hidden;
+  contain: strict;
+  background: var(--xs-cell-bg);
+  break-after: page;
+  break-inside: avoid;
+  page-break-after: always;
+  page-break-inside: avoid;
+}
+
+.xs-print-page:last-child {
+  break-after: auto;
+  page-break-after: auto;
+}
+
+/* 図の層を、見出しを除くセルの範囲で切る入れ物（JS が位置と大きさを指定する） */
+.xs-print-clip {
+  position: absolute;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.xs-print:not(.is-gridlines) .xs-grid tbody td:not(.xs-rownum) {
+  border-color: transparent;
+}
+
+/* 幅に合わせて縮めた印刷（fit: 'width'）では、列記号も行番号と同じく倍率で小さくする（13px のままだと狭い列で切れる）。小さくても 5px */
+.xs-print .xs-grid thead th,
+.xs-print .xs-grid .xs-rownum .xs-cell {
+  font-size: max(5px, calc(13px * min(1, var(--xs-zoom, 1))));
 }

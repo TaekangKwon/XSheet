@@ -98,7 +98,7 @@ flowchart LR
 | Worker | 解析を Worker で動かす補助（core は DOM 非依存なのでそのまま動く。転送の型を用意する） |
 | Excel との照合 | 罫線 E1〜E5・書式 F1〜F10 の暫定項目を Excel 16 で確かめる（[05_quality.md](05_quality.md) §3） |
 | 表示の追加 | 揃えと折り返し：**入れた**（2026-11-16・ADR-0008・M7-12・M7-13）。リッチテキストの部分書式：**入れた**（2026-11-17・ADR-0009・M7-16〜M7-18）。残りは条件付き書式・テーブルのスタイル・フォント名・グラフの G2（面・散布図・データラベル・第 2 軸・組み合わせ） |
-| 操作 | 検索・ハイライト・移動（`scrollToCell`）・位置の判定・拡大縮小・見出しを隠す・今のシート・和暦：**出した**（2026-11-13・v0.5.0・[ADR-0007](adr/0007-moobius-viewer-api.md)。Moobius の依頼 R1〜R7）。残りはセルの選択とコピー、`view` の `Viewer` に同じ操作を足すか（ADR-0007 §7） |
+| 操作 | 検索・ハイライト・移動（`scrollToCell`）・位置の判定・拡大縮小・見出しを隠す・今のシート・和暦：**出した**（2026-11-13・v0.5.0・[ADR-0007](adr/0007-moobius-viewer-api.md)。Moobius の依頼 R1〜R7）。スクロール枠を出す口・印刷の描画：**決めた**（2026-11-26・[ADR-0010](adr/0010-scroll-element-and-print.md)・M7-19〜M7-21。InterX-Viewer の依頼 R15・R16）。残りはセルの選択とコピー、印刷範囲（ADR-0010 §3）、`view` の `Viewer` に同じ操作を足すか（ADR-0007 §7） |
 | 公開 | npm 公開：**名前・入口は決定**（2026-11-05・[ADR-0006](adr/0006-npm-publish.md)。`@taekangkwon/xsheet`・`xsheet/internal` を外す）。残りは ADR-0006 §4（アカウントと Trusted Publisher の用意・名前の付け替え・`publish.yml`）。版は 0.6.0 以降（ADR-0007 §9。0.5.0 は GitHub の Release だけで出した） |
 
 ### M7 Moobius の依頼（v0.4.1・v0.5.0・[ADR-0007](adr/0007-moobius-viewer-api.md)）
@@ -122,9 +122,9 @@ flowchart LR
 
 ### M7 Moobius の追加の依頼 R8・R9（v0.6.0・[ADR-0008](adr/0008-align-wrap-spill.md)）
 
-**完了（2026-11-17・[#49](https://github.com/TaekangKwon/XSheet/pull/49) でマージ・v0.6.0 で出した）**：M7-11〜M7-15。依頼の資料の確認項目を再現したページで 65 項目 NG 0（ADR-0008 §6）。残りは依頼の自己テスト（Moobius の側）。
+**完了（2026-11-17・[#49](https://github.com/TaekangKwon/XSheet/pull/49) でマージ・v0.6.0 で出した）**：M7-11〜M7-15。依頼の資料の確認項目を再現したページで 65 項目 NG 0（ADR-0008 §6）。依頼の自己テストは Moobius の担当が回す（2026-11-17・ユーザーの判断で、XSheet の側はこれで完了とする）。
 
-順は M7-11 → M7-12 → M7-13 → M7-14 → M7-15。M7-11〜M7-14 は自分だけで進め、ユーザーの確認（実機・依頼の自己テスト・版を出す）は M7-15 にまとめる。GitHub の Issue はまだ作っていない（作るかはユーザーの指示）。
+順は M7-11 → M7-12 → M7-13 → M7-14 → M7-15。M7-11〜M7-14 は自分だけで進め、ユーザーの確認（実機・依頼の自己テスト・版を出す）は M7-15 にまとめる。GitHub の Issue は作らない（作業は #49 で済み、PR と ADR-0008 に記録がある）。
 
 | Issue | GitHub | 内容 | 依存 | 完了の条件 |
 | --- | --- | --- | --- | --- |
@@ -143,3 +143,15 @@ flowchart LR
 | M7-16 | — | core：`<r>` の `<rPr>` を読み `CellView.runs` を足す。`make-xlsx` で区切りを作れるようにする | — | テストが通る |
 | M7-17 | — | render：区切りごとの span・検索の一致の片の中の区切り・測り方（移動・判定・はみ出しの見積もり） | M7-16 | テストが通る |
 | M7-18 | — | 実機の確認（依頼のサンプル 06_検索 B9）・文書・CHANGELOG | M7-17 | Excel の画面と同じ部分の色・太字 |
+
+### M7 InterX-Viewer の依頼 R15・R16（v0.7.0・[ADR-0010](adr/0010-scroll-element-and-print.md)）
+
+InterX-Viewer の xlsx プラグインからの依頼（2026-11-26・#53・#54）。依頼の案とは形を変えた（ADR-0010 の却下した案）：R16 はセルで位置を扱う口の代わりにスクロール枠を出すだけ、R15 は XSheet がページに切り分けて描く。印刷範囲（`_xlnm.Print_Area`）は次の版に送る。
+
+順は M7-19 → M7-20 → M7-21。版を出すのはユーザーの指示で。
+
+| Issue | GitHub | 内容 | 依存 | 完了の条件 |
+| --- | --- | --- | --- | --- |
+| M7-19 | [#53](https://github.com/TaekangKwon/XSheet/issues/53) | R16：`scrollElement`（`SheetView`・`WorkbookView`・`view2`）・テスト・README 3 つ | — | テストが通る。examples で並べた 2 つの表が一緒に動く |
+| M7-20 | [#54](https://github.com/TaekangKwon/XSheet/issues/54) | R15：`renderForPrint`（ページへの切り分け・図とグラフを待つ・中断・印刷の CSS・ライトのテーマ・セルの数の上限）・テスト・README 3 つ | — | テストが通る。Chrome・Edge・Firefox の印刷のプレビューで抜けが無い |
+| M7-21 | — | 実機の確認・CHANGELOG・v0.7.0 | M7-19・M7-20 | 依頼の完了の条件を満たす |

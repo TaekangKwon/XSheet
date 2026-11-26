@@ -107,7 +107,7 @@ npm install github:TaekangKwon/XSheet#v0.6.0
 2. **Assets**에서 `xsheet-<version>-standalone.zip`을 내려받습니다. "Source code" 압축 파일은 저장소의 소스이고, 빌드된 라이브러리가 아닙니다.
 3. 압축을 풀면 `xsheet-<version>/` 폴더가 생깁니다.
    - 바로 써 보려면 `viewer.html`을 더블클릭하고(`file://`에서도 동작합니다) `.xlsx` 파일을 고르거나 끌어다 놓습니다. 파일은 브라우저 안에서만 읽으며 어디에도 전송하지 않습니다.
-   - 내 페이지에서 쓰려면 `xsheet.min.js`를 페이지와 같은 곳에 복사하고 [빠른 시작](#빠른-시작)의 예대로 작성합니다. 번들러 없이 `import`하려면 `xsheet.mjs`, `xsheet-geom.mjs`, `xsheet-chart.mjs`를 같은 폴더에 복사합니다.
+   - 내 페이지에서 쓰려면 `xsheet.min.js`를 페이지와 같은 곳에 복사하고 [빠른 시작](#빠른-시작)의 예대로 작성합니다. 번들러 없이 `import`하려면 `xsheet.mjs`, `xsheet-geom.mjs`, `xsheet-chart.mjs`, `xsheet-print.mjs`(v0.7.0)를 같은 폴더에 복사합니다.
 4. 이 파일들을 다시 배포할 때는 `xsheet.licenses.txt`, `LICENSE`, `NOTICE`를 함께 두세요.
 
 ## 동작 방식
@@ -277,8 +277,55 @@ container.addEventListener('click', (e) => {
 | `setZoom(zoom)`, `zoom` | 배율을 바꾸거나(값은 `zoom` 옵션과 같음) 읽음. 왼쪽 위 셀은 움직이지 않음. 머리글 크기는 그대로이고(100% 미만에서는 행 번호 글자만 작아짐), 선 굵기도 바뀌지 않음 |
 | `showSheet(index)` | 표시를 다시 만들지 않고 시트를 바꿈. 배율은 유지하고 하이라이트는 지움. `renderSheet`의 반환값에도 있음 |
 | `activeSheet` | 선택된 시트의 번호(`SheetInfo.index`). 탭을 누르거나 `showSheet`를 호출하면 바로 바뀜. 파일을 열 수 없었으면 `null` |
+| `scrollElement` | 표를 스크롤하는 요소(v0.7.0). `scrollTop`·`scrollLeft`를 읽고 쓰고, `scroll` 이벤트를 받을 수 있음(두 표를 함께 움직일 때 등). `destroy`까지 같은 요소이며, 파일을 열 수 없었을 때와 `destroy` 뒤에는 `null`. 크기·스타일·자식 요소는 바꾸지 말 것. 시트를 바꾸면 왼쪽 위로 돌아가고, 배율을 바꾸면 왼쪽 위 셀이 남도록 움직임 |
+| `renderForPrint(target, options?)` | 표시 중인 시트를 인쇄용으로 페이지를 나눠 그림(v0.7.0). [인쇄](#인쇄v070) 참고 |
 
 - 표시 영역에 CSS `transform`으로 배율을 걸지 마세요. `cellAt`과 `highlightAt`이 엉뚱한 셀을 가리킵니다. `setZoom`을 쓰세요.
+
+### 인쇄(v0.7.0)
+
+`renderForPrint(target, options?)`는 표시 중인 시트를 가상화하지 않고 페이지로 나눠 `target` 안에 그립니다. 가로로도 세로로도 넓은 시트가 빠짐없이 인쇄됩니다(브라우저의 페이지 나눔에 맡기면 오른쪽 끝을 넘는 열이 잘립니다). 표시 자체(배율·스크롤 위치·하이라이트)는 건드리지 않습니다. 인쇄 화면은 사용하는 쪽이 띄우고, `@page`를 `page`와 같은 크기로 맞춘 뒤, 끝나면 결과의 `destroy()`를 호출합니다.
+
+```ts
+const result = await wb.renderForPrint(printHost); // A4 세로·Excel의 "표준" 여백
+window.addEventListener('afterprint', () => result.destroy(), { once: true });
+window.print();
+```
+
+```css
+@page {
+  size: A4 portrait;
+  margin: 0.75in 0.7in; /* 기본 페이지(659 × 978 px)는 이 여백 안쪽의 크기 */
+}
+#print-host {
+  display: none;
+}
+@media print {
+  :root {
+    color-scheme: light; /* 다크 color-scheme 그대로면 Chrome·Edge가 용지 여백을 어둡게 칠함 */
+  }
+  body > :not(#print-host) {
+    display: none;
+  }
+  #print-host {
+    display: block;
+  }
+}
+```
+
+| 옵션 | 기본값 | 의미 |
+| --- | --- | --- |
+| `page` | `{ width: 659, height: 978 }` | 한 페이지 내용의 크기(CSS px. 96 px = 1 in). 기본값은 A4 세로에서 Excel의 "표준" 여백(좌우 0.7 in·상하 0.75 in)을 뺀 값. A4 가로는 `{ width: 988, height: 649 }` |
+| `fit` | — | `'width'`는 모든 열이 한 페이지 폭에 들어가도록 축소함(세로로만 페이지를 나눔) |
+| `headers` | `false` | 열 문자와 행 번호를 페이지마다 출력 |
+| `gridlines` | `false` | 눈금선을 출력. 셀 테두리는 항상 출력됨 |
+| `maxCells` | `200000` | 그릴 셀 수의 상한(보이는 행 × 보이는 열). 넘는 행은 그리지 않고 `truncated`가 `true`가 됨 |
+| `signal` | — | `AbortSignal`. 중단하면 추가한 요소를 치운 뒤 `AbortError` `DOMException`으로 거부함 |
+
+- 페이지 순서는 "아래로, 그다음 오른쪽으로"입니다(Excel의 기본값). 각 페이지는 `page` 크기의 고정된 창이며, 페이지 경계를 넘는 것(넘치는 문자·병합 셀·그림)은 경계에서 잘립니다. 아무것도 없는 페이지는 출력하지 않습니다.
+- 인쇄하는 것은 데이터 범위(셀·그림·차트·넘치는 문자가 닿는 열)입니다. 인쇄 영역·페이지 나누기·인쇄 제목·머리글과 바닥글·파일의 페이지 설정은 아직 읽지 않습니다.
+- 인쇄 처리는 `renderForPrint`를 처음 호출할 때만 읽어 들입니다(별도 청크. 스탠드얼론 ESM에서는 `xsheet-print.mjs`). 그림과 차트를 다 읽은 뒤에 이행(resolve)됩니다. `data-xs-theme="dark"` 아래에서도 인쇄는 항상 라이트 테마입니다.
+- 결과는 `{ pages, truncated, destroy() }`. 시트가 없거나 인쇄할 것이 없으면 `pages`가 `0`이고 아무것도 추가하지 않습니다. 그리는 도중에 시트를 바꾸거나 표시를 `destroy`하면 `AbortError`로 거부합니다. 이행된 뒤에는 `destroy()`를 호출할 때까지 인쇄 페이지가 남습니다.
 
 전체 API는 [docs/02_architecture.md](docs/02_architecture.md)의 §2(core)와 §3(render와 `view` 계층)에 정리되어 있습니다.
 
@@ -300,7 +347,7 @@ container.addEventListener('click', (e) => {
 ## 테마
 
 - 다크 모드로 표시하려면 `view`에 `theme: 'dark'`를 넘기세요(`'auto'`는 OS 설정을 따름). `renderWorkbook` 등을 쓸 때는 표시 영역의 루트나 `<html>` 같은 상위 요소에 `data-xs-theme="dark"`(또는 `"auto"`)를 붙입니다. 다크 값은 `style.css`에 들어 있으므로 따로 복사할 필요가 없습니다.
-- 색은 16개의 CSS 변수(`--xs-*`)로 바꿀 수 있습니다. 기본값의 명시도(specificity)가 0(`:where(:root, :host)`)이라서, Shadow DOM 안을 포함해 어디서든 덮어쓸 수 있습니다.
+- 색은 16개의 CSS 변수(`--xs-*`)로 바꿀 수 있습니다. 기본값의 명시도(specificity)가 0(`:where(:root, :host, .xs-print)`)이라서, Shadow DOM 안을 포함해 어디서든 덮어쓸 수 있습니다. 인쇄 출력(`.xs-print`)에도 같은 기본값이 직접 적용되므로 인쇄는 항상 라이트입니다.
 
 ```css
 /* 라이트 테마의 강조색만 바꾸기 */

@@ -35,6 +35,8 @@ const LIMITS = {
  */
 const CHUNK_LIMITS = {
   'chart-draw': 17_500,
+  // M7-21（2026-11-26）：印刷の描画（ADR-0010 §2）を遅れて読む部品にした。実測 3,110 に約 1 割の余裕
+  print: 3_500,
 };
 
 /**
@@ -46,6 +48,8 @@ const STANDALONE_LIMITS = {
   'xsheet.mjs': 104_000,
   'xsheet-geom.mjs': 34_000,
   'xsheet-chart.mjs': 28_000,
+  // M7-21（2026-11-26）：実測 2,820 に約 1 割の余裕
+  'xsheet-print.mjs': 3_200,
 };
 
 /**

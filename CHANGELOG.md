@@ -4,6 +4,24 @@
 
 ## [Unreleased]
 
+InterX-Viewer の依頼 R15・R16（[ADR-0010](docs/adr/0010-scroll-element-and-print.md)）。今までの API の形は変えていない。
+
+### 追加
+
+- `SheetView`・`WorkbookView` の `scrollElement`：表をスクロールする要素（`div.xs-body`）を出す（[#53](https://github.com/TaekangKwon/XSheet/issues/53)。[ADR-0010](docs/adr/0010-scroll-element-and-print.md) §1）。`scrollTop`・`scrollLeft` を読み書きし、`scroll` のイベントを受けられる（2 つの表を一緒に動かすときなど）。表示を作ってから `destroy` まで同じ要素で、開けなかったブック・シートが 0 枚の表示と `destroy` の後は `null`。シートを替えると左上に戻り、倍率を替えると左上のセルが残るように動く（どちらも `scroll` のイベントが来る）。
+- `SheetView`・`WorkbookView` の `renderForPrint(target, options?)`：表示中のシートを、印刷のためにページに分けて描く（[#54](https://github.com/TaekangKwon/XSheet/issues/54)。[ADR-0010](docs/adr/0010-scroll-element-and-print.md) §2）。型 `PrintOptions`・`PrintResult` を `xsheet/render` から出す。
+  - 範囲はデータ・図・グラフ・はみ出しの届く列まで。ページは用紙の中身の大きさ（`page`。既定は A4 縦から Excel の「標準」の余白を引いた 659×978 px）の固定の窓で、「下へ、それから右へ」の順に並べ、境をまたぐ物は境で切る。何も無いページは出さない。ブラウザの改ページに任せないので、右へ広いシートの列も抜けない。
+  - `fit: 'width'`（全部の列を 1 ページの幅に縮める）・`headers`（列記号と行番号）・`gridlines`（目盛り線）・`maxCells`（描くセルの数の上限。既定 200,000。超える行を打ち切り `truncated` を返す）・`signal`。
+  - 図・グラフを読み終えてから解決する。`signal`・表示の `destroy`・シートの切り替えで中断し、足した物を片付けてから `AbortError` で拒否する。今の表示（倍率・位置・ハイライト）には触らない。
+  - 印刷の処理は最初に `renderForPrint` を呼んだときだけ読む（別のチャンク。単独版の ESM では同じフォルダの `xsheet-print.mjs`。**単独版の ESM を使う側は、このファイルも置く**）。`xsheet.min.js` は中に持つ。
+  - 見た目はいつもライトのテーマで、塗りと罫線の色は印刷でも落とさない（`print-color-adjust: exact`）。印刷の画面と `@page` は使う側が出す（README の例）。
+  - Chrome・Edge・Firefox で PDF にして、ページの数と中身が描いたページと一致することを確かめた（A4 縦・横、幅に合わせる、ダークの画面）。
+  - 印刷範囲（`Print_Area`）・改ページ・印刷タイトル・ヘッダーとフッターはまだ読まない（次の版。ADR-0010 §3）。
+
+### 変更
+
+- CSS 変数の既定値のブロックのセレクタを `:where(:root, :host, .xs-print)` にした（印刷の描画の根 `.xs-print` に既定値を直に当て、祖先のダーク・上書きを受け継がない）。詳細度は 0 のままで、画面の表示の上書きの仕方は変わらない。
+
 ## [0.6.0] - 2026-11-17
 
 Moobius の追加の依頼 R8・R9（[ADR-0008](docs/adr/0008-align-wrap-spill.md)）と、リッチテキストの部分の書式（[ADR-0009](docs/adr/0009-rich-text-runs.md)）。

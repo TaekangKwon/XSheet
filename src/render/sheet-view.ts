@@ -60,6 +60,10 @@ import {
 // XSheet: 最後の列からはみ出す文字の分だけ表を広げる（ADR-0008 §4）
 import { spillReachCols } from './spill-extent';
 import { createImageLayer } from './image-layer';
+// XSheet: 印刷の描画（ADR-0010 §2）
+import type { PrintOptions, PrintResult } from './print';
+import { createPrintGate } from './print-gate';
+import type { SheetDrawing } from '../core/index';
 import { formatMessage, type XSheetMessages } from './messages';
 import { loadGeom } from './shapes';
 
@@ -126,6 +130,10 @@ export interface SheetViewInstance {
   setZoom(zoom: Zoom): void;
   /** XSheet: 今の倍率（fit のときは計算した値） */
   readonly zoom: number;
+  /** XSheet: スクロール枠（`div.xs-body`）。作ってから destroy まで同じ要素で、destroy の後は null（ADR-0010 §1） */
+  readonly scrollElement: HTMLElement | null;
+  /** XSheet: 印刷の描画（中身は print.ts。印刷するときだけ読む。ADR-0010 §2） */
+  renderForPrint(target: HTMLElement, options?: PrintOptions): Promise<PrintResult>;
   /** リスナ・ResizeObserver・rAF・blob URL・シートを放し、根を `container` から外す。何度呼んでもよい。ブックは閉じない */
   destroy(): void;
 }
@@ -252,6 +260,9 @@ export function createSheetView(
   let boxes: DrawingBox[] = [];
   /** 図を収めるのに必要な表の行数・列数（表を図のある範囲まで広げる） */
   let drawingMin = { rows: 0, cols: 0 };
+  // XSheet: 印刷の描画が使う図の一覧と、描いている途中の印刷（シートの切り替え・destroy で中断する。ADR-0010 §2）
+  let sheetDrawings: readonly SheetDrawing[] = [];
+  const printGate = createPrintGate();
   /** 図の読み取り・上限超過をまとめて知らせる 1 行（無ければ hidden） */
   const noticeBar = document.createElement('div');
   noticeBar.className = 'xs-notice';
@@ -503,6 +514,7 @@ export function createSheetView(
       throw new RangeError('シートの番号が範囲外');
     }
     const seq = ++openSeq;
+    printGate.abortAll(); // XSheet: ADR-0010 §2-3
     const isStale = (): boolean => seq !== openSeq || closed;
     let opened: XlsxSheet;
     try {
@@ -561,6 +573,7 @@ export function createSheetView(
     // 図の位置は geometry（行数・列数を Excel の最大にしたもの。範囲外の番号も既定の寸法で延びる）から出す。
     const bigGeo = createGeometry(opened.layout, MAX_GRID_ROWS, MAX_GRID_COLS);
     const drawings = found.drawings;
+    sheetDrawings = drawings; // XSheet: ADR-0010 §2
     const placed = layoutDrawings(bigGeo, drawings);
     if (opened.rowCount === 0 && placed.length === 0) {
       // 空シート（グラフシートを含む）。保持せず、データ無しの表示にする。
@@ -613,6 +626,7 @@ export function createSheetView(
     }
     closed = true;
     openSeq++;
+    printGate.abortAll(); // XSheet: ADR-0010 §2-3
     // blob URL を先にすべて revoke する（読み込み中の画像の結果は捨てられる）
     layer.dispose();
     cancelAnimationFrame(frame);
@@ -701,6 +715,27 @@ export function createSheetView(
     get zoom() {
       return zoom;
     },
+    // XSheet: ADR-0010 §1
+    get scrollElement() {
+      return closed ? null : body;
+    },
+    // XSheet: ADR-0010 §2（表が無い・閉じた表示は 0 ページ）
+    renderForPrint: (target, opts) =>
+      printGate.run(
+        target,
+        sheet && activeIndex !== null && !closed
+          ? {
+              book,
+              index: activeIndex,
+              sheet,
+              drawings: options.drawings ? sheetDrawings : [],
+              boxes,
+              messages,
+              nonce: options.nonce,
+            }
+          : null,
+        opts,
+      ),
     destroy,
   };
 }

@@ -107,7 +107,7 @@ npm install github:TaekangKwon/XSheet#v0.6.0
 2. **Assets** から `xsheet-<version>-standalone.zip` をダウンロードします。「Source code」のアーカイブはリポジトリのソースで、ビルド済みのライブラリではありません。
 3. 展開すると `xsheet-<version>/` フォルダができます。
    - すぐに試すなら、`viewer.html` をダブルクリックして（`file://` で動きます）、`.xlsx` ファイルを選ぶかドロップします。ファイルはブラウザの中で読み込むだけで、どこにも送信しません。
-   - 自分のページで使うなら、`xsheet.min.js` をページと同じ場所にコピーし、[クイックスタート](#クイックスタート)の例のとおりに書きます。バンドラなしで `import` するなら、`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet-chart.mjs` を同じフォルダにコピーします。
+   - 自分のページで使うなら、`xsheet.min.js` をページと同じ場所にコピーし、[クイックスタート](#クイックスタート)の例のとおりに書きます。バンドラなしで `import` するなら、`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet-chart.mjs`・`xsheet-print.mjs`（v0.7.0）を同じフォルダにコピーします。
 4. これらのファイルを再配布するときは、`xsheet.licenses.txt`・`LICENSE`・`NOTICE` を一緒に置いてください。
 
 ## 仕組み
@@ -277,8 +277,55 @@ container.addEventListener('click', (e) => {
 | `setZoom(zoom)`・`zoom` | 倍率を変える（値は `zoom` オプションと同じ）・読む。左上のセルは動きません。見出しの大きさは変わらず（100% 未満では行番号の文字だけ小さくなります）、線の太さも変わりません |
 | `showSheet(index)` | 表示を作り直さずにシートを替えます。倍率は保ち、ハイライトは消します。`renderSheet` の戻り値にもあります |
 | `activeSheet` | 選んでいるシートの番号（`SheetInfo.index`）。タブを押したとき・`showSheet` を呼んだときにすぐ替わります。開けなかったファイルでは `null` |
+| `scrollElement` | 表をスクロールする要素（v0.7.0）。`scrollTop`・`scrollLeft` を読み書きし、`scroll` のイベントを受けられます（2 つの表を一緒に動かすときなど）。`destroy` まで同じ要素で、開けなかったファイルと `destroy` の後は `null`。大きさ・スタイル・子要素は替えないでください。シートを替えると左上に戻り、倍率を替えると左上のセルが残るように動きます |
+| `renderForPrint(target, options?)` | 表示中のシートを、印刷のためにページに分けて描きます（v0.7.0）。[印刷](#印刷v070)を参照 |
 
 - 表示に CSS の `transform` で倍率を掛けないでください。`cellAt`・`highlightAt` が違うセルを指します。`setZoom` を使います。
+
+### 印刷（v0.7.0）
+
+`renderForPrint(target, options?)` は、表示中のシートを仮想化せずにページに分けて `target` の中に描きます。横にも縦にも広いシートが抜けなく印刷されます（ブラウザの改ページに任せると、右端より先の列が切れます）。表示そのもの（倍率・スクロールの位置・ハイライト）には触りません。印刷の画面は使う側が出し、`@page` を `page` と同じ大きさにして、終わったら結果の `destroy()` を呼びます。
+
+```ts
+const result = await wb.renderForPrint(printHost); // A4 縦・Excel の「標準」の余白
+window.addEventListener('afterprint', () => result.destroy(), { once: true });
+window.print();
+```
+
+```css
+@page {
+  size: A4 portrait;
+  margin: 0.75in 0.7in; /* 既定のページ（659 × 978 px）は、この余白の内側の大きさ */
+}
+#print-host {
+  display: none;
+}
+@media print {
+  :root {
+    color-scheme: light; /* ダークの color-scheme のままだと、Chrome・Edge が用紙の余白を暗く塗る */
+  }
+  body > :not(#print-host) {
+    display: none;
+  }
+  #print-host {
+    display: block;
+  }
+}
+```
+
+| オプション | 既定値 | 意味 |
+| --- | --- | --- |
+| `page` | `{ width: 659, height: 978 }` | 1 ページの中身の大きさ（CSS px。96 px = 1 in）。既定は A4 縦から Excel の「標準」の余白（左右 0.7 in・上下 0.75 in）を引いた値。A4 横は `{ width: 988, height: 649 }` |
+| `fit` | — | `'width'` は全部の列が 1 ページの幅に収まるように縮めます（縦だけページを分けます） |
+| `headers` | `false` | 列記号と行番号を各ページに出します |
+| `gridlines` | `false` | 目盛り線を出します。セルの罫線はいつも出ます |
+| `maxCells` | `200000` | 描くセルの数の上限（見える行 × 見える列）。超える行は描かず、`truncated` が `true` になります |
+| `signal` | — | `AbortSignal`。中断すると、足した物を外してから `AbortError` の `DOMException` で拒否します |
+
+- ページは「下へ、それから右へ」の順です（Excel の既定）。各ページは `page` の大きさの固定の窓で、ページの境をまたぐ物（はみ出す文字・結合セル・図）は境で切れます。何も無いページは出しません。
+- 印刷するのはデータの範囲（セル・図・グラフ・はみ出す文字が届く列）です。印刷範囲・改ページ・印刷タイトル・ヘッダーとフッター・ファイルのページ設定はまだ読みません。
+- 印刷の処理は、最初に `renderForPrint` を呼んだときだけ読み込みます（別のチャンク。単独版の ESM では `xsheet-print.mjs`）。図とグラフを読み終えてから解決します。`data-xs-theme="dark"` の下でも、印刷はいつもライトのテーマです。
+- 結果は `{ pages, truncated, destroy() }`。シートが無い・印刷する物が無いときは `pages` が `0` で、何も足しません。描いている途中にシートを替える・表示を `destroy` すると `AbortError` で拒否します。解決した後は、`destroy()` を呼ぶまで印刷のページが残ります。
 
 API の全体は [docs/02_architecture.md](docs/02_architecture.md) の §2（core）と §3（render と `view` の層）にまとめています。
 
@@ -300,7 +347,7 @@ API の全体は [docs/02_architecture.md](docs/02_architecture.md) の §2（co
 ## テーマ
 
 - ダークで表示するには、`view` に `theme: 'dark'` を渡します（`'auto'` なら OS の設定に合わせます）。`renderWorkbook` などを使う場合は、表示のルート要素か `<html>` などの祖先要素に `data-xs-theme="dark"`（または `"auto"`）を付けます。ダークの値は `style.css` に含まれているので、自分で書き写す必要はありません。
-- 色は 16 個の CSS 変数（`--xs-*`）で変えられます。既定値の詳細度は 0（`:where(:root, :host)`）なので、Shadow DOM の中を含め、どこからでも上書きできます。
+- 色は 16 個の CSS 変数（`--xs-*`）で変えられます。既定値の詳細度は 0（`:where(:root, :host, .xs-print)`）なので、Shadow DOM の中を含め、どこからでも上書きできます。印刷の出力（`.xs-print`）にも同じ既定値が直接当たるので、印刷はいつもライトです。
 
 ```css
 /* ライトテーマのアクセントカラーだけを変える */

@@ -282,3 +282,34 @@
 - #49（R8・R9）と #50（リッチテキストの部分の書式）をマージし、#51 で版を 0.6.0・CHANGELOG の日付を 2026-11-17 にした。#49 の CI は誤ってコミットした `.vitest/json/output.json` で format:check が落ちていたので、外して `.gitignore` に足した（07b36f2）。
 - `main`（73ac532）から dist を含めたタグ専用のコミット（4220996）を作り、注釈付きタグ `v0.6.0` を push した。Release「XSheet 0.6.0」に `xsheet-0.6.0-standalone.zip`（373,466 B）を添付した。
 - zip の `xsheet.min.js` で依頼のサンプルを開き、06_検索 B9 の部分の書式・一致の片・`cellAt`・`highlightAt` を確かめた。`viewer.html`・`viewer2.html` が読み込める。npm への公開は保留のまま。
+
+## 2026-11-17 v0.6.0 の後の整理（ブランチ docs/after-v0.6.0）
+- 依頼の自己テスト（R1〜R9）は Moobius の担当が回すので、ユーザーの判断で XSheet の側は完了とした（04 の M7 R8・R9 の節）。
+- M7-11〜M7-18 の GitHub の Issue は作らない（作業は #49・#50 で済み、PR と ADR-0008・0009 に記録がある）。
+
+## 2026-11-26 InterX-Viewer の依頼 R15・R16 の ADR（ブランチ docs/after-v0.6.0）
+- #53（スクロールの位置）・#54（印刷）を InterX-Viewer の `ScrollCapability`（縦の割合）と照らして検討し、ADR-0010 を書いた。ユーザーが推奨どおりに決めた（accepted）。
+- R16 は `scrollElement` を出すだけ。R15 は `renderForPrint` で XSheet がページに切り分けて描く（目盛り線・見出しは既定で出さない、用紙は A4 縦・標準の余白、セルの上限は仮に 200,000）。
+- 印刷範囲は次の版。04 に M7-19〜M7-21（v0.7.0）を載せた。
+
+## 2026-11-26 M7-19：scrollElement（#53・ブランチ feat/m7-19-scroll-element）
+- `SheetView`・`WorkbookView`・`view2` に `scrollElement`（`div.xs-body`。表の無い表示・destroy の後は null）を足した（ADR-0010 §1）。
+- テスト `tests/render/scroll-element.test.ts`・view2 の 1 件。README 3 つと 02 §3 に足した。全体 110 ファイル・2,355 件が通る。
+- 例のページ `examples/scroll-sync.html` で、左右どちらをホイールで動かしても相手が縦の割合で付いて来て、送り返しが起きないことを内蔵ブラウザで確かめた（ref-colors.xlsx）。
+
+## 2026-11-26 M7-20：renderForPrint（#54・ブランチ feat/m7-20-print）
+- `src/render/print.ts` を足し、`SheetView`・`WorkbookView`・`view2` に `renderForPrint` を通した（ADR-0010 §2）。写しのファイル（sheet-view・image-layer）には `// XSheet:` の口だけ。テーマは既定値のブロックを `:where(:root, :host, .xs-print)` にしていつもライト。
+- テスト `tests/render/print.test.ts`（31 件）。全体 111 ファイル・2,386 件が通る。README 3 つ・02 §3・§6・guide/theme・ADR-0010 版 1.1（計測・結合セル・空のページ）を直した。
+- 例のページ `examples/print.html` で showcase・ref-drawings・ref-shapes・ref-charts を内蔵ブラウザで見た（下へ→右・空のページを飛ばす・図は境で切れる・グラフ 75 個を待つ・ダークでもライト）。200,000 セルは描画 1.2 秒・417 ページ（取り付けたまま譲ると 27 秒だったので、文書の外で組んでから付ける）。
+- Chrome・Edge・Firefox の印刷のプレビュー（印刷の画面）は未確認。M7-21 の実機で見る。
+
+## 2026-11-26 M7-21：3 つのブラウザの印刷の確認・CHANGELOG（ブランチ feat/m7-20-print）
+- `examples/print.html` に自動の動き（`auto=render`）を足し、Chrome・Edge（headless の PDF・DevTools の printToPDF）と Firefox（WebDriver BiDi の print）で 7 つの場合を PDF にした。3 つとも PDF のページの数が描いたページの数と一致。
+- 見つけて直した：A4 横で幅に合わせると Chrome・Edge が全体を 0.67 倍などに縮めていた（縮めた図の層の中身を印刷の幅に数える）→ ページに `contain: strict`。縮めた印刷の列記号が切れる → 倍率で小さく（5px まで）。例のページのダークの余白 → 印刷で `color-scheme: light`（README に書いた）。
+- CHANGELOG の Unreleased・ADR-0010 版 1.2。全体 111 ファイル・2,389 件が通る。
+- 未解決：`npm run size` の render が 66,171 で上限 65,000 を超える（M7-20 で +2.4 KB。M7-19 では 63,762）。CI が止まるので PR の前に決める。
+
+## 2026-11-26 M7-21：印刷の処理を遅れて読む部品に（ユーザーの決定・ADR-0010 版 1.3）
+- `print.ts` を動的 import にし（`print-gate.ts` の口と `PRINT_KIT`）、`LAZY_PARTS` に print を足した。render 66,171 → 64,405（上限 65,000）、print のチャンク 3,110（上限 3,500）、`xsheet-print.mjs` 2,820（上限 3,200）。
+- `check:standalone` に印刷を足した（IIFE で renderForPrint・ESM で xsheet-print.mjs を読む）。`check:consumer`・size も通る。README 3 つ・standalone・csp・02・CHANGELOG を合わせた。
+- 全体 111 ファイル・2,389 件のうち sync.test の 1 件が 5 秒の時間切れ（git の模型。前のコミットでも同じく落ちる＝この PC の今の遅さ。60 秒なら通る）。

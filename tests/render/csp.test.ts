@@ -44,9 +44,10 @@ describe('render のソース：CSP で止まる書き方をしない', () => {
     );
   });
 
-  it('<style> を作るのは書式の 1 か所だけで、nonce を付けられる', () => {
-    expect(filesMatching(/createElement\(\s*['"]style['"]/)).toEqual(['sheet-view.ts']);
+  it('<style> を作るのは書式の 2 か所（表示と印刷の描画。ADR-0010 §2-4）だけで、nonce を付けられる', () => {
+    expect(filesMatching(/createElement\(\s*['"]style['"]/)).toEqual(['print.ts', 'sheet-view.ts']);
     expect(sources['sheet-view.ts']).toMatch(/setAttribute\(\s*'nonce'/);
+    expect(sources['print.ts']).toMatch(/setAttribute\(\s*'nonce'/);
   });
 
   it('画像は blob URL だけで出す（data: の URL を作らない。img-src は blob: だけでよい）', () => {
