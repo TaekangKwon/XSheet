@@ -313,3 +313,8 @@
 - `print.ts` を動的 import にし（`print-gate.ts` の口と `PRINT_KIT`）、`LAZY_PARTS` に print を足した。render 66,171 → 64,405（上限 65,000）、print のチャンク 3,110（上限 3,500）、`xsheet-print.mjs` 2,820（上限 3,200）。
 - `check:standalone` に印刷を足した（IIFE で renderForPrint・ESM で xsheet-print.mjs を読む）。`check:consumer`・size も通る。README 3 つ・standalone・csp・02・CHANGELOG を合わせた。
 - 全体 111 ファイル・2,389 件のうち sync.test の 1 件が 5 秒の時間切れ（git の模型。前のコミットでも同じく落ちる＝この PC の今の遅さ。60 秒なら通る）。
+
+## 2026-11-26 v0.7.0 を出した（#58・#59）
+- #58（InterX-Viewer の依頼 R15・R16：`scrollElement`・`renderForPrint`・ADR-0010）をマージし、#59 で版を 0.7.0・CHANGELOG の日付を 2026-11-26 にした。
+- `main`（56b6b68）から dist を含めたタグ専用のコミット（0e385d1）を作り、注釈付きタグ `v0.7.0` を push した。Release「XSheet 0.7.0」に `xsheet-0.7.0-standalone.zip`（399,073 B・13 ファイル）を添付した。
+- zip の JS・CSS・型は、`check:standalone`（IIFE で印刷も描く）・`check:consumer`・size を通した dist と同じ中身。npm への公開は保留のまま。
