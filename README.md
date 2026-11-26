@@ -168,7 +168,7 @@ Shows the whole workbook with sheet tabs. Returns `Promise<Viewer>`.
 
 | Member | Meaning |
 | --- | --- |
-| `sheets` | The sheet list (`SheetInfo[]`: `index` (1-based), `name`, `hidden`), in tab order, hidden sheets included |
+| `sheets` | The sheet list (`SheetInfo[]`: `index` (1-based), `name`, `hidden`, and `printArea` when the sheet has a print area), in tab order, hidden sheets included |
 | `showSheet(index or name)` | Switch sheets, like clicking a tab. Unknown index or name throws `RangeError` |
 | `destroy()` | Remove the view and release the workbook, listeners and blob URLs. Safe to call more than once |
 
@@ -240,6 +240,8 @@ book.close();
 | `zoom` | `1` | Initial zoom (v0.5.0): a number from 0.5 to 2.0, or `{ fit: 'width' }` to fit the used columns to the view's width (`min` / `max` default to 0.5 / 2.0). Numbers outside the range are clamped; `NaN` or any other value throws `RangeError` |
 | `headers` | `true` | With `false`, no row numbers and no column letters; the cells start at the top-left corner (v0.5.0) |
 | `onSheetChange` | — | Called with the sheet index after a tab click or `showSheet` has switched sheets and drawn the new one; not for the first sheet (`renderWorkbook` only, v0.5.0). Use it to search the new sheet, since highlights are cleared on a switch |
+| `selection` | — | `'row'` or `'cell'`: let the user select with clicks and the keyboard, and copy with Ctrl+C (v0.8.0). See [Selection](#selection-keyboard-and-copy-v080) |
+| `onSelectionChange` | — | Called with `(selection, origin)` when the selection changes (v0.8.0) |
 
 ### Search, highlights and zoom (v0.5.0)
 
@@ -279,6 +281,7 @@ container.addEventListener('click', (e) => {
 | `activeSheet` | The index (`SheetInfo.index`) of the selected sheet; it changes as soon as a tab is clicked or `showSheet` is called. `null` when the file could not be opened |
 | `scrollElement` | The element that scrolls the grid (v0.7.0). Read or set its `scrollTop` / `scrollLeft` and listen for its `scroll` event, for example to scroll two views together. It stays the same element until `destroy`; `null` when the file could not be opened and after `destroy`. Do not change its size, style or children. Switching sheets scrolls it back to the top-left, and changing the zoom moves it so that the top-left cell stays in place |
 | `renderForPrint(target, options?)` | Draw the shown sheet split into pages for printing (v0.7.0). See [Printing](#printing-v070) |
+| `getSelection()`, `setSelection(selection)`, `selectionText()` | Read or change the selection, or get it as tab-separated text (v0.8.0). See [Selection](#selection-keyboard-and-copy-v080) |
 
 - Do not scale the view with a CSS `transform`; `cellAt` and `highlightAt` would point at the wrong cells. Use `setZoom`.
 
@@ -319,13 +322,35 @@ window.print();
 | `fit` | — | `'width'` shrinks the sheet so that all columns fit one page's width; only rows are split into pages |
 | `headers` | `false` | Print column letters and row numbers on every page |
 | `gridlines` | `false` | Print the gridlines. Cell borders are always printed |
-| `maxCells` | `200000` | Most cells to draw (visible rows × visible columns). Rows past the limit are dropped and `truncated` is `true` |
+| `maxCells` | `200000` | Most cells to draw (visible rows × visible columns, across all print areas). Rows past the limit are dropped and `truncated` is `true` |
+| `ignorePrintArea` | `false` | Ignore the sheet's print area and print the used range (Excel's "Ignore print area") |
 | `signal` | — | An `AbortSignal`. Aborting rejects with an `AbortError` `DOMException` after removing what was added |
 
 - Pages go down, then across (Excel's default). Each page is a fixed window of `page` size: content crossing a page edge (overflowing text, merged cells, pictures) is cut there, and pages with nothing on them are skipped.
-- It prints the used range: cells, pictures, charts and the columns that overflowing text reaches. Print areas, manual page breaks, print titles, headers/footers and the file's own page setup are not read yet.
+- Without a print area it prints the used range: cells, pictures, charts and the columns that overflowing text reaches. When the sheet has a print area (`_xlnm.Print_Area`, v0.8.0), only those ranges are printed, in the order they are defined, each range starting on a new page; text overflowing a range is cut at its edge. A whole-column range (`$A:$C`) stops at the last used row, a whole-row range (`$1:$5`) at the last used column. Manual page breaks, print titles, headers/footers and the file's own page setup are not read yet.
 - The printing code loads only when `renderForPrint` is first called (a separate chunk; `xsheet-print.mjs` in the standalone ESM build). The promise resolves after pictures and charts have finished loading. The output is always in the light theme, even under `data-xs-theme="dark"`.
 - The result is `{ pages, truncated, destroy() }`. `pages` is `0` (and nothing is added) when there is no sheet or nothing to print. Switching sheets or destroying the view while it is still drawing rejects with an `AbortError`; once it has resolved, the printed pages stay until `destroy()`.
+
+### Selection, keyboard and copy (v0.8.0)
+
+With the `selection` option, the user can select one row, column or cell, move the selection with the keyboard and copy it. Without the option nothing changes: no clicks are handled and the selection code is not loaded.
+
+```ts
+const wb = await renderWorkbook(container, bytes, {
+  selection: 'row', // a cell click selects its whole row, like the Explorer preview; 'cell' selects the cell
+  onSelectionChange: (sel, origin) => console.log(sel?.range, origin),
+});
+wb.setSelection({ type: 'cell', r: 5, c: 3 });
+wb.scrollToCell(5, 3);
+```
+
+- Clicks: a cell selects its row (`'row'`) or the cell (`'cell'`); a row number selects the row; a column letter selects the column. A merged cell selects the whole merged range. Clicks that move more than a few pixels, and clicks while text is selected, are ignored, so selecting text with the mouse still works.
+- The selection is `{ type, range, active }`: `type` is `'row'`, `'column'` or `'cell'`; `range` is `{ r1, c1, r2, c2 }` (1-based; a whole row spans columns 1–16,384, a whole column rows 1–1,048,576); `active` is the current cell the keyboard moves from.
+- It is drawn as a band over the cells (`div.xs-sel`), and the selected row numbers and column letters are marked `is-selected`. Colors: `--xs-sel-bg`, `--xs-sel-line`, `--xs-sel-head-bg`, `--xs-sel-head-fg`. Switching sheets clears the selection.
+- Keyboard: the grid takes focus when a click selects. ↑ ↓ ← → move by one row or column (skipping hidden ones and whole merged ranges), PageUp / PageDown by one view, Home to the first column, Ctrl+Home to the top-left, Ctrl+End to the last used cell. The grid scrolls just enough to show the new selection. Only those keys are taken; Tab, Ctrl+F and keys with Shift or Alt are left to the page. The selected address (`C5`, `5:5`, `C:C`) is announced through an `aria-live` region.
+- Ctrl+C copies the selection as tab-separated text (`\r\n` between rows), as displayed after number formats — it pastes back into Excel as a table. Cells with a tab, line break or `"` are quoted. Hidden rows and columns are left out; whole rows and columns stop at the last used column and row. More than 1,000,000 cells are not copied and a notice is shown. When text is selected with the mouse, the browser copies that text as usual. `selectionText()` returns the same text.
+- `setSelection({ type: 'row', r, r2? } | { type: 'column', c, c2? } | { type: 'cell', r, c } | null)` does not scroll. It throws `RangeError` for numbers outside the sheet. Without the `selection` option, `getSelection()` is `null` and `setSelection` does nothing.
+- The selection code loads before the first sheet is shown (a separate chunk; `xsheet-selection.mjs` in the standalone ESM build).
 
 The full API is described in [docs/02_architecture.md](docs/02_architecture.md) §2 (core) and §3 (render and the `view` layer).
 
@@ -347,7 +372,7 @@ The full API is described in [docs/02_architecture.md](docs/02_architecture.md) 
 ## Theming
 
 - For a dark view, pass `theme: 'dark'` to `view` (`'auto'` follows the OS). With `renderWorkbook` and friends, put `data-xs-theme="dark"` (or `"auto"`) on the view root or an ancestor such as `<html>`. The dark values ship in `style.css`; you do not need to copy them.
-- Colors are 16 CSS variables (`--xs-*`). Their defaults have zero specificity (`:where(:root, :host, .xs-print)`), so you can override them anywhere, including inside Shadow DOM. The same defaults sit on the print output (`.xs-print`), which keeps it light.
+- Colors are 20 CSS variables (`--xs-*`). Their defaults have zero specificity (`:where(:root, :host, .xs-print)`), so you can override them anywhere, including inside Shadow DOM. The same defaults sit on the print output (`.xs-print`), which keeps it light.
 
 ```css
 /* change only the accent color of the light theme */
@@ -360,7 +385,7 @@ Overriding the dark values and Shadow DOM notes: [docs/guide/theme.md](docs/guid
 
 ## UI text
 
-- Japanese (`MESSAGES_JA`), English (`MESSAGES_EN`) and Korean (`MESSAGES_KO`) are included — 23 keys ([docs/02_architecture.md](docs/02_architecture.md) §7).
+- Japanese (`MESSAGES_JA`), English (`MESSAGES_EN`) and Korean (`MESSAGES_KO`) are included — 24 keys ([docs/02_architecture.md](docs/02_architecture.md) §7).
 - `view` picks one with `lang` (default `auto`). `renderWorkbook` and `renderSheet` default to Japanese.
 - To change only a few strings, pass e.g. `messages: { noData: '(empty)' }`.
 - Developer-facing errors and warnings from `view` and `read` are in English and start with `XSheet:`.

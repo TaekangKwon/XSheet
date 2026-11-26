@@ -26,6 +26,10 @@ import {
   type PrintOptions,
   type PrintResult,
   type ScrollToCellOptions,
+  type Selection,
+  type SelectionInput,
+  type SelectionMode,
+  type SelectionOrigin,
   type Zoom,
 } from '../render/index';
 import { toSourceBytes, type XSheetSource } from './source';
@@ -43,6 +47,10 @@ export interface View2Options extends ViewOptions {
   headers?: boolean;
   /** シートが替わり、表示し終えた後に呼ぶ（`renderWorkbook` の `onSheetChange` と同じ。番号は `SheetInfo.index`） */
   onSheetChange?: (index: number) => void;
+  /** クリックで選ぶ物（`renderWorkbook` の `selection` と同じ。既定は無効。ADR-0011） */
+  selection?: SelectionMode;
+  /** 選択が変わったときに呼ぶ（`renderWorkbook` の `onSelectionChange` と同じ。ADR-0011） */
+  onSelectionChange?: (selection: Selection | null, origin: SelectionOrigin) => void;
 }
 
 /** `Viewer2.find` の指定 */
@@ -87,6 +95,12 @@ export interface Viewer2 {
   readonly scrollElement: HTMLElement | null;
   /** 印刷のために表示中のシートをページに分けて描く（`renderWorkbook` の `renderForPrint` と同じ。ADR-0010 §2） */
   renderForPrint(target: HTMLElement, options?: PrintOptions): Promise<PrintResult>;
+  /** 今の選択（`renderWorkbook` の `getSelection` と同じ。ADR-0011） */
+  getSelection(): Selection | null;
+  /** 選択を替える（`renderWorkbook` の `setSelection` と同じ。ADR-0011） */
+  setSelection(selection: SelectionInput | null): void;
+  /** 選択をコピーする文字（`renderWorkbook` の `selectionText` と同じ。ADR-0011） */
+  selectionText(): string | null;
   /** 表示を外し、ブック・リスナ・blob URL を放す。何度呼んでもよい */
   destroy(): void;
 }
@@ -120,6 +134,9 @@ function discarded(): Viewer2 {
     setZoom: () => undefined,
     scrollElement: null,
     renderForPrint: replaced,
+    getSelection: () => null,
+    setSelection: () => undefined,
+    selectionText: () => null,
     destroy: () => undefined,
   };
 }
@@ -174,6 +191,8 @@ export async function view2(
       builtinDates,
       zoom: options.zoom,
       headers: options.headers,
+      selection: options.selection,
+      onSelectionChange: options.onSelectionChange,
       onSheetChange: (index) => {
         stopFinding();
         options.onSheetChange?.(index);
@@ -271,6 +290,9 @@ export async function view2(
       return wb.scrollElement;
     },
     renderForPrint: (target, printOptions) => wb.renderForPrint(target, printOptions),
+    getSelection: () => wb.getSelection(),
+    setSelection: (sel) => wb.setSelection(sel),
+    selectionText: () => wb.selectionText(),
     destroy,
   };
   current.set(container, { token, viewer });

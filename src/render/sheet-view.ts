@@ -63,6 +63,9 @@ import { createImageLayer } from './image-layer';
 // XSheet: 印刷の描画（ADR-0010 §2）
 import type { PrintOptions, PrintResult } from './print';
 import { createPrintGate } from './print-gate';
+// XSheet: セル・行・列の選択（ADR-0011）
+import type { Selection, SelectionInput, SelectionMode, SelectionOrigin } from './selection';
+import { createSelectionGate } from './selection-gate';
 import type { SheetDrawing } from '../core/index';
 import { formatMessage, type XSheetMessages } from './messages';
 import { loadGeom } from './shapes';
@@ -71,7 +74,7 @@ import { loadGeom } from './shapes';
 const OVERSCAN = 40;
 
 /** 通知の行にする理由（図の読み取りの通知＋画像の合計の上限超過＋形の表の読み込み失敗） */
-type ViewNotice = DrawingNotice | 'over-budget' | 'geom-failed';
+type ViewNotice = DrawingNotice | 'over-budget' | 'geom-failed' | 'copy-too-large'; // XSheet: copy-too-large（ADR-0011 §5）
 
 /** 通知の理由 → 文言のキー */
 const NOTICE_KEYS: Record<ViewNotice, keyof XSheetMessages> = {
@@ -82,6 +85,7 @@ const NOTICE_KEYS: Record<ViewNotice, keyof XSheetMessages> = {
   'shape-simplified': 'noticeShapeSimplified',
   'over-budget': 'noticeOverBudget',
   'geom-failed': 'libLoadFailed',
+  'copy-too-large': 'noticeCopyTooLarge', // XSheet: ADR-0011 §5
 };
 
 /** 書式 CSS の表示ごとの連番（`data-xs-fmt`）。表示を作るたびに 1 増やす（ファイル名・パスは使わない。ADR-0030 §決定 1） */
@@ -99,6 +103,10 @@ export interface SheetViewOptions {
   zoom?: Zoom;
   /** XSheet: 行番号の列と列見出しを出すか（既定 true。ADR-0007 §7） */
   headers?: boolean;
+  /** XSheet: セルをクリックしたときに選ぶ物（無ければクリックで選ばない。ADR-0011 §1） */
+  selection?: SelectionMode;
+  /** XSheet: 選択が変わった（ADR-0011 §1） */
+  onSelectionChange?: (selection: Selection | null, origin: SelectionOrigin) => void;
 }
 
 /** 1 シートの表示（`renderSheet`・`renderWorkbook` の中身） */
@@ -134,6 +142,15 @@ export interface SheetViewInstance {
   readonly scrollElement: HTMLElement | null;
   /** XSheet: 印刷の描画（中身は print.ts。印刷するときだけ読む。ADR-0010 §2） */
   renderForPrint(target: HTMLElement, options?: PrintOptions): Promise<PrintResult>;
+  /** XSheet: 今の選択（無ければ null。ADR-0011 §1） */
+  getSelection(): Selection | null;
+  /**
+   * XSheet: 選択を替える（null で外す。ADR-0011 §1）
+   * @throws RangeError 正しくない選択
+   */
+  setSelection(selection: SelectionInput | null): void;
+  /** XSheet: 選択をコピーする文字（ADR-0011 §5） */
+  selectionText(): string | null;
   /** リスナ・ResizeObserver・rAF・blob URL・シートを放し、根を `container` から外す。何度呼んでもよい。ブックは閉じない */
   destroy(): void;
 }
@@ -416,6 +433,7 @@ export function createSheetView(
       tableEl = table;
       drawnRows = rows; // XSheet: ADR-0007 §4
       drawn = { first: range.first, last: range.last, firstCol: cols.first, lastCol: cols.last };
+      selection.layout(); // XSheet: 帯の位置・見出しの印を合わせ直す（ADR-0011 §2）
       // 図の層の原点は A1 の左上（行番号の列の幅・見出し行の高さだけ表の左上からずらす）
       // XSheet: 図の層は中を 100% で描き、層に倍率を掛ける（ADR-0007 §5）
       layer.place(originX, headY, g.totalWidth / zoom, g.totalHeight / zoom);
@@ -515,6 +533,7 @@ export function createSheetView(
     }
     const seq = ++openSeq;
     printGate.abortAll(); // XSheet: ADR-0010 §2-3
+    selection.clear(); // XSheet: シートを替えると選択を外す（ADR-0011 §1）
     const isStale = (): boolean => seq !== openSeq || closed;
     let opened: XlsxSheet;
     try {
@@ -550,6 +569,7 @@ export function createSheetView(
         }
       }
     }
+    await selection.ready; // XSheet: 選択の部品を読み終えてから出す（ADR-0011 §3）
     if (isStale()) {
       return;
     }
@@ -646,6 +666,7 @@ export function createSheetView(
     hits = null; // XSheet: ADR-0007 §2
     drawnRows = []; // XSheet: ADR-0007 §4
     nav.dispose();
+    selection.dispose(); // XSheet: ADR-0011
     wrapper.replaceChildren();
     body.replaceChildren();
     root.replaceChildren();
@@ -673,6 +694,28 @@ export function createSheetView(
       }
     },
   });
+
+  // XSheet: セル・行・列の選択（ADR-0011）。帯は図の層の前に置く
+  const selection = createSelectionGate(
+    {
+      root,
+      body,
+      wrapper,
+      before: layer.element,
+      sheet: () => sheet,
+      geometry: () => geo,
+      origin: () => ({ x: headX(extent.rows), y: headY }),
+      extent: () => extent,
+      table: () => tableEl,
+      draw: () => draw(),
+      changed: (sel, origin) => options.onSelectionChange?.(sel, origin),
+      copyTooLarge: () => {
+        notices.add('copy-too-large');
+        renderNotices();
+      },
+    },
+    options.selection,
+  );
 
   root.append(noticeBar, body, fmtStyle);
   container.append(root);
@@ -736,6 +779,12 @@ export function createSheetView(
           : null,
         opts,
       ),
+    // XSheet: ADR-0011 §1
+    getSelection: () => selection.get(),
+    setSelection(sel) {
+      if (!closed) selection.set(sel);
+    },
+    selectionText: () => (closed ? null : selection.text()),
     destroy,
   };
 }

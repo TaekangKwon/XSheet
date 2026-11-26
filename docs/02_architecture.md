@@ -68,7 +68,7 @@ export function openXlsx(data: ArrayBuffer | Uint8Array, options?: OpenXlsxOptio
 export interface OpenXlsxOptions { limits?: Partial<XlsxLimits>; builtinDates?: BuiltinDates } // BuiltinDates = 'default' | 'japanese-era'（M7-8・ADR-0007 §6）
 
 export interface XlsxBook {
-  readonly sheets: readonly SheetInfo[];                 // index は 1 始まり・hidden は veryHidden を含む
+  readonly sheets: readonly SheetInfo[];                 // index は 1 始まり・hidden は veryHidden を含む・printArea は印刷範囲（M7-22・ADR-0010 §3。CellRange の配列・無いシートは持たない）
   openSheet(index: number): Promise<XlsxSheet>;
   openDrawings(index: number): Promise<SheetDrawings>;   // 画像・図形・線・グループ＋通知
   readImage(index: number, path: string): Promise<ImageResult>; // シートごとに合計 128 MiB の予算
@@ -111,6 +111,8 @@ export interface RenderOptions {
   nonce?: string;                       // 書式の <style> に付ける（CSP 用。§3「CSP」）
   zoom?: Zoom;                          // 最初の倍率（M7-7・ADR-0007 §5。0.5〜2.0 か { fit: 'width' }）
   headers?: boolean;                    // 行番号の列と列見出し（既定 true。M7-9・ADR-0007 §7）
+  selection?: 'row' | 'cell';           // クリックで選ぶ物（既定は無効。M7-24・ADR-0011 §1。指定した表示だけ選択の部品を読む）
+  onSelectionChange?: (selection: Selection | null, origin: 'user' | 'api') => void; // 選択が変わった
 }
 export interface SheetView {
   setHighlights(matches: readonly TextMatch[] | null): void; // 検索の一致を光らせる（M7-5・ADR-0007 §2。null・空で消す）
@@ -124,6 +126,9 @@ export interface SheetView {
   readonly activeSheet: number | null;  // 選んでいるシートの番号（ADR-0007 §7 版 1.1。showSheet ですぐ替わる・表の無い表示は null）
   readonly scrollElement: HTMLElement | null; // スクロール枠 div.xs-body（M7-19・ADR-0010 §1。destroy まで同じ要素・表の無い表示と destroy の後は null）
   renderForPrint(target: HTMLElement, options?: PrintOptions): Promise<PrintResult>; // 印刷のページを target に描く（M7-20・ADR-0010 §2。下の PrintOptions）
+  getSelection(): Selection | null;     // 今の選択（M7-24・ADR-0011 §1。selection を指定しない表示では null）
+  setSelection(selection: SelectionInput | null): void; // 選択を替える（スクロールしない。selection を指定しない表示では何もしない）
+  selectionText(): string | null;       // 選択をコピーする文字（M7-26・ADR-0011 §5。タブ区切り・\r\n。無い・100 万セル超は null）
   destroy(): void;                      // blob URL・リスナ・シートを放す（book は閉じない）
 }
 export interface PrintOptions {         // M7-20・ADR-0010 §2（中身は src/render/print.ts）
@@ -131,7 +136,8 @@ export interface PrintOptions {         // M7-20・ADR-0010 §2（中身は src/
   fit?: 'width';                        // 全部の列を 1 ページの幅に縮める（縦だけ分ける）
   headers?: boolean;                    // 列記号・行番号を各ページに（既定 false）
   gridlines?: boolean;                  // 目盛り線（既定 false。罫線はいつも出す）
-  maxCells?: number;                    // 描くセルの数の上限（既定 200000。超える行を打ち切る）
+  maxCells?: number;                    // 描くセルの数の上限（既定 200000。全部の印刷範囲を通して数え、超える行を打ち切る）
+  ignorePrintArea?: boolean;            // 印刷範囲を使わずデータの範囲を印刷（既定 false。M7-23・ADR-0010 §3）
   signal?: AbortSignal;
 }
 export interface PrintResult {
@@ -217,7 +223,7 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
 
 | 指定 | 理由 |
 | --- | --- |
-| `script-src 'self'` | ライブラリと形の表（`geom` のチャンク・単独版では `xsheet-geom.mjs`。図形を描くときに動的 import）・グラフの描画（`chart-draw` のチャンク・単独版では `xsheet-chart.mjs`。グラフを描くときに動的 import）・印刷の描画（`print` のチャンク・単独版では `xsheet-print.mjs`。`renderForPrint` で動的 import）を同じ出所から読む。`eval`・`new Function` は使わない（N1）ので `'unsafe-eval'` は要らない |
+| `script-src 'self'` | ライブラリと形の表（`geom` のチャンク・単独版では `xsheet-geom.mjs`。図形を描くときに動的 import）・グラフの描画（`chart-draw` のチャンク・単独版では `xsheet-chart.mjs`。グラフを描くときに動的 import）・印刷の描画（`print` のチャンク・単独版では `xsheet-print.mjs`。`renderForPrint` で動的 import）・選択（`selection` のチャンク・単独版では `xsheet-selection.mjs`。`selection` を指定した表示を作るときに動的 import。M7-24）を同じ出所から読む。`eval`・`new Function` は使わない（N1）ので `'unsafe-eval'` は要らない |
 | `style-src 'nonce-<値>'`（または `'unsafe-inline'`） | 書式の `<style>` 要素（表示の根に 1 枚）と、`view` が自動で入れる表示の CSS の `<style>`（M6-2）。`nonce` を渡すとどちらにも付く。`style.css` を `<link>` で読むなら（`view` では `css: 'none'`）、その `<link>` にも同じ nonce を付けるか、`style-src` に出所（`'self'` など）を足す |
 | `img-src blob:` | 図の画像は blob URL で出す（`data:` の URL は作らない） |
 
@@ -257,6 +263,7 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
 | 図形の文字 | `maxShapeTextChars` 10,000／`maxShapeParagraphs` 500／`maxShapeRuns` 2,000／`maxSheetTextChars` 1,000,000 |
 | 画像 | `maxImageBytes` 20 MiB／`maxSheetImageBytes` 128 MiB／`maxImageSidePx` 16,384／`maxImagePixels` 64 Mi 画素 |
 | グラフ（M7） | `maxChartSeries` 255／`maxChartPoints` 100,000／`maxChartTextChars` 200,000／`maxSheetChartPoints` 1,000,000（超えたグラフは破線枠） |
+| 印刷範囲（M7-22） | `maxPrintAreas` 1,000（1 シートの範囲の数。超えた分は読まない） |
 | 形の式 | `maxGeomGuides` 512／`maxGeomCommands` 4,096／`maxSheetGeomUnits` 200,000／`maxShapeAdjustments` 16 |
 | 書式 | `maxBorders` 65,536／`maxFonts` 65,536／`maxFills` 65,536／`maxCellFormats` 4,096 |
 
@@ -278,15 +285,17 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
 | `--xs-border-ink` | 自動・黒の罫線（墨色） | `#000000` | `#d4d4d4` | `--ih-xlsx-border-ink` |
 | `--xs-backdrop`・`--xs-backdrop-display` | ダーク時の図の白い下地 | `transparent`・`none` | `#ffffff`・`block` | `--ih-xlsx-backdrop*` |
 | `--xs-hit-bg`・`--xs-hit-current-bg` | 検索の一致のハイライト（`xs-hit`）と今のヒット（`is-current`）の地（M7-5・ADR-0007 §2） | `rgba(255, 255, 0, 0.4)`・`#ffa500` | `rgba(255, 255, 0, 0.3)`・`#b45309` | なし（XSheet で足した） |
+| `--xs-sel-bg`・`--xs-sel-line` | 選択の帯（`xs-sel`）の地と、セルの選択の枠（M7-24・ADR-0011 §2） | `rgba(0, 0, 0, 0.1)`・`#217346` | `rgba(255, 255, 255, 0.14)`・`#6cc08b` | なし（XSheet で足した） |
+| `--xs-sel-head-bg`・`--xs-sel-head-fg` | 選んだ行番号・列記号（`is-selected`）の地と文字（M7-24・ADR-0011 §2） | `#d2d2d2`・`#217346` | `#3a4150`・`#9fe0b5` | なし（XSheet で足した） |
 
 - `style.css`（`src/style.css`・M3-1）の明るい既定値は詳細度 0 の `:where(:root, :host, .xs-print)` に置くため（`.xs-print` は印刷の描画の根。祖先のダークを受け継がずいつもライトにする。ADR-0010 §2-4）、使う側が `:root`・テーマの属性・`container` のどこで上書きしても勝つ（Shadow DOM の中に置いても効く）。
 - ダークの値（この表の「ダークの例」の列）は、M6-2 から `style.css` が持つ（ADR-0003 §2。それまでは使う側が 14 個を写して上書きしていた）：
   - `[data-xs-theme='dark']`：表示の根か、その祖先（`<html>` など）に付ける。`view` の `theme: 'dark'` は表示の根 `div.xs-viewer` に付ける。`renderWorkbook`・`renderSheet` の使う側も同じ属性を使える。
   - `@media (prefers-color-scheme: dark) { [data-xs-theme='auto'] }`：OS・ブラウザの設定に従う（`theme: 'auto'`）。
-  - どちらも 16 個すべてと `color-scheme: dark` を持つ。値を替えるときは、属性の付いた要素より内側で `--xs-*` を上書きする（[guide/theme.md](guide/theme.md)）。
+  - どちらも 20 個すべてと `color-scheme: dark` を持つ。値を替えるときは、属性の付いた要素より内側で `--xs-*` を上書きする（[guide/theme.md](guide/theme.md)）。
   - 2 つのブロックとこの表の「ダークの例」の列が同じことを `tests/render/style-css.test.ts` が突き合わせる。
-- 自前のテーマの属性で 16 個を上書きする形も使える。例は `examples/example.css`（M3-2。`npm run examples` で http://localhost:5173/examples/ を開く）。この表の「ダークの例」の列と同じ値で、`tests/render/examples.test.ts` が突き合わせる。
-- `--xs-zoom`（倍率。M7-7）はテーマの変数ではなく、表示の根（`.xs-sheet`）に JS が入れる値で、16 個に数えない。使う側は上書きしない（倍率は `setZoom` で替える）。
+- 自前のテーマの属性で 20 個を上書きする形も使える。例は `examples/example.css`（M3-2。`npm run examples` で http://localhost:5173/examples/ を開く）。この表の「ダークの例」の列と同じ値で、`tests/render/examples.test.ts` が突き合わせる。
+- `--xs-zoom`（倍率。M7-7）はテーマの変数ではなく、表示の根（`.xs-sheet`）に JS が入れる値で、20 個に数えない。使う側は上書きしない（倍率は `setZoom` で替える）。
 - Excel の色（塗り・文字の色・図形の色）は変数ではなく、書式の CSS とインラインの値で入る。ダーク表示の描き分けの規則（塗りのあるセルは Excel の色のまま、白の塗りは「紙」など）は InterHub ADR-0030 のとおり。
 - 変数の表は M3-1 で、InterHub の実際の規則に合わせて直した：グリッド線は `--ih-border` ではなく `--ih-border-soft`（`.ih-data-view th, td` の線）だったため `--xs-grid` の値を替え、見出し行の下の線・タブの枠の `--ih-border` を `--xs-border` に分けた。タブ（`--ih-accent`）と通知の帯（`--ih-warn*`）の変数を足した。この表と `style.css` の既定値は `tests/render/style-css.test.ts` が突き合わせる。
 - Excel に寄せた見た目（Issue #23）：明るい既定値のうち `--xs-cell-bg`（白）・`--xs-grid`・`--xs-border`（少し濃く）を InterHub の値から変えた。ダークの値は変えていない。
@@ -294,14 +303,14 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
   - 表の色は `renderSheet` だけを使う側の画面も変える。昔の色に戻したい側は、3 つの変数を元の値（表の「InterHub の元」の列）で上書きすればよい。
 - クラス名は InterHub の `ih-xlsx-*`・`ih-xf-N`・`data-ih-xlsx-fmt` を `xs-*`・`xs-xf-N`・`data-xs-fmt` にする（D6）。表の根の `.ih-spreadsheet` は `.xs-sheet`。InterHub 共用のクラス（`ih-data-view`・`ih-data-banner`・`ih-dv-rownum`・`ih-sheet-tabs` など）は、render が要るものだけ `xs-` で作り直す。
 
-## 7. 文言（`XSheetMessages`・23 キー）
+## 7. 文言（`XSheetMessages`・24 キー）
 
 | 区分 | キー（InterHub の `spreadsheet.`・`spreadsheet.drawing.` を除いた名前） |
 | --- | --- |
 | エラー | `parseFailed`（`{detail}`）・`noSheets`・`noData`（InterHub の `data.noData`）・`encrypted`・`tooLarge`・`unsupported` |
 | タブ | `hiddenSheet`・`tabsPrev`・`tabsNext`（`renderWorkbook` だけが使う） |
 | 図の枠 | `chart`・`smartart`・`shape`・`textbox`・`group`・`imageFormat`（`{format}`）・`imageBroken` |
-| 通知 | `noticeTooLarge`・`noticeBroken`・`noticeTooMany`・`noticeTextTruncated`・`noticeShapeSimplified`・`noticeOverBudget`・`libLoadFailed`（形の表を読めない） |
+| 通知 | `noticeTooLarge`・`noticeBroken`・`noticeTooMany`・`noticeTextTruncated`・`noticeShapeSimplified`・`noticeOverBudget`・`libLoadFailed`（形の表を読めない）・`noticeCopyTooLarge`（選択のコピーが 100 万セルを超えた。M7-26・ADR-0011 §5。XSheet で足した） |
 
 - 文言の元は InterHub `src_V1/src/locales/ja.ts`（275〜302 行・248 行の `data.noData`）と `en.ts`。
 - 実装は `src/render/messages.ts`（M2-2）：
@@ -340,13 +349,13 @@ dist/
   - A（単独版・`dist/` の根の `xsheet*`）：依存を束ね、圧縮する。使い方は [guide/standalone.md](guide/standalone.md)。`exports` からは指さない（タグの `dist/` と Release の zip で配る）。
 - 単独版のビルド（`tools/standalone/build.mjs`）：
   - Vite を 3 回走らせる（IIFE の `xsheet.min.js`・ESM の `xsheet.mjs`・遅れて読む部品ごとの `xsheet-<名前>.mjs`）。部品を本体と別のビルドにするのは、1 回のビルドで分けると共有の小さな部品が 3 つ目のファイルになるため。
-  - 遅れて読む部品の一覧は `tools/standalone/parts.mjs` の `LAZY_PARTS`（今は geom だけ）。部品を足すときはここに 1 行足す。`xsheet.mjs` ではその動的 import を `./xsheet-<名前>.mjs` への外の import に替え、`xsheet.min.js` では中に入れる。
+  - 遅れて読む部品の一覧は `tools/standalone/parts.mjs` の `LAZY_PARTS`（geom・chart・print・selection）。部品を足すときはここに 1 行足す。`xsheet.mjs` ではその動的 import を `./xsheet-<名前>.mjs` への外の import に替え、`xsheet.min.js` では中に入れる。
   - N1：jszip は `lib/`（ソース）から束ねる（browser 向けの dist は `setimmediate` の `new Function` を中に持つ）。`setimmediate` は `new Function` の無い版（`tools/standalone/set-immediate.mjs`）に、Node の `stream` は空の部品（`tools/standalone/empty.mjs`）に替える。
   - ビルドの中の検査：出力が決まったファイルだけ・外への import が遅れて読む部品だけ・`eval(`・`Function(`・`new Function` の文面が無い。違えば失敗する。
   - `xsheet.licenses.txt`：束ねたパッケージ（ビルドの moduleIds から決める）ごとに、`package.json` の版とライセンスと、ライセンスの文の全文をまとめる（MIT・Apache-2.0 などは、配る物に著作権表示と許諾の文を含めることを求めるため）。
   - `xsheet.d.ts`：`dist` の d.ts を `index` から辿り、1 つのファイルの ambient module（`declare module 'xsheet'`・`'xsheet/_/<パス>'`）にまとめ、`declare const XSheet: typeof import('xsheet')` を足す。
 - `npm run check:consumer`：一時フォルダに使う側のプロジェクトを作り、`npm pack` で入るファイルだけを `node_modules/xsheet` に写して（リンクは作らない。jszip・ssf は使う側の Vite の alias でこのリポジトリの node_modules を指す）、`exports` を通して型検査（strict）と Vite のビルドをする。形の表が使う側のビルドでも別のチャンクになること、`xsheet/style.css` が CSS に入ることを見る。`xsheet`（`view`・`read`）・`xsheet/core` の import も見る。
-- `npm run check:standalone`：① jsdom の窓で `xsheet.min.js` を `<script>` と同じく実行し、`XSheet.view` が fixtures の xlsx をタブ・図形付きで描き、`ref-charts.xlsx` のグラフを svg で描く（形の表・グラフの描画が中に入っている）② 素の Node（`--disallow-code-generation-from-strings`）で `xsheet.mjs` を import して `read` で開け、`xsheet-geom.mjs`・`xsheet-chart.mjs`・`xsheet-print.mjs` も読める（①は `renderWorkbook` の `renderForPrint` でページも描く） ③ 大域の `XSheet`・`import type … from 'xsheet'`・`import … from './xsheet.mjs'` の型検査が通る。
+- `npm run check:standalone`：① jsdom の窓で `xsheet.min.js` を `<script>` と同じく実行し、`XSheet.view` が fixtures の xlsx をタブ・図形付きで描き、`ref-charts.xlsx` のグラフを svg で描く（形の表・グラフの描画が中に入っている）② 素の Node（`--disallow-code-generation-from-strings`）で `xsheet.mjs` を import して `read` で開け、`xsheet-geom.mjs`・`xsheet-chart.mjs`・`xsheet-print.mjs`・`xsheet-selection.mjs` も読める（①は `renderWorkbook` の `renderForPrint` でページも描く） ③ 大域の `XSheet`・`import type … from 'xsheet'`・`import … from './xsheet.mjs'` の型検査が通る。
 - 例のページ：`examples/index.html` は dist ではなく src を直接読む（ビルドの前でも動かすため）。`examples/standalone.html`・`examples/esm.html` は単独版の例なので、`npm run build` の後に `dist/` の単独版を読む。
 
 ### 大きさ（N6・M4-2）
@@ -356,12 +365,14 @@ dist/
 | 入口 | dist（B） | gzip | 圧縮＋gzip | 上限 |
 | --- | ---: | ---: | ---: | ---: |
 | `core/index`（`xsheet/core`） | 215,747 | 70,042 | 32,897 | 40,000 |
-| `render/index`（`xsheet/render`。core を含む） | 364,970 | 118,714 | 53,699 | 65,000 |
+| `render/index`（`xsheet/render`。core を含む） | 364,970 | 118,714 | 53,699 | 72,000 |
 | `geom/index`（`xsheet/geom`。形の表を含む） | 236,078 | 36,752 | 32,519 | 36,000 |
 
 - `render/index` の上限は M7-7（2026-11-12）で 59,000 から 65,000 にした。ADR-0007 のハイライト・移動と位置の判定・拡大縮小（`highlight.ts`・`navigate.ts`・`zoom.ts`）で 59,489（dist 403,912・gzip 131,527）になったため。M7-9・M7-8 の分も入る余裕を約 1 割とした。
+- `render/index` の上限は M7-27（2026-11-26）で 65,000 から 72,000 にした（ユーザーの決定）。印刷範囲の読み取り（core の `print-area.ts`。+458）・選択の口と表示の口（+299）・コピーの文言 3 つ（+216）で 65,378（dist 445,052・gzip 144,081）になったため。選択の本体は遅れて読むチャンクに分けたうえで、残りは分けられない。余裕は約 1 割。
 - `core/index` の上限は M7-8（2026-11-13）で 36,000 から 40,000 にした。ADR-0007 の検索・曜日・和暦（`find-text.ts`・`format-ja.ts`）で 36,071（dist 237,660・gzip 77,441）になったため。余裕は約 1 割。
 - 遅れて読むチャンク `print`（`renderForPrint` を呼んだときだけ。M7-21）：dist 12,482・gzip 5,068・圧縮＋gzip 3,110（上限 3,500）。印刷の描画を render に入れると render が 66,171 になり上限を超えたので分けた（ADR-0010 版 1.3）。`print.ts` は表示の部品を import せず、`print-gate.ts` の `PRINT_KIT` で受け取る（単独版の部品は別に束ねるので、import すると xsheet-print.mjs に表示の部品が重なる）。分けた後の render は 64,405。
+- 遅れて読むチャンク `selection`（`selection` を指定した表示を作るときだけ。M7-24〜M7-26・ADR-0011 §3）：dist 16,497・gzip 6,028・圧縮＋gzip 3,851（上限 4,300）。選択を render に入れると render が上限を超えた（選択だけで 66,530）ので分けた。`selection.ts` は表示の部品を import せず、列の記号と寸法の関数を `selection-gate.ts` から受け取る。
 - 遅れて読むチャンク `chart-draw`（グラフを描くときだけ）：dist 98,631・gzip 32,632・圧縮＋gzip 15,829（上限 17,500。`tools/size.mjs` の `CHUNK_LIMITS`。チャンクのファイルだけを測り、render から static に辿れたら失敗する）。
 - 使う側のビルド（`check:consumer` の Vite・圧縮あり。0.2.0 の時点）では、最初に読む JS が 235,602 B（gzip 78,051。jszip・ssf・core・render を含む）、図形を描くときに読む形の表のチャンクが 176,422 B（gzip 30,477）、CSS が 5,404 B（gzip 1,537）。
 - 参考（01 N6）：xrag の初版は読み取り＋表示で 40,760 B、jszip が 96,716 B。XSheet は図形・罫線・書式の描画を持つぶん大きい。形の表は図形のあるシートでだけ読む。
@@ -372,12 +383,14 @@ dist/
 
 | ファイル | 圧縮済み | gzip | 上限 |
 | --- | ---: | ---: | ---: |
-| `xsheet.min.js`（形の表・グラフの描画を含む） | 470,375 | 130,861 | 144,000 |
+| `xsheet.min.js`（形の表・グラフの描画を含む） | 470,375 | 130,861 | 163,000 |
 | `xsheet.mjs`（最初に読む分） | 258,152 | 85,931 | 104,000 |
 | `xsheet-geom.mjs`（図形を描くときだけ） | 176,674 | 30,588 | 34,000 |
 | `xsheet-chart.mjs`（グラフを描くときだけ） | 67,545 | 25,031 | 28,000 |
 | `xsheet-print.mjs`（`renderForPrint` のときだけ。2026-11-26） | 5,723 | 2,820 | 3,200 |
+| `xsheet-selection.mjs`（`selection` を指定した表示だけ。M7-27） | 8,009 | 3,405 | 3,800 |
 
+- `xsheet.min.js` の上限は M7-27（2026-11-26）で 144,000 から 163,000 にした（ユーザーの決定）。遅れて読む部品も中に持つので、印刷範囲・選択・キーボード・コピーの分がそのまま増えて 147,906（圧縮済み 517,792）になったため。余裕は約 1 割。
 - `xsheet.mjs` の上限は M7-15（2026-11-16）で 94,000 から 104,000 にした。ADR-0007 の 0.5.0 の操作と ADR-0008 の配置・折り返し・最後の列からのはみ出し（`cell-align.ts`・`spill-extent.ts`）で 94,470（圧縮済み 282,683）になったため。余裕は約 1 割。
 - `xsheet-chart.mjs` は部品ごとに別に束ねるため、軸の文字の書式（`formatNumberByCode`・ssf）と色の変換を `xsheet.mjs` と重ねて持つ（約 10 KB）。ssf の `format` は状態を持たないので、写しが 2 つでも結果は同じ（曜日の置き換え `format-ja.ts` も 2 つ持つ。覚えておくのは書式の字句の分解だけで、結果は変わらない）。グラフの無いブックでは読まないので、最初に読む分を軽くするほうを採った（ADR-0003 §1）。
 
@@ -416,4 +429,4 @@ dist/
 3. `main` から作業用のブランチ（例 `release/v0.1.0`）を切り、`git add -f dist` だけのコミットを作る（`main` には入れない・ADR-0002）。
 4. そのコミットに注釈付きのタグ（`git tag -a v0.1.0`）を打ち、タグを push する。
 5. 使う側で `npm install github:TaekangKwon/XSheet#v0.1.0` を入れ、表示を確かめる（M5）。
-6. （M6 から）`npm run release:zip` で単独版の zip（`release/xsheet-<版>-standalone.zip`）を作り、タグの GitHub Release に添付する（ADR-0003 §6・M6-5）。中身は `xsheet.min.js`・`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet-chart.mjs`・`xsheet-print.mjs`・`xsheet.css`・`xsheet.d.ts`・`xsheet.d.mts`・`xsheet.licenses.txt`・`LICENSE`・`NOTICE`・`viewer.html`（`examples/standalone.html` を `xsheet.min.js` と同じフォルダで動くようにしたもの）・`viewer2.html`（確認用。`examples/standalone-viewer2.html` を同じように直したもの）。zip を展開した `viewer.html` を `file://` で開いて表示を確かめる。
+6. （M6 から）`npm run release:zip` で単独版の zip（`release/xsheet-<版>-standalone.zip`）を作り、タグの GitHub Release に添付する（ADR-0003 §6・M6-5）。中身は `xsheet.min.js`・`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet-chart.mjs`・`xsheet-print.mjs`・`xsheet-selection.mjs`・`xsheet.css`・`xsheet.d.ts`・`xsheet.d.mts`・`xsheet.licenses.txt`・`LICENSE`・`NOTICE`・`viewer.html`（`examples/standalone.html` を `xsheet.min.js` と同じフォルダで動くようにしたもの）・`viewer2.html`（確認用。`examples/standalone-viewer2.html` を同じように直したもの）。zip を展開した `viewer.html` を `file://` で開いて表示を確かめる。

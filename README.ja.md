@@ -168,7 +168,7 @@ graph LR
 
 | メンバー | 説明 |
 | --- | --- |
-| `sheets` | シートの一覧（`SheetInfo[]`：`index`（1 始まり）、`name`、`hidden`）。タブの順で、非表示のシートも含みます |
+| `sheets` | シートの一覧（`SheetInfo[]`：`index`（1 始まり）、`name`、`hidden`、印刷範囲のあるシートは `printArea`）。タブの順で、非表示のシートも含みます |
 | `showSheet(index または name)` | タブをクリックしたのと同じようにシートを切り替えます。存在しない番号や名前なら `RangeError` |
 | `destroy()` | 表示を消し、ブック、イベントリスナー、blob URL を解放します。何度呼んでも安全です |
 
@@ -240,6 +240,8 @@ book.close();
 | `zoom` | `1` | 最初の倍率（v0.5.0）。0.5〜2.0 の数か、使っている列を表示の幅に合わせる `{ fit: 'width' }`（`min`・`max` の既定は 0.5・2.0）。範囲の外の数は端の値にし、`NaN` やその他の値は `RangeError` |
 | `headers` | `true` | `false` なら行番号と列見出しを出さず、セルを左上の角から描きます（v0.5.0） |
 | `onSheetChange` | — | タブや `showSheet` でシートが替わり、そのシートを描き終えた後に、シートの番号を渡して呼びます。最初のシートでは呼びません（`renderWorkbook` のみ・v0.5.0）。シートを替えるとハイライトが消えるので、新しいシートを検索し直すのに使います |
+| `selection` | — | `'row'` か `'cell'`。クリックとキーボードで選び、Ctrl+C でコピーできるようにします（v0.8.0）。[選択](#選択キーボードコピーv080)を参照 |
+| `onSelectionChange` | — | 選択が変わったときに `(selection, origin)` を渡して呼びます（v0.8.0） |
 
 ### 検索・ハイライト・拡大縮小（v0.5.0）
 
@@ -279,6 +281,7 @@ container.addEventListener('click', (e) => {
 | `activeSheet` | 選んでいるシートの番号（`SheetInfo.index`）。タブを押したとき・`showSheet` を呼んだときにすぐ替わります。開けなかったファイルでは `null` |
 | `scrollElement` | 表をスクロールする要素（v0.7.0）。`scrollTop`・`scrollLeft` を読み書きし、`scroll` のイベントを受けられます（2 つの表を一緒に動かすときなど）。`destroy` まで同じ要素で、開けなかったファイルと `destroy` の後は `null`。大きさ・スタイル・子要素は替えないでください。シートを替えると左上に戻り、倍率を替えると左上のセルが残るように動きます |
 | `renderForPrint(target, options?)` | 表示中のシートを、印刷のためにページに分けて描きます（v0.7.0）。[印刷](#印刷v070)を参照 |
+| `getSelection()`・`setSelection(selection)`・`selectionText()` | 選択を読む・替える・タブ区切りの文字で取ります（v0.8.0）。[選択](#選択キーボードコピーv080)を参照 |
 
 - 表示に CSS の `transform` で倍率を掛けないでください。`cellAt`・`highlightAt` が違うセルを指します。`setZoom` を使います。
 
@@ -319,13 +322,35 @@ window.print();
 | `fit` | — | `'width'` は全部の列が 1 ページの幅に収まるように縮めます（縦だけページを分けます） |
 | `headers` | `false` | 列記号と行番号を各ページに出します |
 | `gridlines` | `false` | 目盛り線を出します。セルの罫線はいつも出ます |
-| `maxCells` | `200000` | 描くセルの数の上限（見える行 × 見える列）。超える行は描かず、`truncated` が `true` になります |
+| `maxCells` | `200000` | 描くセルの数の上限（見える行 × 見える列。全部の印刷範囲を通して数えます）。超える行は描かず、`truncated` が `true` になります |
+| `ignorePrintArea` | `false` | シートの印刷範囲を使わず、データの範囲を印刷します（Excel の「印刷範囲を無視」） |
 | `signal` | — | `AbortSignal`。中断すると、足した物を外してから `AbortError` の `DOMException` で拒否します |
 
 - ページは「下へ、それから右へ」の順です（Excel の既定）。各ページは `page` の大きさの固定の窓で、ページの境をまたぐ物（はみ出す文字・結合セル・図）は境で切れます。何も無いページは出しません。
-- 印刷するのはデータの範囲（セル・図・グラフ・はみ出す文字が届く列）です。印刷範囲・改ページ・印刷タイトル・ヘッダーとフッター・ファイルのページ設定はまだ読みません。
+- 印刷範囲が無ければ、データの範囲（セル・図・グラフ・はみ出す文字が届く列）を印刷します。シートに印刷範囲（`_xlnm.Print_Area`。v0.8.0）があれば、その範囲だけを定義の順に、範囲ごとに新しいページから印刷します。範囲の外へはみ出す文字は範囲の端で切れます。列だけの範囲（`$A:$C`）はデータの最後の行まで、行だけの範囲（`$1:$5`）はデータの最後の列までです。改ページ・印刷タイトル・ヘッダーとフッター・ファイルのページ設定はまだ読みません。
 - 印刷の処理は、最初に `renderForPrint` を呼んだときだけ読み込みます（別のチャンク。単独版の ESM では `xsheet-print.mjs`）。図とグラフを読み終えてから解決します。`data-xs-theme="dark"` の下でも、印刷はいつもライトのテーマです。
 - 結果は `{ pages, truncated, destroy() }`。シートが無い・印刷する物が無いときは `pages` が `0` で、何も足しません。描いている途中にシートを替える・表示を `destroy` すると `AbortError` で拒否します。解決した後は、`destroy()` を呼ぶまで印刷のページが残ります。
+
+### 選択・キーボード・コピー（v0.8.0）
+
+`selection` を指定すると、行・列・セルを 1 つ選び、キーボードで動かし、コピーできます。指定しなければ何も変わりません（クリックを扱わず、選択の処理も読み込みません）。
+
+```ts
+const wb = await renderWorkbook(container, bytes, {
+  selection: 'row', // セルのクリックでその行の全体（エクスプローラーのプレビューと同じ）。'cell' はセル
+  onSelectionChange: (sel, origin) => console.log(sel?.range, origin),
+});
+wb.setSelection({ type: 'cell', r: 5, c: 3 });
+wb.scrollToCell(5, 3);
+```
+
+- クリック：セルはその行（`'row'`）かそのセル（`'cell'`）、行番号はその行、列記号はその列を選びます。結合したセルは結合の範囲を選びます。数ピクセルより動いたクリックと、文字を選んでいるときのクリックは無視するので、マウスで文字を選ぶ動きはそのままです。
+- 選択は `{ type, range, active }` です。`type` は `'row'`・`'column'`・`'cell'`、`range` は `{ r1, c1, r2, c2 }`（1 始まり。行の全体は列 1〜16,384、列の全体は行 1〜1,048,576）、`active` はキーボードで動かす起点の今のセルです。
+- セルの上に帯（`div.xs-sel`）を描き、選んだ行番号・列記号に `is-selected` を付けます。色は `--xs-sel-bg`・`--xs-sel-line`・`--xs-sel-head-bg`・`--xs-sel-head-fg`。シートを替えると選択は外れます。
+- キーボード：クリックで選ぶと表にフォーカスが移ります。↑ ↓ ← → で 1 行・1 列（非表示の行・列と結合の範囲は飛ばします）、PageUp・PageDown で 1 画面、Home で行の先頭の列、Ctrl+Home で左上、Ctrl+End で値のある最後のセルへ動きます。表は新しい選択が見えるだけスクロールします。取るのはこれらのキーだけで、Tab・Ctrl+F・Shift や Alt の付いたキーはページに任せます。選択の番地（`C5`・`5:5`・`C:C`）を `aria-live` の要素で伝えます。
+- Ctrl+C で、選択を表示形式を当てた後の文字のまま、タブ区切り（行の間は `\r\n`）でコピーします。Excel に貼ると表の形に戻ります。タブ・改行・`"` を含むセルは `"` で囲みます。非表示の行・列は入れず、行・列の全体は値のある最後の列・行までです。100 万セルを超えるとコピーせず、通知を出します。マウスで文字を選んでいるときは、ブラウザがその文字をいつもどおりコピーします。`selectionText()` は同じ文字を返します。
+- `setSelection({ type: 'row', r, r2? } | { type: 'column', c, c2? } | { type: 'cell', r, c } | null)` はスクロールしません。シートの範囲の外の番号は `RangeError` です。`selection` を指定しない表示では、`getSelection()` は `null` で、`setSelection` は何もしません。
+- 選択の処理は、最初のシートを出す前に読み込みます（別のチャンク。単独版の ESM では `xsheet-selection.mjs`）。
 
 API の全体は [docs/02_architecture.md](docs/02_architecture.md) の §2（core）と §3（render と `view` の層）にまとめています。
 
@@ -347,7 +372,7 @@ API の全体は [docs/02_architecture.md](docs/02_architecture.md) の §2（co
 ## テーマ
 
 - ダークで表示するには、`view` に `theme: 'dark'` を渡します（`'auto'` なら OS の設定に合わせます）。`renderWorkbook` などを使う場合は、表示のルート要素か `<html>` などの祖先要素に `data-xs-theme="dark"`（または `"auto"`）を付けます。ダークの値は `style.css` に含まれているので、自分で書き写す必要はありません。
-- 色は 16 個の CSS 変数（`--xs-*`）で変えられます。既定値の詳細度は 0（`:where(:root, :host, .xs-print)`）なので、Shadow DOM の中を含め、どこからでも上書きできます。印刷の出力（`.xs-print`）にも同じ既定値が直接当たるので、印刷はいつもライトです。
+- 色は 20 個の CSS 変数（`--xs-*`）で変えられます。既定値の詳細度は 0（`:where(:root, :host, .xs-print)`）なので、Shadow DOM の中を含め、どこからでも上書きできます。印刷の出力（`.xs-print`）にも同じ既定値が直接当たるので、印刷はいつもライトです。
 
 ```css
 /* ライトテーマのアクセントカラーだけを変える */
@@ -360,7 +385,7 @@ API の全体は [docs/02_architecture.md](docs/02_architecture.md) の §2（co
 
 ## 画面の文言
 
-- 日本語（`MESSAGES_JA`）、英語（`MESSAGES_EN`）、韓国語（`MESSAGES_KO`）を同梱しています。キーは 23 個です（[docs/02_architecture.md](docs/02_architecture.md) §7）。
+- 日本語（`MESSAGES_JA`）、英語（`MESSAGES_EN`）、韓国語（`MESSAGES_KO`）を同梱しています。キーは 24 個です（[docs/02_architecture.md](docs/02_architecture.md) §7）。
 - `view` は `lang`（既定値 `auto`）で言語を選びます。`renderWorkbook` と `renderSheet` の既定は日本語です。
 - 一部の文言だけを変えるには、`messages: { noData: '（空）' }` のように渡します。
 - `view` と `read` が出す開発者向けのエラーと警告は英語で、`XSheet:` から始まります。

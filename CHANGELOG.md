@@ -4,6 +4,18 @@
 
 ## [Unreleased]
 
+### 追加
+
+- 印刷範囲（`_xlnm.Print_Area`）を読む（[ADR-0010](docs/adr/0010-scroll-element-and-print.md) §3）。`SheetInfo.printArea`（型 `CellRange` の配列。印刷範囲のあるシートだけ）と、上限 `maxPrintAreas`（既定 1,000）を足した。
+- `renderForPrint` は印刷範囲があれば、その範囲だけを定義の順に、範囲ごとに新しいページから描く。列だけ（`$A:$C`）・行だけ（`$1:$5`）の範囲はデータの最後の行・列までに縮める。範囲の外へのはみ出しは範囲の端で切る。`maxCells` は全部の範囲を通して数える。`PrintOptions.ignorePrintArea: true` で今までどおりデータの範囲を印刷する。
+- `RenderOptions.selection`（`'row'` | `'cell'`）：行・列・セルを 1 つ選べるようにする（[#55](https://github.com/TaekangKwon/XSheet/issues/55)。[ADR-0011](docs/adr/0011-selection.md)）。既定は無効で、指定しない表示の見た目・動きは変わらない。
+  - クリック：セル（`'row'` はその行の全体）・行番号（行の全体）・列記号（列の全体）。結合したセルは結合の範囲。動いたクリックと文字を選んでいるときは選ばない。
+  - 帯 `div.xs-sel` と、選んだ行番号・列記号の `is-selected`。CSS 変数 `--xs-sel-bg`・`--xs-sel-line`・`--xs-sel-head-bg`・`--xs-sel-head-fg`（ダークの値も）。
+  - `getSelection()`・`setSelection(selection | null)`・`onSelectionChange(selection, origin)`。型 `Selection`・`SelectionInput`・`SelectionMode`・`SelectionOrigin`・`SelectionType` を `xsheet/render` から出す。シートを替えると外れる。
+- キーボードで選択を移す（[#56](https://github.com/TaekangKwon/XSheet/issues/56)）：↑ ↓ ← →・PageUp/PageDown・Home・Ctrl+Home・Ctrl+End。非表示の行・列と結合の範囲を飛ばし、見えない所へは最小の量だけスクロールする。選択を動かしたキーだけ既定の動きを止める。選択の番地を `aria-live` で伝える。
+- Ctrl+C で選択をタブ区切りの文字にしてコピーする（[#57](https://github.com/TaekangKwon/XSheet/issues/57)）。`selectionText()` も同じ文字を返す。非表示の行・列は入れない。100 万セルを超えるとコピーせず通知を出す（文言 `noticeCopyTooLarge` を足した。24 キー）。
+  - 選択の処理は `selection` を指定した表示だけが読む別のチャンク（単独版の ESM では同じフォルダの `xsheet-selection.mjs`。**単独版の ESM を使う側は、このファイルも置く**）。`xsheet.min.js` は中に持つ。
+
 ## [0.7.0] - 2026-11-26
 
 InterX-Viewer の依頼 R15・R16（[ADR-0010](docs/adr/0010-scroll-element-and-print.md)）。今までの API の形は変えていない。

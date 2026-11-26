@@ -58,6 +58,7 @@ const tabPositionSelect = byId<HTMLSelectElement>('tab-position');
 const headersCheck = byId<HTMLInputElement>('headers');
 const builtinEraCheck = byId<HTMLInputElement>('builtin-era');
 const zoomSelect = byId<HTMLSelectElement>('zoom');
+const selectionSelect = byId<HTMLSelectElement>('selection');
 const findForm = byId<HTMLFormElement>('find');
 const findInput = byId<HTMLInputElement>('find-text');
 const findPrev = byId<HTMLButtonElement>('find-prev');
@@ -216,6 +217,16 @@ async function show(): Promise<void> {
     nonce,
     zoom: zoomValue(),
     headers: headersCheck.checked,
+    // セル・行番号・列記号のクリックで選ぶ（ADR-0011）。選択の番地を状態の欄に出す
+    selection:
+      selectionSelect.value === 'row' || selectionSelect.value === 'cell'
+        ? selectionSelect.value
+        : undefined,
+    onSelectionChange: (sel) => {
+      if (!sel) return;
+      const { r1, c1, r2, c2 } = sel.range;
+      statusOut.value = `選択：${sel.type} 行 ${r1}〜${r2}・列 ${c1}〜${c2}（今のセル ${sel.active.r},${sel.active.c}）`;
+    },
     // 組み込みの日付の書式 27〜36・50〜58 を日本語版 Excel と同じに（ref-era.xlsx の builtin のシートで違いが見える）
     builtinDates: builtinDatesValue(),
     onSheetChange: resetFind, // シートが替わると XSheet がハイライトを消すので、検索の結果も捨てる
@@ -301,6 +312,7 @@ langSelect.addEventListener('change', reshow);
 drawingsCheck.addEventListener('change', reshow);
 tabPositionSelect.addEventListener('change', reshow);
 headersCheck.addEventListener('change', reshow);
+selectionSelect.addEventListener('change', reshow);
 builtinEraCheck.addEventListener('change', reshow);
 zoomSelect.addEventListener('change', () => view?.setZoom(zoomValue()));
 

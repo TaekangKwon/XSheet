@@ -318,3 +318,38 @@
 - #58（InterX-Viewer の依頼 R15・R16：`scrollElement`・`renderForPrint`・ADR-0010）をマージし、#59 で版を 0.7.0・CHANGELOG の日付を 2026-11-26 にした。
 - `main`（56b6b68）から dist を含めたタグ専用のコミット（0e385d1）を作り、注釈付きタグ `v0.7.0` を push した。Release「XSheet 0.7.0」に `xsheet-0.7.0-standalone.zip`（399,073 B・13 ファイル）を添付した。
 - zip の JS・CSS・型は、`check:standalone`（IIFE で印刷も描く）・`check:consumer`・size を通した dist と同じ中身。npm への公開は保留のまま。
+
+## 2026-11-26 M7-22・M7-23：印刷範囲（ブランチ feat/m7-22-print-area）
+- core に `print-area.ts` を足し、`_xlnm.Print_Area` を `SheetInfo.printArea`（`CellRange[]`）に読む。上限 `maxPrintAreas` 1,000。写しのファイルには `// XSheet:` の口だけ（ADR-0010 §3・版 1.4）。
+- `renderForPrint` は印刷範囲を定義の順に、範囲ごとにページを分けて描く。列だけ／行だけの範囲はデータの最後の行・列まで。`maxCells` は全部の範囲を通して数える。`ignorePrintArea` を足した。
+- テスト `tests/core/print-area.test.ts`・print.test の 7 件。全体 112 ファイル・2,405 件が通る。README 3 つ・02・CHANGELOG・04（v0.8.0 の候補の節）・examples/print（印刷範囲を無視）。
+- 未解決：`npm run size` の `xsheet.min.js` が 144,316 で上限 144,000 を超える（render は 64,863／65,000）。選択などを入れた後に M7-27 でまとめて決める。
+
+## 2026-11-26 M7-24：セル・行・列の選択（#55・ブランチ feat/m7-22-print-area）
+- ADR-0011（proposed。#55〜#57 の決めることを推奨の案で表にし、ユーザーの決定を待つ）を書いた。
+- `src/render/selection.ts`（帯 `div.xs-sel`・クリック・見出しの `is-selected`・結合の範囲）と口 `selection-gate.ts`。`selection: 'row' | 'cell'` を指定した表示だけ遅れて読む（選択を render に入れると 66,530 で上限を超えたため）。`getSelection`・`setSelection`・`onSelectionChange` を SheetView・WorkbookView・view2 に。
+- CSS 変数 `--xs-sel-*` 4 個（ダーク 2 つ・examples・02 §6・theme の数を 20 個に）。examples に選択の切り替え。テスト `tests/render/selection.test.ts`（19 件）。全体 113 ファイル・2,424 件が通る。
+- 大きさ：render 65,162（上限 65,000 を 162 超える）・selection のチャンク 2,181。README は M7-26 でまとめて書く。
+
+## 2026-11-26 M7-25：キーボードで選択を移す（#56）
+- `selection-keys.ts`（行き先の計算：矢印・PageUp/PageDown・Home・Ctrl+Home/End・非表示を飛ばす・結合は範囲の端から）。`selection.ts` に keydown・`tabindex="0"`・クリックでフォーカス・最小の量のスクロール・`span.xs-live`（番地の読み上げ）。
+- 動かしたキー（端も）だけ preventDefault。Shift・Alt・End だけ・入力欄からのキーは取らない。ADR-0011 §4。CSS は `:focus-visible` の枠と `.xs-live`。
+- テスト `tests/render/selection-keys.test.ts`（10 件）。全体 114 ファイル・2,434 件が通る。selection のチャンク 3,382（render は 65,165 のまま）。
+
+## 2026-11-26 M7-26：Ctrl+C でコピー（#57）・README
+- `selection-copy.ts`（タブ・`\r\n` 区切り、タブ・改行・`"` の囲み、結合は左上だけ、非表示の行・列を除く、行・列の全体は値のある範囲まで、100 万セルの上限）。`selection.ts` の `copy` イベントと `selectionText()`（SheetView・WorkbookView・view2）。上限超えは通知の帯（文言 `noticeCopyTooLarge`。24 キー）。
+- README 3 つに「選択・キーボード・コピー（v0.8.0）」の節と表の行。02（§3・§7）・ADR-0011 §5・CHANGELOG。
+- テスト `tests/render/selection-copy.test.ts`（10 件）。全体 115 ファイル・2,444 件が通る。check:standalone も通る。
+- 大きさ：render 65,378（上限 65,000）・selection 3,851・xsheet.min.js 147,906（上限 144,000）。M7-27 で決める。
+
+## 2026-11-26 M7-22〜M7-26 の実機の確認（内蔵ブラウザ・Chromium）
+- examples：showcase で行の選択（クリック・↓・行番号の印・`aria-live` の `10:10`）、セルの選択と列記号のクリック（ダーク・150%）、合成の copy のイベントで `Total\t5,230…\r\n`。
+- examples/print：印刷範囲 2 つ（B2:D6・H20:J22）が範囲ごとに 2 ページ、「印刷範囲を無視」でデータの範囲全部。
+- 本物の Ctrl+C（クリップボード）と Excel・メモ帳への貼り付け、Firefox・Edge はユーザーの確認に残した。
+
+## 2026-11-26 M7-27：大きさの上限の見直し（ユーザーの決定）
+- 実測に約 1 割の余裕で、render 65,000 → 72,000、xsheet.min.js 144,000 → 163,000、selection（仮 6,000）→ 4,300、xsheet-selection.mjs（仮 6,000）→ 3,800。理由は 02 §8・ADR-0011 §3。
+- `check:standalone` で xsheet-selection.mjs も読む。size・テスト（115 ファイル・2,444 件）・check:standalone が通る。
+
+## 2026-11-26 ADR-0011 を accepted に（ユーザーの決定）
+- 10 点すべてを推奨（作った物）のとおりに決めた。版 1.1（ステータスだけ）。04・handoff を合わせた。

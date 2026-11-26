@@ -177,6 +177,7 @@ describe('resolvePrintOptions', () => {
       headers: false,
       gridlines: false,
       maxCells: 200000,
+      ignorePrintArea: false,
     });
   });
 
@@ -374,6 +375,107 @@ describe('renderForPrint：見た目', () => {
     expect(body.scrollTop).toBe(120);
     expect(root.querySelector('table')).toBe(before);
     expect(view.zoom).toBe(1);
+  });
+});
+
+describe('renderForPrint：印刷範囲（M7-23・ADR-0010 §3）', () => {
+  /** A1〜J12 に `r,c` の文字を置いたシート（印刷範囲 ref）を表示する */
+  async function setupArea(ref: string, more?: Partial<SheetSpec>) {
+    const cells: Record<string, string> = {};
+    for (let r = 1; r <= 12; r++) for (let c = 1; c <= 10; c++) cells[`${r},${c}`] = `${r},${c}`;
+    const book = await openBook({
+      font: { name: 'Calibri', size: 11 },
+      sheets: [{ name: 'S', rows: grid(cells), ...more }],
+      definedNames: [{ name: '_xlnm.Print_Area', localSheetId: 0, ref }],
+    });
+    const m = await mount(book);
+    const sh = await book.openSheet(1);
+    return { ...m, geo: createGeometry(sh.layout, 1000, 100) };
+  }
+
+  it('範囲の中のセルだけを描く（範囲の外へのはみ出しは広げない）', async () => {
+    const { view } = await setupArea("'S'!$B$2:$C$3");
+    const t = newTarget();
+    const r = await print(view, t);
+    expect(r.pages).toBe(1);
+    const page = pagesOf(t)[0]!;
+    expect(textsOf(page)).toEqual(['2,2', '2,3', '3,2', '3,3']);
+    expect(rowsOf(page)).toEqual([2, 3]);
+    expect(page.querySelectorAll('col')).toHaveLength(3); // 行番号の列（畳む）＋B・C
+  });
+
+  it('複数の範囲は、1 ページに収まっても範囲ごとにページを分け、定義の順に描く', async () => {
+    const { view } = await setupArea('S!$E$5:$F$6,S!$A$1:$B$2');
+    const t = newTarget();
+    const r = await print(view, t);
+    expect(r.pages).toBe(2);
+    expect(pagesOf(t).map(textsOf)).toEqual([
+      ['5,5', '5,6', '6,5', '6,6'],
+      ['1,1', '1,2', '2,1', '2,2'],
+    ]);
+  });
+
+  it('範囲の中も下へ、それから右へ分ける', async () => {
+    const { view, geo } = await setupArea('S!$A$1:$D$4');
+    const t = newTarget();
+    const page = { width: geo.colWidth(1) * 2, height: geo.rowHeight(1) * 2 };
+    const r = await print(view, t, { page });
+    expect(r.pages).toBe(4);
+    expect(pagesOf(t).map((p) => textsOf(p)[0])).toEqual(['1,1', '3,1', '1,3', '3,3']);
+  });
+
+  it('列だけの範囲はデータの最下行まで、行だけの範囲はデータの最右列まで', async () => {
+    const cols = await setupArea('S!$B:$C');
+    const t1 = newTarget();
+    await print(cols.view, t1);
+    const p1 = pagesOf(t1);
+    expect(p1.flatMap(rowsOf)).toEqual(Array.from({ length: 12 }, (_, i) => i + 1));
+    expect(p1.flatMap(textsOf)).toHaveLength(24);
+
+    const rows = await setupArea('S!$11:$12');
+    const t2 = newTarget();
+    await print(rows.view, t2);
+    const p2 = pagesOf(t2);
+    expect(p2.map(rowsOf)).toEqual([[11, 12]]); // A〜J は A4 縦の幅に収まる
+    expect(p2.flatMap(textsOf).sort()).toEqual(
+      ['11', '12'].flatMap((r) => Array.from({ length: 10 }, (_, i) => `${r},${i + 1}`)).sort(),
+    );
+  });
+
+  it('ignorePrintArea: true はデータの範囲全部を描く', async () => {
+    const { view } = await setupArea('S!$B$2:$C$3');
+    const t = newTarget();
+    await print(view, t, { ignorePrintArea: true });
+    expect(pagesOf(t).flatMap(textsOf)).toHaveLength(120);
+  });
+
+  it('maxCells は全部の範囲を通して数え、超える手前の行で打ち切る（後の範囲は描かない）', async () => {
+    const { view } = await setupArea('S!$A$1:$B$2,S!$D$4:$E$5,S!$G$7:$H$8');
+    const t = newTarget();
+    const r = await print(view, t, { maxCells: 6 });
+    expect(r.truncated).toBe(true);
+    expect(pagesOf(t).map(textsOf)).toEqual([
+      ['1,1', '1,2', '2,1', '2,2'],
+      ['4,4', '4,5'],
+    ]);
+  });
+
+  it('ほかのシートの印刷範囲は使わない', async () => {
+    const book = await openBook({
+      sheets: [
+        { name: 'A', rows: [['a1', 'a2']] },
+        { name: 'B', rows: [['b1', 'b2']] },
+      ],
+      definedNames: [{ name: '_xlnm.Print_Area', localSheetId: 1, ref: 'B!$B$1' }],
+    });
+    const a = await mount(book, 1);
+    const t1 = newTarget();
+    await print(a.view, t1);
+    expect(pagesOf(t1).flatMap(textsOf)).toEqual(['a1', 'a2']);
+    const b = await mount(book, 2);
+    const t2 = newTarget();
+    await print(b.view, t2);
+    expect(pagesOf(t2).flatMap(textsOf)).toEqual(['b2']);
   });
 });
 

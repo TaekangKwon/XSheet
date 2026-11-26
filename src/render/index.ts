@@ -15,3 +15,11 @@ export {
 export { renderWorkbook, type WorkbookOptions, type WorkbookView } from './render-workbook';
 export type { Zoom } from './zoom';
 export type { PrintOptions, PrintResult } from './print'; // XSheet: ADR-0010 §2
+// XSheet: ADR-0011
+export type {
+  Selection,
+  SelectionInput,
+  SelectionMode,
+  SelectionOrigin,
+  SelectionType,
+} from './selection';
