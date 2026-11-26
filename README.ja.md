@@ -301,6 +301,9 @@ window.print();
   display: none;
 }
 @media print {
+  :root {
+    color-scheme: light; /* ダークの color-scheme のままだと、Chrome・Edge が用紙の余白を暗く塗る */
+  }
   body > :not(#print-host) {
     display: none;
   }

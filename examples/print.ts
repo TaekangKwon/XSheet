@@ -51,10 +51,16 @@ const host = byId<HTMLElement>('print-host');
 const nonce =
   document.querySelector<HTMLLinkElement>('link[rel="stylesheet"][nonce]')?.nonce || undefined;
 
-/** 横の用紙の @page（縦は print.html の既定） */
-const pageStyle = document.createElement('style');
-if (nonce) pageStyle.nonce = nonce;
-document.head.append(pageStyle);
+/** 用紙の @page（1 つだけ。描くたびに新しい <style> に入れ替える） */
+let pageStyle: HTMLStyleElement | null = null;
+function setPageRule(): void {
+  const orientation = paper.value === 'landscape' ? 'landscape' : 'portrait';
+  pageStyle?.remove();
+  pageStyle = document.createElement('style');
+  if (nonce) pageStyle.nonce = nonce;
+  pageStyle.textContent = `@page { size: A4 ${orientation}; margin: 0.75in 0.7in; }`;
+  document.head.append(pageStyle);
+}
 
 let view: WorkbookView | null = null;
 let printed: PrintResult | null = null;
@@ -81,8 +87,7 @@ function clearPrint(): void {
 async function renderPrint(): Promise<PrintResult | null> {
   clearPrint();
   if (!view) return null;
-  pageStyle.textContent =
-    paper.value === 'landscape' ? '@page { size: A4 landscape; margin: 0.75in 0.7in; }' : '';
+  setPageRule();
   const c = new AbortController();
   ctl = c;
   const t0 = performance.now();
@@ -164,5 +169,30 @@ printBtn.addEventListener('click', () => {
   });
 });
 
+/**
+ * 実機の確認用の自動の動き（M7-21）：URL の引数で指定を入れ、描き終えたら `document.title` を `printed:<ページ数>` にする。
+ * `auto=render` は印刷の描画を作るだけ（Chrome・Edge の `--headless --print-to-pdf` で PDF にする）。
+ * `auto=print` はさらに `window.print()` を呼ぶ（Firefox の印刷を黙って PDF にする設定で使う）。
+ * 例：`print.html?sample=ref-shapes.xlsx&sheet=1&paper=landscape&fit=1&headers=1&gridlines=1&theme=dark&auto=render`
+ */
+async function autoRun(q: URLSearchParams): Promise<void> {
+  const name = q.get('sample');
+  if (name && SAMPLES.includes(name)) sample.value = name;
+  paper.value = q.get('paper') === 'landscape' ? 'landscape' : 'portrait';
+  fit.checked = q.get('fit') === '1';
+  headers.checked = q.get('headers') === '1';
+  gridlines.checked = q.get('gridlines') === '1';
+  theme.value = q.get('theme') === 'dark' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = theme.value;
+  await openSample(sample.value);
+  const index = Number(q.get('sheet') ?? '');
+  if (view && Number.isInteger(index) && index >= 1) await view.showSheet(index);
+  const r = await renderPrint();
+  document.title = r ? `printed:${r.pages}` : 'printed:error';
+  if (r && q.get('auto') === 'print') window.print();
+}
+
+const query = new URLSearchParams(location.search);
 document.documentElement.dataset.theme = theme.value;
-void openSample(SAMPLES[0]!);
+if (query.has('auto')) void autoRun(query);
+else void openSample(SAMPLES[0]!);

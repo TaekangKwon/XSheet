@@ -24,6 +24,7 @@ import {
   stubClientSize,
   wait,
 } from './render-sheet.helpers';
+import { css, rule } from './style-css.helpers';
 
 /**
  * 印刷の描画 `renderForPrint`（M7-20・ADR-0010 §2）。jsdom はレイアウトも印刷も持たないので、
@@ -544,5 +545,26 @@ describe('renderForPrint：図・待つ・中断・片付け', () => {
     expect(textsOf(pagesOf(t)[0]!)).toEqual(['x', 'y']);
     r.destroy();
     expect(t.children).toHaveLength(0);
+  });
+});
+
+describe('印刷の CSS（style.css の文面。M7-21 で 3 つのブラウザの PDF で確かめた形）', () => {
+  it('ページは固定の窓：overflow: hidden・contain: strict（図の層の中身で文書全体を縮めさせない）・後ろで改ページ', () => {
+    const page = rule('.xs-print-page');
+    expect(page).toContain('overflow: hidden;');
+    expect(page).toContain('contain: strict;');
+    expect(page).toContain('break-after: page;');
+    expect(rule('.xs-print-page:last-child')).toContain('break-after: auto;');
+  });
+
+  it('根は色を落とさず（print-color-adjust: exact）、変数の既定値が直に当たる', () => {
+    expect(rule('.xs-sheet.xs-print')).toContain('print-color-adjust: exact;');
+    expect(css).toContain(':where(:root, :host, .xs-print) {');
+  });
+
+  it('縮めた印刷では列記号も行番号も倍率で小さくする（5px より小さくしない）', () => {
+    expect(rule('.xs-print .xs-grid thead th,\n.xs-print .xs-grid .xs-rownum .xs-cell')).toContain(
+      'font-size: max(5px, calc(13px * min(1, var(--xs-zoom, 1))));',
+    );
   });
 });

@@ -773,10 +773,13 @@
   -webkit-print-color-adjust: exact;
 }
 
+/* contain: strict：ページの外まで広がる図（幅に合わせて縮めた図の層の中身）を、Chrome・Edge が印刷の幅に数えて
+   全体を縮めて出していた（overflow: hidden・contain: paint では止まらない。M7-21 で PDF にして確かめた） */
 .xs-print-page {
   position: relative;
   box-sizing: border-box;
   overflow: hidden;
+  contain: strict;
   background: var(--xs-cell-bg);
   break-after: page;
   break-inside: avoid;
@@ -799,4 +802,10 @@
 
 .xs-print:not(.is-gridlines) .xs-grid tbody td:not(.xs-rownum) {
   border-color: transparent;
+}
+
+/* 幅に合わせて縮めた印刷（fit: 'width'）では、列記号も行番号と同じく倍率で小さくする（13px のままだと狭い列で切れる）。小さくても 5px */
+.xs-print .xs-grid thead th,
+.xs-print .xs-grid .xs-rownum .xs-cell {
+  font-size: max(5px, calc(13px * min(1, var(--xs-zoom, 1))));
 }

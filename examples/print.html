@@ -40,8 +40,13 @@
         }
       }
 
-      /* 印刷では印刷の描画だけを出す。用紙の大きさ・余白は @page（A4 の縦は下の既定、横は print.ts が足す） */
+      /* 印刷では印刷の描画だけを出す。用紙の大きさ・余白の @page は、選んだ用紙に合わせて print.ts が入れる */
       @media print {
+        /* 画面がダーク（color-scheme: dark）のままだと、Chrome・Edge は用紙の余白を暗い色で塗る（背景は印刷で落ちる） */
+        :root {
+          color-scheme: light !important;
+        }
+
         html,
         body {
           display: block;
@@ -56,11 +61,6 @@
         #print-host {
           display: block !important;
         }
-      }
-
-      @page {
-        size: A4 portrait;
-        margin: 0.75in 0.7in;
       }
     </style>
     <script type="module" src="./print.ts"></script>

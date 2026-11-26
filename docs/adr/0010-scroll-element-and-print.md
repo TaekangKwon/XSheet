@@ -1,6 +1,6 @@
 # 0010. スクロール枠を出す口と、抜けの無い印刷の描画（InterX-Viewer の依頼 R15・R16）
 
-> 版: 1.1 ・ 更新日: 2026-11-26 ・ 担当: kwon
+> 版: 1.2 ・ 更新日: 2026-11-26 ・ 担当: kwon
 > 関連文書: [0007](0007-moobius-viewer-api.md)（§5 倍率・§7 `SheetView` と `WorkbookView` の形をそろえる） / [0008](0008-align-wrap-spill.md)（§4 はみ出しの届く列） / [0003](0003-universal-distribution.md)（§4-1 写しの規約） / Issue [#53](https://github.com/TaekangKwon/XSheet/issues/53)・[#54](https://github.com/TaekangKwon/XSheet/issues/54)
 
 ## TL;DR
@@ -13,7 +13,7 @@
 
 ## ステータス
 
-accepted（2026-11-26）。ユーザーが次の 6 点を推奨どおりに決めた。§1・§2 の形は依頼の案と違うので、#53・#54 にコメントで伝える。版 1.1（M7-20）は、実装で確かめたこと（§2-4 のテーマの当て方・§2-5 の計測・§2-6 の結合セルと空のページ）を書き足しただけで、決めたことは変えていない。
+accepted（2026-11-26）。ユーザーが次の 6 点を推奨どおりに決めた。§1・§2 の形は依頼の案と違うので、#53・#54 にコメントで伝える。版 1.1（M7-20）は、実装で確かめたこと（§2-4 のテーマの当て方・§2-5 の計測・§2-6 の結合セルと空のページ）を書き足しただけで、決めたことは変えていない。版 1.2（M7-21）も、3 つのブラウザで確かめたこと（§2-4・§4）を書き足しただけ。
 
 | # | 決めたこと | 理由 |
 | --- | --- | --- |
@@ -125,6 +125,10 @@ export interface SheetView {
 - `div.xs-print` に `print-color-adjust: exact`（と `-webkit-print-color-adjust: exact`）を付け、塗り・罫線の色が印刷で消えないようにする。
 - テーマは印刷ではいつもライト：`.xs-print` の上で `--xs-*` をライトの値に定義し直す（祖先の `data-xs-theme="dark"` を受け継がない）。
   - 版 1.1：値を写して並べず、変数の既定値のブロックのセレクタを `:where(:root, :host, .xs-print)` にした（同じ値を 2 か所に持たない。詳細度は 0 のままで、`.xs-print` に直に当たるので祖先の値に勝つ）。
+- 版 1.2（M7-21 で確かめた）：
+  - 各ページに `contain: strict` を付ける。`fit: 'width'` で図の層を縮めると、層の中の図（100% の位置）を Chrome・Edge が印刷の幅に数え、文書全体を縮めて出していた（A4 横で 0.67 倍など。`overflow: hidden`・`contain: paint` では止まらない）。
+  - 幅に合わせて縮めた印刷では、列記号も行番号と同じく倍率で小さくする（5px より小さくしない）。13px のままだと狭い列で切れる。
+  - 使う側の注意（README）：画面の `color-scheme: dark` のまま印刷すると、Chrome・Edge は用紙の余白を暗く塗る（ページの背景は印刷で落ちる）。印刷では `color-scheme: light` にする。
 - 書式の CSS は `div.xs-print` の中に専用の `<style>`（`nonce` を付ける）を置き、`.xs-print` に `data-xs-fmt` を付けて当てる。表示の `destroy` の後でも印刷の描画が崩れない。
 - 目盛り線は既定で出さない（`gridlines: true` で出す）。見出しは既定で出さない（`headers: true` で、各ページに列記号と行番号を出す）。core は `printOptions` を読まないので、ファイルの指定には従わない。
 
@@ -161,6 +165,7 @@ export interface SheetView {
 - 実機（examples）：
   - 2 つの表を左右に並べ、片方の `scrollElement` の割合をもう片方に写すページで、一緒に動くことを目で見る。
   - 縦にも横にもスクロールしないと見えないシート（図・グラフ・結合・はみ出し・ダークのテーマを含む）を、Chrome・Edge・Firefox の印刷のプレビューで見て、抜けが無いこと。
+  - 版 1.2（M7-21）：印刷の画面は操作できないので、`examples/print.html` の自動の動き（URL の `auto=render`）で描き、Chrome・Edge は `--headless --print-to-pdf` と DevTools の `Page.printToPDF`（`preferCSSPageSize`）、Firefox は WebDriver BiDi の `browsingContext.print` で PDF にした。7 つの場合（A4 縦・横、幅に合わせる、見出し・目盛り線、ダークの画面、図・グラフの多いシート）で、3 つのブラウザとも PDF のページの数が描いたページの数と一致し、中身が切れずに出ることを見た。人が印刷の画面で見るのは InterX-Viewer の側の確認に任せる。
 
 ### 5. 進め方と版
 

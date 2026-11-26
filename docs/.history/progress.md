@@ -302,3 +302,9 @@
 - テスト `tests/render/print.test.ts`（31 件）。全体 111 ファイル・2,386 件が通る。README 3 つ・02 §3・§6・guide/theme・ADR-0010 版 1.1（計測・結合セル・空のページ）を直した。
 - 例のページ `examples/print.html` で showcase・ref-drawings・ref-shapes・ref-charts を内蔵ブラウザで見た（下へ→右・空のページを飛ばす・図は境で切れる・グラフ 75 個を待つ・ダークでもライト）。200,000 セルは描画 1.2 秒・417 ページ（取り付けたまま譲ると 27 秒だったので、文書の外で組んでから付ける）。
 - Chrome・Edge・Firefox の印刷のプレビュー（印刷の画面）は未確認。M7-21 の実機で見る。
+
+## 2026-11-26 M7-21：3 つのブラウザの印刷の確認・CHANGELOG（ブランチ feat/m7-20-print）
+- `examples/print.html` に自動の動き（`auto=render`）を足し、Chrome・Edge（headless の PDF・DevTools の printToPDF）と Firefox（WebDriver BiDi の print）で 7 つの場合を PDF にした。3 つとも PDF のページの数が描いたページの数と一致。
+- 見つけて直した：A4 横で幅に合わせると Chrome・Edge が全体を 0.67 倍などに縮めていた（縮めた図の層の中身を印刷の幅に数える）→ ページに `contain: strict`。縮めた印刷の列記号が切れる → 倍率で小さく（5px まで）。例のページのダークの余白 → 印刷で `color-scheme: light`（README に書いた）。
+- CHANGELOG の Unreleased・ADR-0010 版 1.2。全体 111 ファイル・2,389 件が通る。
+- 未解決：`npm run size` の render が 66,171 で上限 65,000 を超える（M7-20 で +2.4 KB。M7-19 では 63,762）。CI が止まるので PR の前に決める。

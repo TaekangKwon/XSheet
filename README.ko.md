@@ -301,6 +301,9 @@ window.print();
   display: none;
 }
 @media print {
+  :root {
+    color-scheme: light; /* 다크 color-scheme 그대로면 Chrome·Edge가 용지 여백을 어둡게 칠함 */
+  }
   body > :not(#print-host) {
     display: none;
   }

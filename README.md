@@ -301,6 +301,9 @@ window.print();
   display: none;
 }
 @media print {
+  :root {
+    color-scheme: light; /* with a dark color-scheme, Chrome and Edge paint the page margins dark */
+  }
   body > :not(#print-host) {
     display: none;
   }
