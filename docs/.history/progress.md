@@ -318,3 +318,9 @@
 - #58（InterX-Viewer の依頼 R15・R16：`scrollElement`・`renderForPrint`・ADR-0010）をマージし、#59 で版を 0.7.0・CHANGELOG の日付を 2026-11-26 にした。
 - `main`（56b6b68）から dist を含めたタグ専用のコミット（0e385d1）を作り、注釈付きタグ `v0.7.0` を push した。Release「XSheet 0.7.0」に `xsheet-0.7.0-standalone.zip`（399,073 B・13 ファイル）を添付した。
 - zip の JS・CSS・型は、`check:standalone`（IIFE で印刷も描く）・`check:consumer`・size を通した dist と同じ中身。npm への公開は保留のまま。
+
+## 2026-11-26 M7-22・M7-23：印刷範囲（ブランチ feat/m7-22-print-area）
+- core に `print-area.ts` を足し、`_xlnm.Print_Area` を `SheetInfo.printArea`（`CellRange[]`）に読む。上限 `maxPrintAreas` 1,000。写しのファイルには `// XSheet:` の口だけ（ADR-0010 §3・版 1.4）。
+- `renderForPrint` は印刷範囲を定義の順に、範囲ごとにページを分けて描く。列だけ／行だけの範囲はデータの最後の行・列まで。`maxCells` は全部の範囲を通して数える。`ignorePrintArea` を足した。
+- テスト `tests/core/print-area.test.ts`・print.test の 7 件。全体 112 ファイル・2,405 件が通る。README 3 つ・02・CHANGELOG・04（v0.8.0 の候補の節）・examples/print（印刷範囲を無視）。
+- 未解決：`npm run size` の `xsheet.min.js` が 144,316 で上限 144,000 を超える（render は 64,863／65,000）。選択などを入れた後に M7-27 でまとめて決める。

@@ -6,12 +6,14 @@
  *   表（`buildGridTable`）・罫線の層（`svg.xs-borders` 1 枚）・図の層（範囲で切る入れ物の中）を重ね、ページの端で切る。
  *   ブラウザの改ページには任せない（幅のはみ出しは次のページへ送られず切れるため）。
  * - 範囲は、データ・図の右下・はみ出しの届く列（全部の行から）。枠を埋める空のセルは入れない。何も描く物の無いページは出さない。
+ *   ファイルに印刷範囲（`_xlnm.Print_Area`）があれば、その範囲を定義の順に、範囲ごとにページを分けて描く（§3・M7-23）。
  * - 倍率はいつも 100%。`fit: 'width'` のときだけ、全部の列が 1 ページの幅に収まるまで縮める。
  * - 描くセルの数が上限を超えたら、超える手前の行で打ち切る（列は打ち切らない）。
  * - 画像・グラフを描き終えてから解決する。中断（`signal`・表示の destroy・シートの切り替え）では、足した物を片付けてから AbortError。
  * ユーザーのファイル内容は `textContent` だけで入れる（表・図の層の部品と同じ）。例外のメッセージにセル値・シート名を含めない。
  */
 import type {
+  CellRange,
   colName,
   createGeometry,
   Geometry,
@@ -72,6 +74,11 @@ export interface PrintOptions {
   gridlines?: boolean;
   /** 描くセルの数の上限（行 × 列。非表示の行・列は数えない）。既定 200000 */
   maxCells?: number;
+  /**
+   * ファイルの印刷範囲（`_xlnm.Print_Area`）を使わず、データの範囲を印刷する（Excel の「印刷範囲を無視」）。
+   * 既定 false（印刷範囲があれば、その範囲だけを範囲ごとにページを分けて描く）
+   */
+  ignorePrintArea?: boolean;
   /** 中断する（描いている間・画像を待つ間に見る） */
   signal?: AbortSignal;
 }
@@ -102,6 +109,7 @@ export interface ResolvedPrintOptions {
   headers: boolean;
   gridlines: boolean;
   maxCells: number;
+  ignorePrintArea: boolean;
 }
 
 /**
@@ -128,6 +136,7 @@ export function resolvePrintOptions(options: PrintOptions = {}): ResolvedPrintOp
     headers: options.headers === true,
     gridlines: options.gridlines === true,
     maxCells: Math.floor(maxCells),
+    ignorePrintArea: options.ignorePrintArea === true,
   };
 }
 
@@ -139,19 +148,25 @@ export interface PrintPage {
   c2: number;
 }
 
-/** 印刷の割り付け（DOM を使わない計算の結果） */
-export interface PrintPlan {
-  /** 描く最後の行 */
-  rows: number;
-  /** 描く最後の列 */
-  cols: number;
-  /** 倍率（`fit: 'width'` のときだけ 1 未満） */
-  zoom: number;
-  truncated: boolean;
+/** 1 つの範囲のページの切れ目 */
+export interface PrintAreaBands {
   /** 行のページの切れ目（上から） */
   rowBands: readonly [number, number][];
   /** 列のページの切れ目（左から） */
   colBands: readonly [number, number][];
+}
+
+/** 印刷の割り付け（DOM を使わない計算の結果） */
+export interface PrintPlan {
+  /** 描く最後の行（全部の範囲で一番下） */
+  rows: number;
+  /** 描く最後の列（全部の範囲で一番右） */
+  cols: number;
+  /** 倍率（`fit: 'width'` のときだけ 1 未満） */
+  zoom: number;
+  truncated: boolean;
+  /** 範囲ごとの切れ目（印刷範囲の順。印刷範囲の無いシートはデータの範囲 1 つ）。範囲ごとにページを分ける */
+  areas: readonly PrintAreaBands[];
 }
 
 /** 割り付けに使うシートの部分 */
@@ -193,87 +208,128 @@ export function splitBands(
   return out;
 }
 
+/** 印刷する範囲 1 つ（`spill` は、はみ出しの届く列まで右へ広げるか） */
+interface AreaSpec extends PrintPage {
+  spill: boolean;
+}
+
 /**
- * 印刷の範囲・倍率・ページの切れ目を決める（ADR-0010 §2-2・§2-5）。
- * - 行は データ・図の最下行まで、列は データ・図の最右列・はみ出しの届く列（見える全部の行から）まで。
- * - 見える行を上から数え、見える行 × 見える列が `maxCells` を超える手前で打ち切る（最初の 1 行は必ず描く）。
+ * 印刷の範囲・倍率・ページの切れ目を決める（ADR-0010 §2-2・§2-5・§3）。
+ * - 印刷範囲が無ければ、行は データ・図の最下行まで、列は データ・図の最右列・はみ出しの届く列（見える全部の行から）まで。
+ * - 印刷範囲があれば、その範囲を定義の順に使う（範囲の外へのはみ出しは広げない）。列だけ（`$A:$C`）の範囲は
+ *   データ・図の最下行まで、行だけ（`$1:$5`）の範囲はデータ・図の最右列・はみ出しの届く列までに縮める。
+ * - 見える行を上から数え、全部の範囲を通して見える行 × 見える列が `maxCells` を超える手前で打ち切る
+ *   （最初の 1 行は必ず描く。打ち切った後の範囲は描かない）。
  */
 export function planPrint(
   kit: PrintKit,
   sheet: PrintSheet,
   boxes: readonly DrawingBox[],
   opts: ResolvedPrintOptions,
+  printArea?: readonly CellRange[],
 ): PrintPlan {
   const { createGeometry, drawingExtent, spillReachCols, rowNumWidth, zoomGeometry } = kit;
   const { GRID_HEADER_HEIGHT, MAX_GRID_ROWS, MAX_GRID_COLS } = kit;
   const big = createGeometry(sheet.layout, MAX_GRID_ROWS, MAX_GRID_COLS);
   const fig = drawingExtent(big, boxes);
   const lastRow = Math.min(MAX_GRID_ROWS, Math.max(1, sheet.rowCount, fig.rows));
-  let cols = Math.min(MAX_GRID_COLS, Math.max(1, sheet.colCount, fig.cols));
-  // 見える列の数（列 1〜counted の分。列は増えるだけなので続きから数える）
-  let counted = 0;
-  let shown = 0;
-  const shownCols = (n: number): number => {
-    for (; counted < n; counted++) {
-      if (big.colWidth(counted + 1) > 0) shown++;
+  const lastCol = Math.min(MAX_GRID_COLS, Math.max(1, sheet.colCount, fig.cols));
+  const specs: AreaSpec[] =
+    printArea && printArea.length > 0
+      ? printArea.map((a) => {
+          const r1 = Math.min(a.r1, MAX_GRID_ROWS);
+          const c1 = Math.min(a.c1, MAX_GRID_COLS);
+          const wholeRows = a.c2 >= MAX_GRID_COLS;
+          return {
+            r1,
+            c1,
+            r2: a.r2 >= MAX_GRID_ROWS ? Math.max(r1, lastRow) : a.r2,
+            c2: wholeRows ? Math.max(c1, lastCol) : a.c2,
+            spill: wholeRows,
+          };
+        })
+      : [{ r1: 1, c1: 1, r2: lastRow, c2: lastCol, spill: true }];
+
+  // 見える列の数（列 1〜n の分。先頭から数えた結果を覚えておく）
+  const prefix = [0];
+  const shownUpTo = (n: number): number => {
+    for (let c = prefix.length; c <= n; c++) {
+      prefix.push(prefix[c - 1]! + (big.colWidth(c) > 0 ? 1 : 0));
     }
-    return shown;
+    return prefix[n]!;
   };
-  let seen = 0;
-  let end = 0;
+  const shownCols = (c1: number, c2: number): number => shownUpTo(c2) - shownUpTo(c1 - 1);
+
+  let used = 0;
   let truncated = false;
-  for (let a = 1; a <= lastRow && !truncated; a += READ_CHUNK) {
-    const b = Math.min(lastRow, a + READ_CHUNK - 1);
-    const data: SheetRow[] =
-      a <= sheet.rowCount ? sheet.getRows(a, Math.min(b, sheet.rowCount)) : [];
-    for (let r = a; r <= b; r++) {
-      if (big.rowHeight(r) === 0) {
+  const kept: PrintPage[] = [];
+  for (const s of specs) {
+    let cols = s.c2;
+    let seen = 0;
+    let end = s.r1 - 1;
+    for (let a = s.r1; a <= s.r2 && !truncated; a += READ_CHUNK) {
+      const b = Math.min(s.r2, a + READ_CHUNK - 1);
+      const data: SheetRow[] =
+        s.spill && a <= sheet.rowCount ? sheet.getRows(a, Math.min(b, sheet.rowCount)) : [];
+      for (let r = a; r <= b; r++) {
+        if (big.rowHeight(r) === 0) {
+          end = r;
+          continue;
+        }
+        const row = data[r - a];
+        const reach = row ? Math.min(MAX_GRID_COLS, spillReachCols(big, [row], sheet.formats)) : 0;
+        const need = Math.max(cols, reach);
+        if ((used > 0 || seen > 0) && used + (seen + 1) * shownCols(s.c1, need) > opts.maxCells) {
+          truncated = true;
+          break;
+        }
+        seen++;
+        cols = need;
         end = r;
-        continue;
       }
-      const row = data[r - a];
-      const reach = row ? Math.min(MAX_GRID_COLS, spillReachCols(big, [row], sheet.formats)) : 0;
-      const need = Math.max(cols, reach);
-      if (seen > 0 && (seen + 1) * shownCols(need) > opts.maxCells) {
-        truncated = true;
-        break;
-      }
-      seen++;
-      cols = need;
-      end = r;
     }
+    if (end >= s.r1) {
+      kept.push({ r1: s.r1, r2: end, c1: s.c1, c2: cols });
+    }
+    used += seen * shownCols(s.c1, cols);
+    if (truncated) break;
   }
-  const headX = opts.headers ? rowNumWidth(end) : 0;
+
+  const rows = Math.max(1, ...kept.map((p) => p.r2));
+  const cols = Math.max(1, ...kept.map((p) => p.c2));
+  const headX = opts.headers ? rowNumWidth(rows) : 0;
   const headY = opts.headers ? GRID_HEADER_HEIGHT : 0;
   let zoom = 1;
   if (opts.fit) {
-    const content = big.colLeft(cols + 1);
+    const content = Math.max(0, ...kept.map((p) => big.colLeft(p.c2 + 1) - big.colLeft(p.c1)));
     const avail = Math.floor(opts.page.width - headX);
     if (avail > 0 && content > avail) {
       // 境目は zoomGeometry が丸めるので、右端が avail を超えないよう avail（整数）÷ 中身の幅にする
       zoom = avail / content;
     }
   }
-  const g = zoomGeometry(createGeometry(sheet.layout, end, cols), zoom);
+  const g = zoomGeometry(createGeometry(sheet.layout, rows, cols), zoom);
   return {
-    rows: end,
+    rows,
     cols,
     zoom,
     truncated,
-    rowBands: splitBands(
-      1,
-      end,
-      (r) => g.rowTop(r),
-      (y) => g.rowAt(y),
-      opts.page.height - headY,
-    ),
-    colBands: splitBands(
-      1,
-      cols,
-      (c) => g.colLeft(c),
-      (x) => g.colAt(x),
-      opts.page.width - headX,
-    ),
+    areas: kept.map((p) => ({
+      rowBands: splitBands(
+        p.r1,
+        p.r2,
+        (r) => g.rowTop(r),
+        (y) => g.rowAt(y),
+        opts.page.height - headY,
+      ),
+      colBands: splitBands(
+        p.c1,
+        p.c2,
+        (c) => g.colLeft(c),
+        (x) => g.colAt(x),
+        opts.page.width - headX,
+      ),
+    })),
   };
 }
 
@@ -316,7 +372,8 @@ function hasCellContent(rows: readonly GridRow[], c1: number, c2: number): boole
 
 /** 印刷の描画に使う、表示中のシートの状態（sheet-view.ts が渡す） */
 export interface PrintSource {
-  book: Pick<XlsxBook, 'readImage' | 'readChart'>;
+  /** `sheets` は印刷範囲（`SheetInfo.printArea`）を引くのに使う */
+  book: Pick<XlsxBook, 'readImage' | 'readChart' | 'sheets'>;
   /** シートの番号（`SheetInfo.index`） */
   index: number;
   sheet: XlsxSheet;
@@ -370,7 +427,8 @@ export async function renderPrint(
     return empty;
   }
   const sh = src.sheet;
-  const plan = planPrint(kit, sh, src.boxes, opts);
+  const area = opts.ignorePrintArea ? undefined : src.book.sheets[src.index - 1]?.printArea;
+  const plan = planPrint(kit, sh, src.boxes, opts, area);
   const z = plan.zoom;
   const g = zoomGeometry(createGeometry(sh.layout, plan.rows, plan.cols), z);
   const big = createGeometry(sh.layout, MAX_GRID_ROWS, MAX_GRID_COLS);
@@ -490,41 +548,42 @@ export async function renderPrint(
     // 増えていく木の全体のスタイル・レイアウトを計算し直し、200,000 セルで約 9 倍遅くなる）
     let pages = 0;
     let last = now();
-    // 下へ、それから右へ（Excel の既定）
-    for (const [c1, c2] of plan.colBands) {
-      for (const [r1, r2] of plan.rowBands) {
-        const p: PrintPage = { r1, r2, c1, c2 };
-        const wg = windowGeometry(g, p);
-        const read = collectVisibleRows(wg, r1, r2, r2, readRows);
-        const rows =
-          sh.formats.length > 0
-            ? applyMarginFormats(
-                read,
-                c1,
-                c2,
-                sh.rowCount,
-                sh.colCount,
-                (r) => sh.rowFormat(r),
-                (c) => sh.colFormat(c),
-              )
-            : read;
-        const win: PxRect = {
-          x: big.colLeft(c1),
-          y: big.rowTop(r1),
-          w: big.colLeft(c2 + 1) - big.colLeft(c1),
-          h: big.rowTop(r2 + 1) - big.rowTop(r1),
-        };
-        const figures = src.boxes.some((b) => rectsIntersect(b.rect, win));
-        if (!figures && !hasCellContent(rows, c1, c2)) {
-          continue; // 何も描く物の無いページは出さない（Excel と同じ）
-        }
-        root.append(buildPage(rows, wg, p, win, figures));
-        pages++;
-        if (now() - last > YIELD_MS) {
-          await yieldTask();
-          check();
-          last = now();
-        }
+    // 範囲の順に、範囲の中は下へ、それから右へ（Excel の既定）
+    const order: PrintPage[] = plan.areas.flatMap((a) =>
+      a.colBands.flatMap(([c1, c2]) => a.rowBands.map(([r1, r2]) => ({ r1, r2, c1, c2 }))),
+    );
+    for (const p of order) {
+      const { r1, r2, c1, c2 } = p;
+      const wg = windowGeometry(g, p);
+      const read = collectVisibleRows(wg, r1, r2, r2, readRows);
+      const rows =
+        sh.formats.length > 0
+          ? applyMarginFormats(
+              read,
+              c1,
+              c2,
+              sh.rowCount,
+              sh.colCount,
+              (r) => sh.rowFormat(r),
+              (c) => sh.colFormat(c),
+            )
+          : read;
+      const win: PxRect = {
+        x: big.colLeft(c1),
+        y: big.rowTop(r1),
+        w: big.colLeft(c2 + 1) - big.colLeft(c1),
+        h: big.rowTop(r2 + 1) - big.rowTop(r1),
+      };
+      const figures = src.boxes.some((b) => rectsIntersect(b.rect, win));
+      if (!figures && !hasCellContent(rows, c1, c2)) {
+        continue; // 何も描く物の無いページは出さない（Excel と同じ）
+      }
+      root.append(buildPage(rows, wg, p, win, figures));
+      pages++;
+      if (now() - last > YIELD_MS) {
+        await yieldTask();
+        check();
+        last = now();
       }
     }
     check();

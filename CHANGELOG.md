@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### 追加
+
+- 印刷範囲（`_xlnm.Print_Area`）を読む（[ADR-0010](docs/adr/0010-scroll-element-and-print.md) §3）。`SheetInfo.printArea`（型 `CellRange` の配列。印刷範囲のあるシートだけ）と、上限 `maxPrintAreas`（既定 1,000）を足した。
+- `renderForPrint` は印刷範囲があれば、その範囲だけを定義の順に、範囲ごとに新しいページから描く。列だけ（`$A:$C`）・行だけ（`$1:$5`）の範囲はデータの最後の行・列までに縮める。範囲の外へのはみ出しは範囲の端で切る。`maxCells` は全部の範囲を通して数える。`PrintOptions.ignorePrintArea: true` で今までどおりデータの範囲を印刷する。
+
 ## [0.7.0] - 2026-11-26
 
 InterX-Viewer の依頼 R15・R16（[ADR-0010](docs/adr/0010-scroll-element-and-print.md)）。今までの API の形は変えていない。

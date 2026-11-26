@@ -68,7 +68,7 @@ export function openXlsx(data: ArrayBuffer | Uint8Array, options?: OpenXlsxOptio
 export interface OpenXlsxOptions { limits?: Partial<XlsxLimits>; builtinDates?: BuiltinDates } // BuiltinDates = 'default' | 'japanese-era'（M7-8・ADR-0007 §6）
 
 export interface XlsxBook {
-  readonly sheets: readonly SheetInfo[];                 // index は 1 始まり・hidden は veryHidden を含む
+  readonly sheets: readonly SheetInfo[];                 // index は 1 始まり・hidden は veryHidden を含む・printArea は印刷範囲（M7-22・ADR-0010 §3。CellRange の配列・無いシートは持たない）
   openSheet(index: number): Promise<XlsxSheet>;
   openDrawings(index: number): Promise<SheetDrawings>;   // 画像・図形・線・グループ＋通知
   readImage(index: number, path: string): Promise<ImageResult>; // シートごとに合計 128 MiB の予算
@@ -131,7 +131,8 @@ export interface PrintOptions {         // M7-20・ADR-0010 §2（中身は src/
   fit?: 'width';                        // 全部の列を 1 ページの幅に縮める（縦だけ分ける）
   headers?: boolean;                    // 列記号・行番号を各ページに（既定 false）
   gridlines?: boolean;                  // 目盛り線（既定 false。罫線はいつも出す）
-  maxCells?: number;                    // 描くセルの数の上限（既定 200000。超える行を打ち切る）
+  maxCells?: number;                    // 描くセルの数の上限（既定 200000。全部の印刷範囲を通して数え、超える行を打ち切る）
+  ignorePrintArea?: boolean;            // 印刷範囲を使わずデータの範囲を印刷（既定 false。M7-23・ADR-0010 §3）
   signal?: AbortSignal;
 }
 export interface PrintResult {
@@ -257,6 +258,7 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
 | 図形の文字 | `maxShapeTextChars` 10,000／`maxShapeParagraphs` 500／`maxShapeRuns` 2,000／`maxSheetTextChars` 1,000,000 |
 | 画像 | `maxImageBytes` 20 MiB／`maxSheetImageBytes` 128 MiB／`maxImageSidePx` 16,384／`maxImagePixels` 64 Mi 画素 |
 | グラフ（M7） | `maxChartSeries` 255／`maxChartPoints` 100,000／`maxChartTextChars` 200,000／`maxSheetChartPoints` 1,000,000（超えたグラフは破線枠） |
+| 印刷範囲（M7-22） | `maxPrintAreas` 1,000（1 シートの範囲の数。超えた分は読まない） |
 | 形の式 | `maxGeomGuides` 512／`maxGeomCommands` 4,096／`maxSheetGeomUnits` 200,000／`maxShapeAdjustments` 16 |
 | 書式 | `maxBorders` 65,536／`maxFonts` 65,536／`maxFills` 65,536／`maxCellFormats` 4,096 |
 

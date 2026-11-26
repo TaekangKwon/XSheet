@@ -168,7 +168,7 @@ Shows the whole workbook with sheet tabs. Returns `Promise<Viewer>`.
 
 | Member | Meaning |
 | --- | --- |
-| `sheets` | The sheet list (`SheetInfo[]`: `index` (1-based), `name`, `hidden`), in tab order, hidden sheets included |
+| `sheets` | The sheet list (`SheetInfo[]`: `index` (1-based), `name`, `hidden`, and `printArea` when the sheet has a print area), in tab order, hidden sheets included |
 | `showSheet(index or name)` | Switch sheets, like clicking a tab. Unknown index or name throws `RangeError` |
 | `destroy()` | Remove the view and release the workbook, listeners and blob URLs. Safe to call more than once |
 
@@ -319,11 +319,12 @@ window.print();
 | `fit` | — | `'width'` shrinks the sheet so that all columns fit one page's width; only rows are split into pages |
 | `headers` | `false` | Print column letters and row numbers on every page |
 | `gridlines` | `false` | Print the gridlines. Cell borders are always printed |
-| `maxCells` | `200000` | Most cells to draw (visible rows × visible columns). Rows past the limit are dropped and `truncated` is `true` |
+| `maxCells` | `200000` | Most cells to draw (visible rows × visible columns, across all print areas). Rows past the limit are dropped and `truncated` is `true` |
+| `ignorePrintArea` | `false` | Ignore the sheet's print area and print the used range (Excel's "Ignore print area") |
 | `signal` | — | An `AbortSignal`. Aborting rejects with an `AbortError` `DOMException` after removing what was added |
 
 - Pages go down, then across (Excel's default). Each page is a fixed window of `page` size: content crossing a page edge (overflowing text, merged cells, pictures) is cut there, and pages with nothing on them are skipped.
-- It prints the used range: cells, pictures, charts and the columns that overflowing text reaches. Print areas, manual page breaks, print titles, headers/footers and the file's own page setup are not read yet.
+- Without a print area it prints the used range: cells, pictures, charts and the columns that overflowing text reaches. When the sheet has a print area (`_xlnm.Print_Area`, v0.8.0), only those ranges are printed, in the order they are defined, each range starting on a new page; text overflowing a range is cut at its edge. A whole-column range (`$A:$C`) stops at the last used row, a whole-row range (`$1:$5`) at the last used column. Manual page breaks, print titles, headers/footers and the file's own page setup are not read yet.
 - The printing code loads only when `renderForPrint` is first called (a separate chunk; `xsheet-print.mjs` in the standalone ESM build). The promise resolves after pictures and charts have finished loading. The output is always in the light theme, even under `data-xs-theme="dark"`.
 - The result is `{ pages, truncated, destroy() }`. `pages` is `0` (and nothing is added) when there is no sheet or nothing to print. Switching sheets or destroying the view while it is still drawing rejects with an `AbortError`; once it has resolved, the printed pages stay until `destroy()`.
 

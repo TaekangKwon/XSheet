@@ -25,11 +25,12 @@ describe('parseAreaRef（範囲 1 つ）', () => {
   });
 });
 
-describe('splitAreas（カンマで分ける）', () => {
-  it("シート名の引用の中のカンマ・引用の中の '' では分けない", () => {
-    expect(splitAreas("'a,b'!$A$1:$B$2,'a,b'!$D$1")).toEqual(["'a,b'!$A$1:$B$2", "'a,b'!$D$1"]);
-    expect(splitAreas("'it''s'!A1,'it''s'!B2")).toEqual(["'it''s'!A1", "'it''s'!B2"]);
-    expect(splitAreas('S!A1')).toEqual(['S!A1']);
+describe('splitAreas（カンマで分け、シート名を除く）', () => {
+  it("シート名の引用の中のカンマ・!・'' では分けない", () => {
+    expect(splitAreas("'a,b'!$A$1:$B$2,'a,b'!$D$1")).toEqual(['$A$1:$B$2', '$D$1']);
+    expect(splitAreas("'it''s!'!A1,'it''s!'!B2")).toEqual(['A1', 'B2']);
+    expect(splitAreas('S!A1')).toEqual(['A1']);
+    expect(splitAreas('A1,B2')).toEqual(['A1', 'B2']);
   });
 });
 

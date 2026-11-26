@@ -42,6 +42,7 @@ const paper = byId<HTMLSelectElement>('paper');
 const fit = byId<HTMLInputElement>('fit');
 const headers = byId<HTMLInputElement>('headers');
 const gridlines = byId<HTMLInputElement>('gridlines');
+const ignoreArea = byId<HTMLInputElement>('ignore-area');
 const theme = byId<HTMLSelectElement>('theme');
 const previewBtn = byId<HTMLButtonElement>('preview');
 const printBtn = byId<HTMLButtonElement>('print');
@@ -97,6 +98,7 @@ async function renderPrint(): Promise<PrintResult | null> {
       fit: fit.checked ? 'width' : undefined,
       headers: headers.checked,
       gridlines: gridlines.checked,
+      ignorePrintArea: ignoreArea.checked,
       signal: c.signal,
     });
     printed = r;
@@ -137,7 +139,7 @@ file.addEventListener('change', () => {
 theme.addEventListener('change', () => {
   document.documentElement.dataset.theme = theme.value;
 });
-for (const el of [paper, fit, headers, gridlines]) {
+for (const el of [paper, fit, headers, gridlines, ignoreArea]) {
   el.addEventListener('change', () => {
     if (previewing) void renderPrint();
     else clearPrint();
@@ -173,7 +175,7 @@ printBtn.addEventListener('click', () => {
  * 実機の確認用の自動の動き（M7-21）：URL の引数で指定を入れ、描き終えたら `document.title` を `printed:<ページ数>` にする。
  * `auto=render` は印刷の描画を作るだけ（Chrome・Edge の `--headless --print-to-pdf` で PDF にする）。
  * `auto=print` はさらに `window.print()` を呼ぶ（Firefox の印刷を黙って PDF にする設定で使う）。
- * 例：`print.html?sample=ref-shapes.xlsx&sheet=1&paper=landscape&fit=1&headers=1&gridlines=1&theme=dark&auto=render`
+ * 例：`print.html?sample=ref-shapes.xlsx&sheet=1&paper=landscape&fit=1&headers=1&gridlines=1&ignoreArea=1&theme=dark&auto=render`
  */
 async function autoRun(q: URLSearchParams): Promise<void> {
   const name = q.get('sample');
@@ -182,6 +184,7 @@ async function autoRun(q: URLSearchParams): Promise<void> {
   fit.checked = q.get('fit') === '1';
   headers.checked = q.get('headers') === '1';
   gridlines.checked = q.get('gridlines') === '1';
+  ignoreArea.checked = q.get('ignoreArea') === '1';
   theme.value = q.get('theme') === 'dark' ? 'dark' : 'light';
   document.documentElement.dataset.theme = theme.value;
   await openSample(sample.value);

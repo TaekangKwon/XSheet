@@ -3,7 +3,7 @@
 | 項目 | 値 |
 | --- | --- |
 | 文書 | XSheet 立ち上げ資料 04 |
-| 更新日 | 2026-11-13 |
+| 更新日 | 2026-11-26 |
 | 関連 | [03_source-map.md](03_source-map.md)・[05_quality.md](05_quality.md) |
 
 ## TL;DR
@@ -98,7 +98,7 @@ flowchart LR
 | Worker | 解析を Worker で動かす補助（core は DOM 非依存なのでそのまま動く。転送の型を用意する） |
 | Excel との照合 | 罫線 E1〜E5・書式 F1〜F10 の暫定項目を Excel 16 で確かめる（[05_quality.md](05_quality.md) §3） |
 | 表示の追加 | 揃えと折り返し：**入れた**（2026-11-16・ADR-0008・M7-12・M7-13）。リッチテキストの部分書式：**入れた**（2026-11-17・ADR-0009・M7-16〜M7-18）。残りは条件付き書式・テーブルのスタイル・フォント名・グラフの G2（面・散布図・データラベル・第 2 軸・組み合わせ） |
-| 操作 | 検索・ハイライト・移動（`scrollToCell`）・位置の判定・拡大縮小・見出しを隠す・今のシート・和暦：**出した**（2026-11-13・v0.5.0・[ADR-0007](adr/0007-moobius-viewer-api.md)。Moobius の依頼 R1〜R7）。スクロール枠を出す口・印刷の描画：**出した**（2026-11-26・v0.7.0・[ADR-0010](adr/0010-scroll-element-and-print.md)・M7-19〜M7-21。InterX-Viewer の依頼 R15・R16）。残りはセルの選択とコピー、印刷範囲（ADR-0010 §3）、`view` の `Viewer` に同じ操作を足すか（ADR-0007 §7） |
+| 操作 | 検索・ハイライト・移動（`scrollToCell`）・位置の判定・拡大縮小・見出しを隠す・今のシート・和暦：**出した**（2026-11-13・v0.5.0・[ADR-0007](adr/0007-moobius-viewer-api.md)。Moobius の依頼 R1〜R7）。スクロール枠を出す口・印刷の描画：**出した**（2026-11-26・v0.7.0・[ADR-0010](adr/0010-scroll-element-and-print.md)・M7-19〜M7-21。InterX-Viewer の依頼 R15・R16）。印刷範囲・セルの選択とキーボード・コピー：v0.8.0 の候補（下の節）。残りは `view` の `Viewer` に同じ操作を足すか（ADR-0007 §7） |
 | 公開 | npm 公開：**名前・入口は決定**（2026-11-05・[ADR-0006](adr/0006-npm-publish.md)。`@taekangkwon/xsheet`・`xsheet/internal` を外す）。残りは ADR-0006 §4（アカウントと Trusted Publisher の用意・名前の付け替え・`publish.yml`）。版は 0.6.0 以降（ADR-0007 §9。0.5.0 は GitHub の Release だけで出した） |
 
 ### M7 Moobius の依頼（v0.4.1・v0.5.0・[ADR-0007](adr/0007-moobius-viewer-api.md)）
@@ -155,3 +155,16 @@ InterX-Viewer の xlsx プラグインからの依頼（2026-11-26・#53・#54�
 | M7-19 | [#53](https://github.com/TaekangKwon/XSheet/issues/53) | R16：`scrollElement`（`SheetView`・`WorkbookView`・`view2`）・テスト・README 3 つ | — | テストが通る。examples で並べた 2 つの表が一緒に動く |
 | M7-20 | [#54](https://github.com/TaekangKwon/XSheet/issues/54) | R15：`renderForPrint`（ページへの切り分け・図とグラフを待つ・中断・印刷の CSS・ライトのテーマ・セルの数の上限）・テスト・README 3 つ | — | テストが通る。Chrome・Edge・Firefox の印刷のプレビューで抜けが無い |
 | M7-21 | — | 実機の確認・CHANGELOG・v0.7.0 | M7-19・M7-20 | 依頼の完了の条件を満たす |
+
+### M7 印刷範囲・選択・キーボード・コピー（v0.8.0 の候補）
+
+2026-11-26 に、自分だけで進められる物を先に、ユーザーの確認（ADR の決定・実機・版を出す）を後にまとめる順で進める。印刷範囲は ADR-0010 §3（決定済み）。選択・キーボード・コピーは Issue #55〜#57 の案から ADR-0011 を書き、推奨の案で作って、決定はユーザーの確認に回す。GitHub の Issue は印刷範囲の分は作らない（#55〜#57 は既にある）。
+
+| Issue | GitHub | 内容 | 依存 | 完了の条件 |
+| --- | --- | --- | --- | --- |
+| M7-22 | — | 印刷範囲の core：`_xlnm.Print_Area` を読み `SheetInfo.printArea`・`maxPrintAreas` | — | テストが通る |
+| M7-23 | — | 印刷範囲の render：範囲ごとのページ・列だけ／行だけの範囲・`ignorePrintArea`・文書 | M7-22 | テストが通る |
+| M7-24 | [#55](https://github.com/TaekangKwon/XSheet/issues/55) | 選択：行・列・セルの帯（重ねる層）・`getSelection`・`setSelection`・知らせ。ADR-0011 | — | テストが通る。examples で帯がずれない |
+| M7-25 | [#56](https://github.com/TaekangKwon/XSheet/issues/56) | キーボードで選択を移す（矢印・PageUp/PageDown・Home・Ctrl+Home/End） | M7-24 | テストが通る。examples で表が付いて来る |
+| M7-26 | [#57](https://github.com/TaekangKwon/XSheet/issues/57) | Ctrl+C でタブ区切りの文字をコピー・`selectionText` | M7-24 | テストが通る。Excel・メモ帳に貼って崩れない（ユーザーの確認） |
+| M7-27 | — | 大きさの上限の見直し・CHANGELOG・v0.8.0（版を出すのはユーザーの指示で） | M7-22〜M7-26 | `npm run size` が通る |
