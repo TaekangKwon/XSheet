@@ -7,6 +7,7 @@
 export const LAZY_PARTS = [
   { name: 'geom', module: 'src/geom/index.ts' },
   { name: 'chart', module: 'src/render/chart-draw.ts' },
+  { name: 'print', module: 'src/render/print.ts' },
 ];
 
 /** 単独版の出力ファイル（dist/ の根からの相対） */

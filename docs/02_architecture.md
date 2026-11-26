@@ -217,7 +217,7 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
 
 | 指定 | 理由 |
 | --- | --- |
-| `script-src 'self'` | ライブラリと形の表（`geom` のチャンク・単独版では `xsheet-geom.mjs`。図形を描くときに動的 import）・グラフの描画（`chart-draw` のチャンク・単独版では `xsheet-chart.mjs`。グラフを描くときに動的 import）を同じ出所から読む。`eval`・`new Function` は使わない（N1）ので `'unsafe-eval'` は要らない |
+| `script-src 'self'` | ライブラリと形の表（`geom` のチャンク・単独版では `xsheet-geom.mjs`。図形を描くときに動的 import）・グラフの描画（`chart-draw` のチャンク・単独版では `xsheet-chart.mjs`。グラフを描くときに動的 import）・印刷の描画（`print` のチャンク・単独版では `xsheet-print.mjs`。`renderForPrint` で動的 import）を同じ出所から読む。`eval`・`new Function` は使わない（N1）ので `'unsafe-eval'` は要らない |
 | `style-src 'nonce-<値>'`（または `'unsafe-inline'`） | 書式の `<style>` 要素（表示の根に 1 枚）と、`view` が自動で入れる表示の CSS の `<style>`（M6-2）。`nonce` を渡すとどちらにも付く。`style.css` を `<link>` で読むなら（`view` では `css: 'none'`）、その `<link>` にも同じ nonce を付けるか、`style-src` に出所（`'self'` など）を足す |
 | `img-src blob:` | 図の画像は blob URL で出す（`data:` の URL は作らない） |
 
@@ -328,7 +328,7 @@ dist/
 ├─ index.d.ts・core/*.d.ts・render/*.d.ts・geom/*.d.ts・facade/*.d.ts  # 型（src と同じ並び。src/testing は出さない）
 ├─ style.css                            # xsheet/style.css（src/style.css の写し）
 ├─ xsheet.min.js                        # 単独版（A）：IIFE・大域 XSheet・依存と形の表を中に持つ・圧縮済み
-├─ xsheet.mjs・xsheet-geom.mjs・xsheet-chart.mjs  # 単独版（A）：ESM・依存を中に持つ・圧縮済み。形の表・グラフの描画は描くときだけ同じフォルダから読む
+├─ xsheet.mjs・xsheet-geom.mjs・xsheet-chart.mjs・xsheet-print.mjs  # 単独版（A）：ESM・依存を中に持つ・圧縮済み。形の表・グラフの描画・印刷の描画は使うときだけ同じフォルダから読む
 ├─ xsheet.css                           # 単独版（A）：style.css と同じ
 ├─ xsheet.d.ts・xsheet.d.mts            # 単独版の型（大域 XSheet と declare module 'xsheet'／xsheet.mjs の型）
 ├─ xsheet.licenses.txt                  # 単独版が中に持つ依存のライセンスの全文
@@ -346,7 +346,7 @@ dist/
   - `xsheet.licenses.txt`：束ねたパッケージ（ビルドの moduleIds から決める）ごとに、`package.json` の版とライセンスと、ライセンスの文の全文をまとめる（MIT・Apache-2.0 などは、配る物に著作権表示と許諾の文を含めることを求めるため）。
   - `xsheet.d.ts`：`dist` の d.ts を `index` から辿り、1 つのファイルの ambient module（`declare module 'xsheet'`・`'xsheet/_/<パス>'`）にまとめ、`declare const XSheet: typeof import('xsheet')` を足す。
 - `npm run check:consumer`：一時フォルダに使う側のプロジェクトを作り、`npm pack` で入るファイルだけを `node_modules/xsheet` に写して（リンクは作らない。jszip・ssf は使う側の Vite の alias でこのリポジトリの node_modules を指す）、`exports` を通して型検査（strict）と Vite のビルドをする。形の表が使う側のビルドでも別のチャンクになること、`xsheet/style.css` が CSS に入ることを見る。`xsheet`（`view`・`read`）・`xsheet/core` の import も見る。
-- `npm run check:standalone`：① jsdom の窓で `xsheet.min.js` を `<script>` と同じく実行し、`XSheet.view` が fixtures の xlsx をタブ・図形付きで描き、`ref-charts.xlsx` のグラフを svg で描く（形の表・グラフの描画が中に入っている）② 素の Node（`--disallow-code-generation-from-strings`）で `xsheet.mjs` を import して `read` で開け、`xsheet-geom.mjs`・`xsheet-chart.mjs` も読める ③ 大域の `XSheet`・`import type … from 'xsheet'`・`import … from './xsheet.mjs'` の型検査が通る。
+- `npm run check:standalone`：① jsdom の窓で `xsheet.min.js` を `<script>` と同じく実行し、`XSheet.view` が fixtures の xlsx をタブ・図形付きで描き、`ref-charts.xlsx` のグラフを svg で描く（形の表・グラフの描画が中に入っている）② 素の Node（`--disallow-code-generation-from-strings`）で `xsheet.mjs` を import して `read` で開け、`xsheet-geom.mjs`・`xsheet-chart.mjs`・`xsheet-print.mjs` も読める（①は `renderWorkbook` の `renderForPrint` でページも描く） ③ 大域の `XSheet`・`import type … from 'xsheet'`・`import … from './xsheet.mjs'` の型検査が通る。
 - 例のページ：`examples/index.html` は dist ではなく src を直接読む（ビルドの前でも動かすため）。`examples/standalone.html`・`examples/esm.html` は単独版の例なので、`npm run build` の後に `dist/` の単独版を読む。
 
 ### 大きさ（N6・M4-2）
@@ -361,6 +361,7 @@ dist/
 
 - `render/index` の上限は M7-7（2026-11-12）で 59,000 から 65,000 にした。ADR-0007 のハイライト・移動と位置の判定・拡大縮小（`highlight.ts`・`navigate.ts`・`zoom.ts`）で 59,489（dist 403,912・gzip 131,527）になったため。M7-9・M7-8 の分も入る余裕を約 1 割とした。
 - `core/index` の上限は M7-8（2026-11-13）で 36,000 から 40,000 にした。ADR-0007 の検索・曜日・和暦（`find-text.ts`・`format-ja.ts`）で 36,071（dist 237,660・gzip 77,441）になったため。余裕は約 1 割。
+- 遅れて読むチャンク `print`（`renderForPrint` を呼んだときだけ。M7-21）：dist 12,482・gzip 5,068・圧縮＋gzip 3,110（上限 3,500）。印刷の描画を render に入れると render が 66,171 になり上限を超えたので分けた（ADR-0010 版 1.3）。`print.ts` は表示の部品を import せず、`print-gate.ts` の `PRINT_KIT` で受け取る（単独版の部品は別に束ねるので、import すると xsheet-print.mjs に表示の部品が重なる）。分けた後の render は 64,405。
 - 遅れて読むチャンク `chart-draw`（グラフを描くときだけ）：dist 98,631・gzip 32,632・圧縮＋gzip 15,829（上限 17,500。`tools/size.mjs` の `CHUNK_LIMITS`。チャンクのファイルだけを測り、render から static に辿れたら失敗する）。
 - 使う側のビルド（`check:consumer` の Vite・圧縮あり。0.2.0 の時点）では、最初に読む JS が 235,602 B（gzip 78,051。jszip・ssf・core・render を含む）、図形を描くときに読む形の表のチャンクが 176,422 B（gzip 30,477）、CSS が 5,404 B（gzip 1,537）。
 - 参考（01 N6）：xrag の初版は読み取り＋表示で 40,760 B、jszip が 96,716 B。XSheet は図形・罫線・書式の描画を持つぶん大きい。形の表は図形のあるシートでだけ読む。
@@ -375,6 +376,7 @@ dist/
 | `xsheet.mjs`（最初に読む分） | 258,152 | 85,931 | 104,000 |
 | `xsheet-geom.mjs`（図形を描くときだけ） | 176,674 | 30,588 | 34,000 |
 | `xsheet-chart.mjs`（グラフを描くときだけ） | 67,545 | 25,031 | 28,000 |
+| `xsheet-print.mjs`（`renderForPrint` のときだけ。2026-11-26） | 5,723 | 2,820 | 3,200 |
 
 - `xsheet.mjs` の上限は M7-15（2026-11-16）で 94,000 から 104,000 にした。ADR-0007 の 0.5.0 の操作と ADR-0008 の配置・折り返し・最後の列からのはみ出し（`cell-align.ts`・`spill-extent.ts`）で 94,470（圧縮済み 282,683）になったため。余裕は約 1 割。
 - `xsheet-chart.mjs` は部品ごとに別に束ねるため、軸の文字の書式（`formatNumberByCode`・ssf）と色の変換を `xsheet.mjs` と重ねて持つ（約 10 KB）。ssf の `format` は状態を持たないので、写しが 2 つでも結果は同じ（曜日の置き換え `format-ja.ts` も 2 つ持つ。覚えておくのは書式の字句の分解だけで、結果は変わらない）。グラフの無いブックでは読まないので、最初に読む分を軽くするほうを採った（ADR-0003 §1）。
@@ -414,4 +416,4 @@ dist/
 3. `main` から作業用のブランチ（例 `release/v0.1.0`）を切り、`git add -f dist` だけのコミットを作る（`main` には入れない・ADR-0002）。
 4. そのコミットに注釈付きのタグ（`git tag -a v0.1.0`）を打ち、タグを push する。
 5. 使う側で `npm install github:TaekangKwon/XSheet#v0.1.0` を入れ、表示を確かめる（M5）。
-6. （M6 から）`npm run release:zip` で単独版の zip（`release/xsheet-<版>-standalone.zip`）を作り、タグの GitHub Release に添付する（ADR-0003 §6・M6-5）。中身は `xsheet.min.js`・`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet-chart.mjs`・`xsheet.css`・`xsheet.d.ts`・`xsheet.d.mts`・`xsheet.licenses.txt`・`LICENSE`・`NOTICE`・`viewer.html`（`examples/standalone.html` を `xsheet.min.js` と同じフォルダで動くようにしたもの）・`viewer2.html`（確認用。`examples/standalone-viewer2.html` を同じように直したもの）。zip を展開した `viewer.html` を `file://` で開いて表示を確かめる。
+6. （M6 から）`npm run release:zip` で単独版の zip（`release/xsheet-<版>-standalone.zip`）を作り、タグの GitHub Release に添付する（ADR-0003 §6・M6-5）。中身は `xsheet.min.js`・`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet-chart.mjs`・`xsheet-print.mjs`・`xsheet.css`・`xsheet.d.ts`・`xsheet.d.mts`・`xsheet.licenses.txt`・`LICENSE`・`NOTICE`・`viewer.html`（`examples/standalone.html` を `xsheet.min.js` と同じフォルダで動くようにしたもの）・`viewer2.html`（確認用。`examples/standalone-viewer2.html` を同じように直したもの）。zip を展開した `viewer.html` を `file://` で開いて表示を確かめる。

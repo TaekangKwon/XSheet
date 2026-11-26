@@ -61,7 +61,8 @@ import {
 import { spillReachCols } from './spill-extent';
 import { createImageLayer } from './image-layer';
 // XSheet: 印刷の描画（ADR-0010 §2）
-import { createPrintGate, type PrintOptions, type PrintResult } from './print';
+import type { PrintOptions, PrintResult } from './print';
+import { createPrintGate } from './print-gate';
 import type { SheetDrawing } from '../core/index';
 import { formatMessage, type XSheetMessages } from './messages';
 import { loadGeom } from './shapes';
@@ -131,7 +132,7 @@ export interface SheetViewInstance {
   readonly zoom: number;
   /** XSheet: スクロール枠（`div.xs-body`）。作ってから destroy まで同じ要素で、destroy の後は null（ADR-0010 §1） */
   readonly scrollElement: HTMLElement | null;
-  /** XSheet: 印刷の描画（中身は print.ts。ADR-0010 §2） */
+  /** XSheet: 印刷の描画（中身は print.ts。印刷するときだけ読む。ADR-0010 §2） */
   renderForPrint(target: HTMLElement, options?: PrintOptions): Promise<PrintResult>;
   /** リスナ・ResizeObserver・rAF・blob URL・シートを放し、根を `container` から外す。何度呼んでもよい。ブックは閉じない */
   destroy(): void;

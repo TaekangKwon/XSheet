@@ -23,6 +23,7 @@
 | `xsheet.mjs` | ESM。依存を中に持つ・圧縮済み。形の表・グラフの描画は持たない | 85,931 B |
 | `xsheet-geom.mjs` | 形の表（遅れて読む部品）。`xsheet.mjs` が図形を描くときだけ、同じフォルダから読む | 30,588 B |
 | `xsheet-chart.mjs` | グラフの描画（遅れて読む部品）。`xsheet.mjs` がグラフを描くときだけ、同じフォルダから読む | 25,031 B |
+| `xsheet-print.mjs` | 印刷の描画（遅れて読む部品・v0.7.0）。`renderForPrint` を呼んだときだけ、同じフォルダから読む（2026-11-26 の実測） | 2,820 B |
 | `xsheet.css` | 表示の CSS（`style.css` と同じ）。`view` が自動で入れるので、読まなくてよい | — |
 | `xsheet.d.ts` | 型。大域の `XSheet` と `declare module 'xsheet'` | — |
 | `xsheet.d.mts` | `xsheet.mjs` の型（中身は `xsheet.d.ts` を引くだけ） | — |
@@ -62,7 +63,7 @@
 ```
 
 - **http で配る**。ブラウザは `file://` のページでモジュールのスクリプトを読まない。このリポジトリでは `npm run build` の後に `npm run examples:static` を走らせ、http://localhost:5174/examples/esm.html を開く（[examples/esm.html](../../examples/esm.html)）。
-- `xsheet-geom.mjs`・`xsheet-chart.mjs` を `xsheet.mjs` と**同じフォルダ**に置く。`xsheet.mjs` は図形・グラフのあるシートを開いたときだけ、自分の場所からの相対（`./xsheet-geom.mjs`・`./xsheet-chart.mjs`）で読む。置き忘れても表は出るが、図形は簡略化して通知を出し、グラフは種類名の破線枠のままになる。
+- `xsheet-geom.mjs`・`xsheet-chart.mjs`・`xsheet-print.mjs` を `xsheet.mjs` と**同じフォルダ**に置く。`xsheet.mjs` は図形・グラフのあるシートを開いたとき・`renderForPrint` を呼んだときだけ、自分の場所からの相対（`./xsheet-geom.mjs`・`./xsheet-chart.mjs`・`./xsheet-print.mjs`）で読む。置き忘れても表は出るが、図形は簡略化して通知を出し、グラフは種類名の破線枠のままになり、`renderForPrint` は読み込みの例外で拒否する。
 - import map で名前を付けてもよい：
 
 ```html
@@ -82,7 +83,7 @@ GitHub Release に添付する単独版の zip（[ADR-0003](../adr/0003-universa
 
 | ファイル | 内容 |
 | --- | --- |
-| `xsheet.min.js`・`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet-chart.mjs`・`xsheet.css` | 上の 1 のとおり |
+| `xsheet.min.js`・`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet-chart.mjs`・`xsheet-print.mjs`・`xsheet.css` | 上の 1 のとおり |
 | `xsheet.d.ts`・`xsheet.d.mts` | 型 |
 | `viewer.html` | 出来上がりのビューア（`examples/standalone.html` を `xsheet.min.js` と同じフォルダで動くようにしたもの）。ダブルクリックで開ける |
 | `viewer2.html` | 確認用のビューア（`examples/standalone-viewer2.html`）。[ADR-0007](../adr/0007-moobius-viewer-api.md) の未決の 2 つ（表示に 0.5.0 の操作を足す・組み込みの日付の書式の既定を日本語版 Excel の表にする）を試す。検索・倍率・見出しの有無・クリックしたセルを試せる。ダブルクリックで開ける |

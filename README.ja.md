@@ -107,7 +107,7 @@ npm install github:TaekangKwon/XSheet#v0.6.0
 2. **Assets** から `xsheet-<version>-standalone.zip` をダウンロードします。「Source code」のアーカイブはリポジトリのソースで、ビルド済みのライブラリではありません。
 3. 展開すると `xsheet-<version>/` フォルダができます。
    - すぐに試すなら、`viewer.html` をダブルクリックして（`file://` で動きます）、`.xlsx` ファイルを選ぶかドロップします。ファイルはブラウザの中で読み込むだけで、どこにも送信しません。
-   - 自分のページで使うなら、`xsheet.min.js` をページと同じ場所にコピーし、[クイックスタート](#クイックスタート)の例のとおりに書きます。バンドラなしで `import` するなら、`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet-chart.mjs` を同じフォルダにコピーします。
+   - 自分のページで使うなら、`xsheet.min.js` をページと同じ場所にコピーし、[クイックスタート](#クイックスタート)の例のとおりに書きます。バンドラなしで `import` するなら、`xsheet.mjs`・`xsheet-geom.mjs`・`xsheet-chart.mjs`・`xsheet-print.mjs`（v0.7.0）を同じフォルダにコピーします。
 4. これらのファイルを再配布するときは、`xsheet.licenses.txt`・`LICENSE`・`NOTICE` を一緒に置いてください。
 
 ## 仕組み
@@ -324,7 +324,7 @@ window.print();
 
 - ページは「下へ、それから右へ」の順です（Excel の既定）。各ページは `page` の大きさの固定の窓で、ページの境をまたぐ物（はみ出す文字・結合セル・図）は境で切れます。何も無いページは出しません。
 - 印刷するのはデータの範囲（セル・図・グラフ・はみ出す文字が届く列）です。印刷範囲・改ページ・印刷タイトル・ヘッダーとフッター・ファイルのページ設定はまだ読みません。
-- 図とグラフを読み終えてから解決します。`data-xs-theme="dark"` の下でも、印刷はいつもライトのテーマです。
+- 印刷の処理は、最初に `renderForPrint` を呼んだときだけ読み込みます（別のチャンク。単独版の ESM では `xsheet-print.mjs`）。図とグラフを読み終えてから解決します。`data-xs-theme="dark"` の下でも、印刷はいつもライトのテーマです。
 - 結果は `{ pages, truncated, destroy() }`。シートが無い・印刷する物が無いときは `pages` が `0` で、何も足しません。描いている途中にシートを替える・表示を `destroy` すると `AbortError` で拒否します。解決した後は、`destroy()` を呼ぶまで印刷のページが残ります。
 
 API の全体は [docs/02_architecture.md](docs/02_architecture.md) の §2（core）と §3（render と `view` の層）にまとめています。

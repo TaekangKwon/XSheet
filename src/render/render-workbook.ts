@@ -16,7 +16,7 @@ import {
   type XlsxLimits,
 } from '../core/index';
 import { resolveMessages, type XSheetMessages } from './messages';
-import { renderPrint } from './print';
+import { renderPrintLazy } from './print-gate';
 import type { RenderOptions, SheetView } from './render-sheet';
 import { buildSheetTabStrip, makeSheetTab } from './sheet-tabs';
 import { createSheetView, xlsxErrorMessage } from './sheet-view';
@@ -96,7 +96,7 @@ function messageView(root: HTMLElement): WorkbookView {
     zoom: 1,
     activeSheet: null,
     scrollElement: null, // XSheet: 表が無いのでスクロール枠も無い（ADR-0010 §1）
-    renderForPrint: (target, opts) => renderPrint(target, null, opts), // XSheet: 0 ページ（指定の確かめだけ。ADR-0010 §2）
+    renderForPrint: (target, opts) => renderPrintLazy(target, null, opts), // XSheet: 0 ページ（指定の確かめだけ。ADR-0010 §2）
     destroy: () => {
       root.replaceChildren();
       root.remove();

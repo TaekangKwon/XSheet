@@ -8,6 +8,7 @@ import {
   splitBands,
   type PrintResult,
 } from '../../src/render/print';
+import { PRINT_KIT } from '../../src/render/print-gate';
 import { makePng } from '../../src/testing/make-image';
 import {
   picXml,
@@ -299,7 +300,7 @@ describe('renderForPrint：ページへの切り分け', () => {
     const { view, sheet } = await setup({
       rows: grid({ '1,1': 'x'.repeat(60) }),
     });
-    const plan = planPrint(sheet, [], resolvePrintOptions());
+    const plan = planPrint(PRINT_KIT, sheet, [], resolvePrintOptions());
     expect(plan.cols).toBeGreaterThan(3);
     const t = newTarget();
     await print(view, t);
@@ -412,7 +413,7 @@ describe('renderForPrint：上限・空のシート', () => {
   });
 
   it('renderPrint は表の無い表示（null）で 0 ページ', async () => {
-    const r = await renderPrint(newTarget(), null);
+    const r = await renderPrint(PRINT_KIT, newTarget(), null);
     expect(r.pages).toBe(0);
   });
 });

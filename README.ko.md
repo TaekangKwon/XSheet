@@ -107,7 +107,7 @@ npm install github:TaekangKwon/XSheet#v0.6.0
 2. **Assets**에서 `xsheet-<version>-standalone.zip`을 내려받습니다. "Source code" 압축 파일은 저장소의 소스이고, 빌드된 라이브러리가 아닙니다.
 3. 압축을 풀면 `xsheet-<version>/` 폴더가 생깁니다.
    - 바로 써 보려면 `viewer.html`을 더블클릭하고(`file://`에서도 동작합니다) `.xlsx` 파일을 고르거나 끌어다 놓습니다. 파일은 브라우저 안에서만 읽으며 어디에도 전송하지 않습니다.
-   - 내 페이지에서 쓰려면 `xsheet.min.js`를 페이지와 같은 곳에 복사하고 [빠른 시작](#빠른-시작)의 예대로 작성합니다. 번들러 없이 `import`하려면 `xsheet.mjs`, `xsheet-geom.mjs`, `xsheet-chart.mjs`를 같은 폴더에 복사합니다.
+   - 내 페이지에서 쓰려면 `xsheet.min.js`를 페이지와 같은 곳에 복사하고 [빠른 시작](#빠른-시작)의 예대로 작성합니다. 번들러 없이 `import`하려면 `xsheet.mjs`, `xsheet-geom.mjs`, `xsheet-chart.mjs`, `xsheet-print.mjs`(v0.7.0)를 같은 폴더에 복사합니다.
 4. 이 파일들을 다시 배포할 때는 `xsheet.licenses.txt`, `LICENSE`, `NOTICE`를 함께 두세요.
 
 ## 동작 방식
@@ -324,7 +324,7 @@ window.print();
 
 - 페이지 순서는 "아래로, 그다음 오른쪽으로"입니다(Excel의 기본값). 각 페이지는 `page` 크기의 고정된 창이며, 페이지 경계를 넘는 것(넘치는 문자·병합 셀·그림)은 경계에서 잘립니다. 아무것도 없는 페이지는 출력하지 않습니다.
 - 인쇄하는 것은 데이터 범위(셀·그림·차트·넘치는 문자가 닿는 열)입니다. 인쇄 영역·페이지 나누기·인쇄 제목·머리글과 바닥글·파일의 페이지 설정은 아직 읽지 않습니다.
-- 그림과 차트를 다 읽은 뒤에 이행(resolve)됩니다. `data-xs-theme="dark"` 아래에서도 인쇄는 항상 라이트 테마입니다.
+- 인쇄 처리는 `renderForPrint`를 처음 호출할 때만 읽어 들입니다(별도 청크. 스탠드얼론 ESM에서는 `xsheet-print.mjs`). 그림과 차트를 다 읽은 뒤에 이행(resolve)됩니다. `data-xs-theme="dark"` 아래에서도 인쇄는 항상 라이트 테마입니다.
 - 결과는 `{ pages, truncated, destroy() }`. 시트가 없거나 인쇄할 것이 없으면 `pages`가 `0`이고 아무것도 추가하지 않습니다. 그리는 도중에 시트를 바꾸거나 표시를 `destroy`하면 `AbortError`로 거부합니다. 이행된 뒤에는 `destroy()`를 호출할 때까지 인쇄 페이지가 남습니다.
 
 전체 API는 [docs/02_architecture.md](docs/02_architecture.md)의 §2(core)와 §3(render와 `view` 계층)에 정리되어 있습니다.

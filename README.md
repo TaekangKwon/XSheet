@@ -107,7 +107,7 @@ npm install github:TaekangKwon/XSheet#v0.6.0
 2. Under **Assets**, download `xsheet-<version>-standalone.zip`. The "Source code" archives are the repository's source, not the built library.
 3. Unzip it. You get a folder `xsheet-<version>/`.
    - To try it right away, double-click `viewer.html` (it works from `file://`) and pick or drop an `.xlsx` file. The file is read in the browser and never uploaded.
-   - To use it on your own page, copy `xsheet.min.js` next to the page and follow [One `<script>`](#one-script-no-build-tools). To `import` without a bundler, copy `xsheet.mjs`, `xsheet-geom.mjs` and `xsheet-chart.mjs` into the same folder.
+   - To use it on your own page, copy `xsheet.min.js` next to the page and follow [One `<script>`](#one-script-no-build-tools). To `import` without a bundler, copy `xsheet.mjs`, `xsheet-geom.mjs`, `xsheet-chart.mjs` and `xsheet-print.mjs` (v0.7.0) into the same folder.
 4. When you redistribute these files, keep `xsheet.licenses.txt`, `LICENSE` and `NOTICE` with them.
 
 ## How it works
@@ -324,7 +324,7 @@ window.print();
 
 - Pages go down, then across (Excel's default). Each page is a fixed window of `page` size: content crossing a page edge (overflowing text, merged cells, pictures) is cut there, and pages with nothing on them are skipped.
 - It prints the used range: cells, pictures, charts and the columns that overflowing text reaches. Print areas, manual page breaks, print titles, headers/footers and the file's own page setup are not read yet.
-- The promise resolves after pictures and charts have finished loading. The output is always in the light theme, even under `data-xs-theme="dark"`.
+- The printing code loads only when `renderForPrint` is first called (a separate chunk; `xsheet-print.mjs` in the standalone ESM build). The promise resolves after pictures and charts have finished loading. The output is always in the light theme, even under `data-xs-theme="dark"`.
 - The result is `{ pages, truncated, destroy() }`. `pages` is `0` (and nothing is added) when there is no sheet or nothing to print. Switching sheets or destroying the view while it is still drawing rejects with an `AbortError`; once it has resolved, the printed pages stay until `destroy()`.
 
 The full API is described in [docs/02_architecture.md](docs/02_architecture.md) §2 (core) and §3 (render and the `view` layer).

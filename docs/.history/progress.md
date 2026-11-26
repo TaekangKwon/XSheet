@@ -308,3 +308,8 @@
 - 見つけて直した：A4 横で幅に合わせると Chrome・Edge が全体を 0.67 倍などに縮めていた（縮めた図の層の中身を印刷の幅に数える）→ ページに `contain: strict`。縮めた印刷の列記号が切れる → 倍率で小さく（5px まで）。例のページのダークの余白 → 印刷で `color-scheme: light`（README に書いた）。
 - CHANGELOG の Unreleased・ADR-0010 版 1.2。全体 111 ファイル・2,389 件が通る。
 - 未解決：`npm run size` の render が 66,171 で上限 65,000 を超える（M7-20 で +2.4 KB。M7-19 では 63,762）。CI が止まるので PR の前に決める。
+
+## 2026-11-26 M7-21：印刷の処理を遅れて読む部品に（ユーザーの決定・ADR-0010 版 1.3）
+- `print.ts` を動的 import にし（`print-gate.ts` の口と `PRINT_KIT`）、`LAZY_PARTS` に print を足した。render 66,171 → 64,405（上限 65,000）、print のチャンク 3,110（上限 3,500）、`xsheet-print.mjs` 2,820（上限 3,200）。
+- `check:standalone` に印刷を足した（IIFE で renderForPrint・ESM で xsheet-print.mjs を読む）。`check:consumer`・size も通る。README 3 つ・standalone・csp・02・CHANGELOG を合わせた。
+- 全体 111 ファイル・2,389 件のうち sync.test の 1 件が 5 秒の時間切れ（git の模型。前のコミットでも同じく落ちる＝この PC の今の遅さ。60 秒なら通る）。

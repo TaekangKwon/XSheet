@@ -11,33 +11,51 @@
  * - 画像・グラフを描き終えてから解決する。中断（`signal`・表示の destroy・シートの切り替え）では、足した物を片付けてから AbortError。
  * ユーザーのファイル内容は `textContent` だけで入れる（表・図の層の部品と同じ）。例外のメッセージにセル値・シート名を含めない。
  */
-import {
+import type {
   colName,
   createGeometry,
-  type Geometry,
-  type SheetDrawing,
-  type SheetRow,
-  type XlsxBook,
-  type XlsxSheet,
+  Geometry,
+  SheetDrawing,
+  SheetRow,
+  XlsxBook,
+  XlsxSheet,
 } from '../core/index';
-import { createBorderLayer } from './border-layer';
-import { buildBorderPaths } from './borders';
-import { drawingExtent, rectsIntersect, type DrawingBox, type PxRect } from './drawings';
-import { buildFormatCss } from './format-css';
-import {
-  applyMarginFormats,
-  collectVisibleRows,
-  GRID_HEADER_HEIGHT,
-  MAX_GRID_COLS,
-  MAX_GRID_ROWS,
-  rowNumWidth,
-  type GridRow,
-} from './grid';
-import { buildGridTable } from './grid-table';
-import { createImageLayer, type ImageLayer } from './image-layer';
+import type { createBorderLayer } from './border-layer';
+import type { buildBorderPaths } from './borders';
+import type { drawingExtent, DrawingBox, PxRect, rectsIntersect } from './drawings';
+import type { buildFormatCss } from './format-css';
+import type { applyMarginFormats, collectVisibleRows, GridRow, rowNumWidth } from './grid';
+import type { buildGridTable } from './grid-table';
+import type { createImageLayer, ImageLayer } from './image-layer';
 import type { XSheetMessages } from './messages';
-import { spillReachCols } from './spill-extent';
-import { zoomGeometry } from './zoom';
+import type { spillReachCols } from './spill-extent';
+import type { zoomGeometry } from './zoom';
+
+/**
+ * 印刷の描画が使う、表示と共有の部品（print-gate.ts の `PRINT_KIT`）。
+ * このファイルは遅れて読む部品なので、表示の部品は import せずに受け取る（単独版の xsheet-print.mjs に表示の部品を二重に入れないため。ADR-0010 §2）。
+ */
+export interface PrintKit {
+  colName: typeof colName;
+  createGeometry: typeof createGeometry;
+  createBorderLayer: typeof createBorderLayer;
+  buildBorderPaths: typeof buildBorderPaths;
+  drawingExtent: typeof drawingExtent;
+  rectsIntersect: typeof rectsIntersect;
+  buildFormatCss: typeof buildFormatCss;
+  applyMarginFormats: typeof applyMarginFormats;
+  collectVisibleRows: typeof collectVisibleRows;
+  rowNumWidth: typeof rowNumWidth;
+  buildGridTable: typeof buildGridTable;
+  createImageLayer: typeof createImageLayer;
+  spillReachCols: typeof spillReachCols;
+  zoomGeometry: typeof zoomGeometry;
+  /** 見出し行の高さ（grid.ts の `GRID_HEADER_HEIGHT`） */
+  GRID_HEADER_HEIGHT: number;
+  /** Excel の最大の行数・列数（grid.ts の `MAX_GRID_ROWS`・`MAX_GRID_COLS`） */
+  MAX_GRID_ROWS: number;
+  MAX_GRID_COLS: number;
+}
 
 /** 印刷の指定（ADR-0010 §2-1） */
 export interface PrintOptions {
@@ -181,10 +199,13 @@ export function splitBands(
  * - 見える行を上から数え、見える行 × 見える列が `maxCells` を超える手前で打ち切る（最初の 1 行は必ず描く）。
  */
 export function planPrint(
+  kit: PrintKit,
   sheet: PrintSheet,
   boxes: readonly DrawingBox[],
   opts: ResolvedPrintOptions,
 ): PrintPlan {
+  const { createGeometry, drawingExtent, spillReachCols, rowNumWidth, zoomGeometry } = kit;
+  const { GRID_HEADER_HEIGHT, MAX_GRID_ROWS, MAX_GRID_COLS } = kit;
   const big = createGeometry(sheet.layout, MAX_GRID_ROWS, MAX_GRID_COLS);
   const fig = drawingExtent(big, boxes);
   const lastRow = Math.min(MAX_GRID_ROWS, Math.max(1, sheet.rowCount, fig.rows));
@@ -330,10 +351,15 @@ const YIELD_MS = 16;
  * @throws DOMException AbortError（中断。足した物は片付けてから拒否する）
  */
 export async function renderPrint(
+  kit: PrintKit,
   target: HTMLElement,
   src: PrintSource | null,
   options: PrintOptions = {},
 ): Promise<PrintResult> {
+  const { colName, createGeometry, createBorderLayer, buildBorderPaths, rectsIntersect } = kit;
+  const { buildFormatCss, applyMarginFormats, collectVisibleRows, rowNumWidth } = kit;
+  const { buildGridTable, createImageLayer, zoomGeometry } = kit;
+  const { GRID_HEADER_HEIGHT, MAX_GRID_ROWS, MAX_GRID_COLS } = kit;
   const opts = resolvePrintOptions(options);
   const signal = options.signal;
   if (signal?.aborted) {
@@ -344,7 +370,7 @@ export async function renderPrint(
     return empty;
   }
   const sh = src.sheet;
-  const plan = planPrint(sh, src.boxes, opts);
+  const plan = planPrint(kit, sh, src.boxes, opts);
   const z = plan.zoom;
   const g = zoomGeometry(createGeometry(sh.layout, plan.rows, plan.cols), z);
   const big = createGeometry(sh.layout, MAX_GRID_ROWS, MAX_GRID_COLS);
@@ -548,43 +574,4 @@ function waitAbortable<T>(p: Promise<T>, signal: AbortSignal | undefined): Promi
       },
     );
   });
-}
-
-/**
- * 表示 1 つの印刷の口（sheet-view.ts が持つ）。表示の destroy・シートの切り替えで、描いている途中の印刷を中断する。
- */
-export interface PrintGate {
-  run(target: HTMLElement, src: PrintSource | null, options?: PrintOptions): Promise<PrintResult>;
-  /** 描いている途中の印刷をすべて中断する */
-  abortAll(): void;
-}
-
-/** {@link PrintGate} を作る */
-export function createPrintGate(): PrintGate {
-  const running = new Set<AbortController>();
-  return {
-    async run(target, src, options = {}) {
-      const ctl = new AbortController();
-      const user = options.signal;
-      const relay = (): void => ctl.abort();
-      if (user?.aborted) {
-        ctl.abort();
-      } else {
-        user?.addEventListener('abort', relay, { once: true });
-      }
-      running.add(ctl);
-      try {
-        return await renderPrint(target, src, { ...options, signal: ctl.signal });
-      } finally {
-        running.delete(ctl);
-        user?.removeEventListener('abort', relay);
-      }
-    },
-    abortAll() {
-      for (const ctl of running) {
-        ctl.abort();
-      }
-      running.clear();
-    },
-  };
 }
