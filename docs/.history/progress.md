@@ -341,3 +341,8 @@
 - README 3 つに「選択・キーボード・コピー（v0.8.0）」の節と表の行。02（§3・§7）・ADR-0011 §5・CHANGELOG。
 - テスト `tests/render/selection-copy.test.ts`（10 件）。全体 115 ファイル・2,444 件が通る。check:standalone も通る。
 - 大きさ：render 65,378（上限 65,000）・selection 3,851・xsheet.min.js 147,906（上限 144,000）。M7-27 で決める。
+
+## 2026-11-26 M7-22〜M7-26 の実機の確認（内蔵ブラウザ・Chromium）
+- examples：showcase で行の選択（クリック・↓・行番号の印・`aria-live` の `10:10`）、セルの選択と列記号のクリック（ダーク・150%）、合成の copy のイベントで `Total\t5,230…\r\n`。
+- examples/print：印刷範囲 2 つ（B2:D6・H20:J22）が範囲ごとに 2 ページ、「印刷範囲を無視」でデータの範囲全部。
+- 本物の Ctrl+C（クリップボード）と Excel・メモ帳への貼り付け、Firefox・Edge はユーザーの確認に残した。
