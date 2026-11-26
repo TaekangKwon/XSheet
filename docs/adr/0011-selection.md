@@ -91,7 +91,7 @@ export interface SheetView {
 - 中身（`selection.ts`：帯・クリック・キーボード・コピー）は、`selection` を指定した表示を作るときだけ動的 import で読む。口は `selection-gate.ts`。表示は最初のシートを出す前に読み終えるのを待つので、`renderSheet`・`renderWorkbook` の約束が解決した後は、`getSelection`・`setSelection` がすぐ効く。
 - `selection.ts` は表示の部品を import しない（単独版の部品は部品ごとに別に束ねるので、import すると `xsheet-selection.mjs` に表示の部品が二重に入る）。列の記号の関数は口から受け取る。
 - 読めなかったとき（単独版の ESM で `xsheet-selection.mjs` を置いていない等）は、選択の無い表示として動く。
-- 大きさ（M7-24 の時点）：render 65,162（口と表示の口だけ。選択を中に入れると 66,530）、`selection` のチャンク 2,181。上限は M7-27 で決め直す。
+- 大きさ：M7-24 の時点で render 65,162（口と表示の口だけ。選択を中に入れると 66,530）、`selection` のチャンク 2,181。キーボード・コピーを足した M7-26 の時点は §5 の後の計測。上限は M7-27 で決め直す。
 
 ### 4. キーボード（M7-25・#56）
 
@@ -108,7 +108,16 @@ export interface SheetView {
 
 ### 5. コピー（M7-26・#57）
 
-§5 は M7-26 で書く。
+- フォーカスのあるスクロール枠の `copy` イベントで `event.clipboardData.setData('text/plain', …)` し、`preventDefault` する。同期で書けて、`navigator.clipboard` の許可（権限の確認・HTTPS）が要らない。外部へは送らない。
+- 文字をドラッグ・ダブルクリックで選んでいる（`getSelection()` が畳まれていない）ときと、選択が無いときは何もせず、ブラウザの既定のコピーに任せる。
+- 中身（`selection-copy.ts`。`selectionText()` も同じ文字を返す）：
+  - `text/plain` だけ。見えている文字（`CellView.text`。表示形式を当てた後）を、タブと `\r\n` で区切る。最後の行にも `\r\n`（Excel のコピーと同じ）。
+  - タブ・改行・`"` を含むセルは `"` で囲み、`"` は `""` にする（#57 の案のとおり。Excel に貼ると元の文字に戻る）。
+  - 結合したセルは左上に文字、残りは空。結合の左上が選択より上にあれば空（読む区切りの 1 行前から読んで捨てる。`getRows` は区切りの最初の行に左上の文字を置くため）。
+  - 非表示の行・列（高さ 0・幅 0）は入れない（ステータスの 9）。
+  - 行の全体は値のある最後の列（`colCount`）まで、列の全体は値のある最後の行（`rowCount`）まで。セルの選択は範囲のまま。
+- 上限：見える行 × 見える列が 1,000,000 セルを超えたらコピーせず（`preventDefault` はする）、通知の帯に `noticeCopyTooLarge` を出す（文言は 24 キー目。メッセージにセル値・シート名を含めない）。`selectionText()` は null。
+- 右クリックのメニュー・`text/html`（書式付きの表）は作らない（ステータスの 8）。
 
 ## 却下した案
 

@@ -5,7 +5,7 @@
  * 差し込み（`{detail}`・`{format}`）は render が行う。文言は `textContent`・`title` にだけ入れる。
  */
 
-/** 文言の表（23 キー。元は InterHub `locales/ja.ts` の `spreadsheet.*` と `data.noData`） */
+/** 文言の表（24 キー。元は InterHub `locales/ja.ts` の `spreadsheet.*` と `data.noData`） */
 export interface XSheetMessages {
   /** 図形の形の表（geom）を読み込めない（図の通知。形のある図形は代替で描く）。InterHub では xlsx の読み込み失敗の文言だった */
   libLoadFailed: string;
@@ -40,6 +40,8 @@ export interface XSheetMessages {
   noticeTextTruncated: string;
   noticeShapeSimplified: string;
   noticeOverBudget: string;
+  /** XSheet: 選択のコピーのセルの数が上限を超えた（ADR-0011 §5） */
+  noticeCopyTooLarge: string;
 }
 
 /** 日本語（既定） */
@@ -68,6 +70,7 @@ export const MESSAGES_JA: Readonly<XSheetMessages> = Object.freeze({
   noticeShapeSimplified:
     '図形の形を描ききれないものがあるため、一部の図形は簡略化して表示しています。',
   noticeOverBudget: '画像の合計が大きいため、一部の画像は枠だけで表示しています。',
+  noticeCopyTooLarge: '選んだ範囲が大きすぎるため、コピーしませんでした（100 万セルまで）。',
 });
 
 /** 英語 */
@@ -96,6 +99,7 @@ export const MESSAGES_EN: Readonly<XSheetMessages> = Object.freeze({
   noticeShapeSimplified:
     'Some shapes are too complex to draw exactly, so they are shown in a simplified form.',
   noticeOverBudget: 'The images are too large in total, so some images are shown as frames only.',
+  noticeCopyTooLarge: 'The selection is too large to copy (up to 1 million cells).',
 });
 
 /** 韓国語（M6-2・ADR-0003 Q4） */
@@ -123,6 +127,7 @@ export const MESSAGES_KO: Readonly<XSheetMessages> = Object.freeze({
   noticeTextTruncated: '도형의 글자가 많아 일부를 생략하고 표시합니다.',
   noticeShapeSimplified: '정확히 그릴 수 없는 도형이 있어 일부 도형은 간략하게 표시합니다.',
   noticeOverBudget: '이미지의 합계가 커서 일부 이미지는 틀만 표시합니다.',
+  noticeCopyTooLarge: '선택한 범위가 너무 커서 복사하지 않았습니다(100만 셀까지).',
 });
 
 /**

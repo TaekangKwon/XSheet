@@ -335,3 +335,9 @@
 - `selection-keys.ts`（行き先の計算：矢印・PageUp/PageDown・Home・Ctrl+Home/End・非表示を飛ばす・結合は範囲の端から）。`selection.ts` に keydown・`tabindex="0"`・クリックでフォーカス・最小の量のスクロール・`span.xs-live`（番地の読み上げ）。
 - 動かしたキー（端も）だけ preventDefault。Shift・Alt・End だけ・入力欄からのキーは取らない。ADR-0011 §4。CSS は `:focus-visible` の枠と `.xs-live`。
 - テスト `tests/render/selection-keys.test.ts`（10 件）。全体 114 ファイル・2,434 件が通る。selection のチャンク 3,382（render は 65,165 のまま）。
+
+## 2026-11-26 M7-26：Ctrl+C でコピー（#57）・README
+- `selection-copy.ts`（タブ・`\r\n` 区切り、タブ・改行・`"` の囲み、結合は左上だけ、非表示の行・列を除く、行・列の全体は値のある範囲まで、100 万セルの上限）。`selection.ts` の `copy` イベントと `selectionText()`（SheetView・WorkbookView・view2）。上限超えは通知の帯（文言 `noticeCopyTooLarge`。24 キー）。
+- README 3 つに「選択・キーボード・コピー（v0.8.0）」の節と表の行。02（§3・§7）・ADR-0011 §5・CHANGELOG。
+- テスト `tests/render/selection-copy.test.ts`（10 件）。全体 115 ファイル・2,444 件が通る。check:standalone も通る。
+- 大きさ：render 65,378（上限 65,000）・selection 3,851・xsheet.min.js 147,906（上限 144,000）。M7-27 で決める。

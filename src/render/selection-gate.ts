@@ -7,7 +7,7 @@
  * - `selection` を指定しない表示では何も読まず、選択は無い（`getSelection` は null、`setSelection` は何もしない）。
  * - 読めなかったとき（単独版で xsheet-selection.mjs を置いていない等）も、選択の無い表示として動く。
  */
-import { colName } from '../core/index';
+import { colName, createGeometry } from '../core/index';
 import type { SelectionController, SelectionHost, SelectionMode } from './selection';
 
 /** 表示 1 つの選択の口 */
@@ -18,7 +18,7 @@ export interface SelectionGate extends SelectionController {
 
 /** {@link SelectionGate} を作る。`mode` が無ければ何も読まない */
 export function createSelectionGate(
-  host: Omit<SelectionHost, 'colName'>,
+  host: Omit<SelectionHost, 'colName' | 'createGeometry'>,
   mode: SelectionMode | undefined,
 ): SelectionGate {
   let ctl: SelectionController | null = null;
@@ -27,7 +27,7 @@ export function createSelectionGate(
     ? import('./selection').then(
         (m) => {
           if (disposed) return;
-          ctl = m.createSelection({ ...host, colName }, mode);
+          ctl = m.createSelection({ ...host, colName, createGeometry }, mode);
           ctl.layout();
         },
         () => undefined,
@@ -38,6 +38,7 @@ export function createSelectionGate(
     get: () => ctl?.get() ?? null,
     set: (input, origin) => ctl?.set(input, origin),
     layout: () => ctl?.layout(),
+    text: () => ctl?.text() ?? null,
     clear: () => ctl?.clear(),
     dispose() {
       disposed = true;

@@ -240,6 +240,8 @@ book.close();
 | `zoom` | `1` | 처음 배율(v0.5.0). 0.5~2.0의 숫자, 또는 사용 중인 열을 표시 영역의 너비에 맞추는 `{ fit: 'width' }`(`min`·`max` 기본값은 0.5·2.0). 범위 밖의 숫자는 끝값으로 맞추고, `NaN`이나 그 밖의 값은 `RangeError` |
 | `headers` | `true` | `false`이면 행 번호와 열 머리글을 표시하지 않고, 셀을 왼쪽 위 모서리부터 그림(v0.5.0) |
 | `onSheetChange` | — | 탭이나 `showSheet`로 시트가 바뀌고 그 시트를 다 그린 뒤, 시트 번호를 넘겨 호출. 처음 시트에서는 호출하지 않음(`renderWorkbook`에만 해당, v0.5.0). 시트를 바꾸면 하이라이트가 지워지므로 새 시트를 다시 검색할 때 씀 |
+| `selection` | — | `'row'` 또는 `'cell'`. 클릭과 키보드로 선택하고 Ctrl+C로 복사할 수 있게 함(v0.8.0). [선택](#선택키보드복사-v080) 참고 |
+| `onSelectionChange` | — | 선택이 바뀌면 `(selection, origin)`을 넘겨 호출(v0.8.0) |
 
 ### 검색, 하이라이트, 확대·축소 (v0.5.0)
 
@@ -279,6 +281,7 @@ container.addEventListener('click', (e) => {
 | `activeSheet` | 선택된 시트의 번호(`SheetInfo.index`). 탭을 누르거나 `showSheet`를 호출하면 바로 바뀜. 파일을 열 수 없었으면 `null` |
 | `scrollElement` | 표를 스크롤하는 요소(v0.7.0). `scrollTop`·`scrollLeft`를 읽고 쓰고, `scroll` 이벤트를 받을 수 있음(두 표를 함께 움직일 때 등). `destroy`까지 같은 요소이며, 파일을 열 수 없었을 때와 `destroy` 뒤에는 `null`. 크기·스타일·자식 요소는 바꾸지 말 것. 시트를 바꾸면 왼쪽 위로 돌아가고, 배율을 바꾸면 왼쪽 위 셀이 남도록 움직임 |
 | `renderForPrint(target, options?)` | 표시 중인 시트를 인쇄용으로 페이지를 나눠 그림(v0.7.0). [인쇄](#인쇄v070) 참고 |
+| `getSelection()`・`setSelection(selection)`・`selectionText()` | 선택을 읽거나 바꾸거나, 탭으로 구분한 문자로 가져옴(v0.8.0). [선택](#선택키보드복사-v080) 참고 |
 
 - 표시 영역에 CSS `transform`으로 배율을 걸지 마세요. `cellAt`과 `highlightAt`이 엉뚱한 셀을 가리킵니다. `setZoom`을 쓰세요.
 
@@ -328,6 +331,27 @@ window.print();
 - 인쇄 처리는 `renderForPrint`를 처음 호출할 때만 읽어 들입니다(별도 청크. 스탠드얼론 ESM에서는 `xsheet-print.mjs`). 그림과 차트를 다 읽은 뒤에 이행(resolve)됩니다. `data-xs-theme="dark"` 아래에서도 인쇄는 항상 라이트 테마입니다.
 - 결과는 `{ pages, truncated, destroy() }`. 시트가 없거나 인쇄할 것이 없으면 `pages`가 `0`이고 아무것도 추가하지 않습니다. 그리는 도중에 시트를 바꾸거나 표시를 `destroy`하면 `AbortError`로 거부합니다. 이행된 뒤에는 `destroy()`를 호출할 때까지 인쇄 페이지가 남습니다.
 
+### 선택·키보드·복사 (v0.8.0)
+
+`selection`을 지정하면 행·열·셀을 하나 선택하고, 키보드로 옮기고, 복사할 수 있습니다. 지정하지 않으면 아무것도 바뀌지 않습니다(클릭을 다루지 않고 선택 처리도 읽어 들이지 않음).
+
+```ts
+const wb = await renderWorkbook(container, bytes, {
+  selection: 'row', // 셀을 클릭하면 그 행 전체(탐색기 미리 보기와 같음). 'cell'은 셀
+  onSelectionChange: (sel, origin) => console.log(sel?.range, origin),
+});
+wb.setSelection({ type: 'cell', r: 5, c: 3 });
+wb.scrollToCell(5, 3);
+```
+
+- 클릭: 셀은 그 행(`'row'`) 또는 그 셀(`'cell'`), 행 번호는 그 행, 열 문자는 그 열을 선택합니다. 병합한 셀은 병합 범위를 선택합니다. 몇 픽셀 넘게 움직인 클릭과 문자를 선택한 상태의 클릭은 무시하므로, 마우스로 문자를 선택하는 동작은 그대로입니다.
+- 선택은 `{ type, range, active }`입니다. `type`은 `'row'`・`'column'`・`'cell'`, `range`는 `{ r1, c1, r2, c2 }`(1부터 시작. 행 전체는 열 1~16,384, 열 전체는 행 1~1,048,576), `active`는 키보드로 옮길 때 기준이 되는 현재 셀입니다.
+- 셀 위에 띠(`div.xs-sel`)를 그리고, 선택한 행 번호・열 문자에 `is-selected`를 붙입니다. 색은 `--xs-sel-bg`・`--xs-sel-line`・`--xs-sel-head-bg`・`--xs-sel-head-fg`. 시트를 바꾸면 선택이 해제됩니다.
+- 키보드: 클릭으로 선택하면 표로 포커스가 옮겨집니다. ↑ ↓ ← →로 한 행・한 열(숨긴 행・열과 병합 범위는 건너뜀), PageUp・PageDown으로 한 화면, Home으로 행의 첫 열, Ctrl+Home으로 왼쪽 위, Ctrl+End로 값이 있는 마지막 셀로 움직입니다. 표는 새 선택이 보일 만큼만 스크롤합니다. 이 키들만 가져가고 Tab・Ctrl+F・Shift나 Alt가 붙은 키는 페이지에 맡깁니다. 선택한 주소(`C5`・`5:5`・`C:C`)를 `aria-live` 요소로 알립니다.
+- Ctrl+C로 선택을 표시 형식을 적용한 문자 그대로, 탭으로 구분해(행 사이는 `\r\n`) 복사합니다. Excel에 붙여 넣으면 표 모양으로 돌아옵니다. 탭・줄바꿈・`"`가 든 셀은 `"`로 감쌉니다. 숨긴 행・열은 넣지 않고, 행・열 전체는 값이 있는 마지막 열・행까지입니다. 100만 셀을 넘으면 복사하지 않고 알림을 띄웁니다. 마우스로 문자를 선택한 상태에서는 브라우저가 그 문자를 평소대로 복사합니다. `selectionText()`는 같은 문자를 돌려줍니다.
+- `setSelection({ type: 'row', r, r2? } | { type: 'column', c, c2? } | { type: 'cell', r, c } | null)`은 스크롤하지 않습니다. 시트 범위 밖의 번호는 `RangeError`입니다. `selection`을 지정하지 않은 표시에서는 `getSelection()`이 `null`이고 `setSelection`은 아무것도 하지 않습니다.
+- 선택 처리는 첫 시트를 표시하기 전에 읽어 들입니다(별도 청크. 스탠드얼론 ESM에서는 `xsheet-selection.mjs`).
+
 전체 API는 [docs/02_architecture.md](docs/02_architecture.md)의 §2(core)와 §3(render와 `view` 계층)에 정리되어 있습니다.
 
 ### 진입점
@@ -361,7 +385,7 @@ window.print();
 
 ## UI 문구
 
-- 일본어(`MESSAGES_JA`), 영어(`MESSAGES_EN`), 한국어(`MESSAGES_KO`)가 들어 있으며, 키는 23개입니다([docs/02_architecture.md](docs/02_architecture.md) §7).
+- 일본어(`MESSAGES_JA`), 영어(`MESSAGES_EN`), 한국어(`MESSAGES_KO`)가 들어 있으며, 키는 24개입니다([docs/02_architecture.md](docs/02_architecture.md) §7).
 - `view`는 `lang`(기본값 `auto`)으로 언어를 고릅니다. `renderWorkbook`과 `renderSheet`의 기본 언어는 일본어입니다.
 - 일부 문구만 바꾸려면 `messages: { noData: '(비어 있음)' }`처럼 넘기면 됩니다.
 - `view`와 `read`가 내는 개발자용 오류와 경고는 영어이며, `XSheet:`로 시작합니다.

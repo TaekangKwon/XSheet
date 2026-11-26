@@ -11,9 +11,12 @@
  * - キーボード（M7-25）：スクロール枠に `tabindex="0"` を付け、クリックで選んだらフォーカスを移す。行き先は selection-keys.ts。
  *   選択を動かしたキーだけ既定の動きを止め、見えない所へ動いたら最小の量だけスクロールする。
  *   選択の番地（`C5`・`5:5`・`C:C`）を見えない `aria-live` の要素に入れて、支援技術に伝える。
+ * - コピー（M7-26）：フォーカスのあるスクロール枠の `copy` イベントで、選択をタブ区切りの文字にして書く（selection-copy.ts）。
+ *   文字を選んでいるときはブラウザの既定のコピーに任せる。上限を超えたらコピーせず、通知の帯に出す。
  * DOM の要素は作るだけで、ユーザーのファイル内容は入れない。
  */
-import type { CellRange, colName, Geometry, XlsxSheet } from '../core/index';
+import type { CellRange, colName, createGeometry, Geometry, XlsxSheet } from '../core/index';
+import { copyRange, rangeText } from './selection-copy';
 import { keyTarget, SELECTION_KEYS } from './selection-keys';
 
 // このファイルは遅れて読む部品なので、表示の部品を import しない（単独版の xsheet-selection.mjs に二重に入れないため。ADR-0011 §3）
@@ -68,8 +71,12 @@ export interface SelectionHost {
   draw(): void;
   /** 選択が変わった（同じ選択では呼ばない） */
   changed(selection: Selection | null, origin: SelectionOrigin): void;
+  /** コピーするセルの数が上限を超えた（通知の帯に出す） */
+  copyTooLarge(): void;
   /** 列の記号（列記号の見出しを探す。selection-gate.ts が渡す） */
   readonly colName: typeof colName;
+  /** シートの寸法（コピーで非表示の行・列を見る。selection-gate.ts が渡す） */
+  readonly createGeometry: typeof createGeometry;
 }
 
 /** {@link createSelection} の戻り値 */
@@ -82,6 +89,9 @@ export interface SelectionController {
   set(input: SelectionInput | null, origin?: SelectionOrigin): void;
   /** 表を描き直した・寸法が変わった後に、帯の位置と見出しの印を合わせ直す */
   layout(): void;
+  /** 選択をコピーする文字（タブ区切り・`
+`）。選択が無い・上限を超えると null */
+  text(): string | null;
   /** 今の選択を、知らせずに外す前に知らせる（シートの切り替え）。選択が無ければ何もしない */
   clear(): void;
   dispose(): void;
@@ -337,7 +347,18 @@ export function createSelection(
       host.body.focus({ preventScroll: true }); // キーボードで続けて動かせるように
     }
   };
+  const onCopy = (e: ClipboardEvent): void => {
+    if (!value || !e.clipboardData) return;
+    const text = host.body.ownerDocument.getSelection?.();
+    if (text && !text.isCollapsed) return; // 文字を選んでいる：ブラウザの既定のコピー
+    const out = controller.text();
+    e.preventDefault();
+    if (out === null) host.copyTooLarge();
+    else e.clipboardData.setData('text/plain', out);
+  };
+
   if (mode) {
+    host.body.addEventListener('copy', onCopy);
     host.body.addEventListener('mousedown', onDown);
     host.body.addEventListener('click', onClick);
     host.body.addEventListener('keydown', onKey);
@@ -404,6 +425,13 @@ export function createSelection(
       band.style.height = `${h}px`;
       band.hidden = false;
     },
+    text() {
+      const sh = host.sheet();
+      if (!value || !sh) return null;
+      const range = copyRange(value, { rows: sh.rowCount, cols: sh.colCount });
+      const geo = host.createGeometry(sh.layout, Math.max(1, range.r2), Math.max(1, range.c2));
+      return rangeText(sh, range, geo);
+    },
     clear() {
       update(null, 'api');
     },
@@ -411,6 +439,7 @@ export function createSelection(
       host.body.removeEventListener('mousedown', onDown);
       host.body.removeEventListener('click', onClick);
       host.body.removeEventListener('keydown', onKey);
+      host.body.removeEventListener('copy', onCopy);
       host.body.removeAttribute('tabindex');
       live.remove();
       marked = [];

@@ -128,6 +128,7 @@ export interface SheetView {
   renderForPrint(target: HTMLElement, options?: PrintOptions): Promise<PrintResult>; // 印刷のページを target に描く（M7-20・ADR-0010 §2。下の PrintOptions）
   getSelection(): Selection | null;     // 今の選択（M7-24・ADR-0011 §1。selection を指定しない表示では null）
   setSelection(selection: SelectionInput | null): void; // 選択を替える（スクロールしない。selection を指定しない表示では何もしない）
+  selectionText(): string | null;       // 選択をコピーする文字（M7-26・ADR-0011 §5。タブ区切り・\r\n。無い・100 万セル超は null）
   destroy(): void;                      // blob URL・リスナ・シートを放す（book は閉じない）
 }
 export interface PrintOptions {         // M7-20・ADR-0010 §2（中身は src/render/print.ts）
@@ -302,14 +303,14 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
   - 表の色は `renderSheet` だけを使う側の画面も変える。昔の色に戻したい側は、3 つの変数を元の値（表の「InterHub の元」の列）で上書きすればよい。
 - クラス名は InterHub の `ih-xlsx-*`・`ih-xf-N`・`data-ih-xlsx-fmt` を `xs-*`・`xs-xf-N`・`data-xs-fmt` にする（D6）。表の根の `.ih-spreadsheet` は `.xs-sheet`。InterHub 共用のクラス（`ih-data-view`・`ih-data-banner`・`ih-dv-rownum`・`ih-sheet-tabs` など）は、render が要るものだけ `xs-` で作り直す。
 
-## 7. 文言（`XSheetMessages`・23 キー）
+## 7. 文言（`XSheetMessages`・24 キー）
 
 | 区分 | キー（InterHub の `spreadsheet.`・`spreadsheet.drawing.` を除いた名前） |
 | --- | --- |
 | エラー | `parseFailed`（`{detail}`）・`noSheets`・`noData`（InterHub の `data.noData`）・`encrypted`・`tooLarge`・`unsupported` |
 | タブ | `hiddenSheet`・`tabsPrev`・`tabsNext`（`renderWorkbook` だけが使う） |
 | 図の枠 | `chart`・`smartart`・`shape`・`textbox`・`group`・`imageFormat`（`{format}`）・`imageBroken` |
-| 通知 | `noticeTooLarge`・`noticeBroken`・`noticeTooMany`・`noticeTextTruncated`・`noticeShapeSimplified`・`noticeOverBudget`・`libLoadFailed`（形の表を読めない） |
+| 通知 | `noticeTooLarge`・`noticeBroken`・`noticeTooMany`・`noticeTextTruncated`・`noticeShapeSimplified`・`noticeOverBudget`・`libLoadFailed`（形の表を読めない）・`noticeCopyTooLarge`（選択のコピーが 100 万セルを超えた。M7-26・ADR-0011 §5。XSheet で足した） |
 
 - 文言の元は InterHub `src_V1/src/locales/ja.ts`（275〜302 行・248 行の `data.noData`）と `en.ts`。
 - 実装は `src/render/messages.ts`（M2-2）：

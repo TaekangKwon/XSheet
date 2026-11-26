@@ -15,7 +15,7 @@ import {
 describe('文言の表', () => {
   it('日本語と英語は同じ 23 キーを持ち、空の文言が無い', () => {
     const keys = Object.keys(MESSAGES_JA).sort();
-    expect(keys).toHaveLength(23);
+    expect(keys).toHaveLength(24);
     expect(Object.keys(MESSAGES_EN).sort()).toEqual(keys);
     for (const table of [MESSAGES_JA, MESSAGES_EN])
       for (const v of Object.values(table)) expect(v.trim()).not.toBe('');

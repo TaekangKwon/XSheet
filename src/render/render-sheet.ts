@@ -152,6 +152,14 @@ export interface SheetView {
    * XSheet: ADR-0011 §1（M7-24）
    */
   setSelection(selection: SelectionInput | null): void;
+  /**
+   * 選択をコピーする文字（Ctrl+C でクリップボードに入る物と同じ）。見えている文字（表示形式を当てた後）をタブと `
+` で区切る。
+   * タブ・改行・`"` を含むセルは `"` で囲む。結合したセルは左上に文字、残りは空。非表示の行・列は入れない。
+   * 行・列の全体は値のある範囲までに切る。選択が無い・100 万セルを超えると null。
+   * XSheet: ADR-0011 §5（M7-26）
+   */
+  selectionText(): string | null;
   /** リスナ・ResizeObserver・blob URL・シートを放し、表示を `container` から外す。何度呼んでもよい。ブックは閉じない */
   destroy(): void;
 }
@@ -220,6 +228,7 @@ export async function renderSheet(
     renderForPrint: (target, opts) => view.renderForPrint(target, opts), // XSheet: ADR-0010 §2
     getSelection: () => view.getSelection(), // XSheet: ADR-0011
     setSelection: (sel) => view.setSelection(sel),
+    selectionText: () => view.selectionText(),
     destroy: () => view.destroy(),
   };
 }

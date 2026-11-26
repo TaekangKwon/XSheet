@@ -74,7 +74,7 @@ import { loadGeom } from './shapes';
 const OVERSCAN = 40;
 
 /** 通知の行にする理由（図の読み取りの通知＋画像の合計の上限超過＋形の表の読み込み失敗） */
-type ViewNotice = DrawingNotice | 'over-budget' | 'geom-failed';
+type ViewNotice = DrawingNotice | 'over-budget' | 'geom-failed' | 'copy-too-large'; // XSheet: copy-too-large（ADR-0011 §5）
 
 /** 通知の理由 → 文言のキー */
 const NOTICE_KEYS: Record<ViewNotice, keyof XSheetMessages> = {
@@ -85,6 +85,7 @@ const NOTICE_KEYS: Record<ViewNotice, keyof XSheetMessages> = {
   'shape-simplified': 'noticeShapeSimplified',
   'over-budget': 'noticeOverBudget',
   'geom-failed': 'libLoadFailed',
+  'copy-too-large': 'noticeCopyTooLarge', // XSheet: ADR-0011 §5
 };
 
 /** 書式 CSS の表示ごとの連番（`data-xs-fmt`）。表示を作るたびに 1 増やす（ファイル名・パスは使わない。ADR-0030 §決定 1） */
@@ -148,6 +149,8 @@ export interface SheetViewInstance {
    * @throws RangeError 正しくない選択
    */
   setSelection(selection: SelectionInput | null): void;
+  /** XSheet: 選択をコピーする文字（ADR-0011 §5） */
+  selectionText(): string | null;
   /** リスナ・ResizeObserver・rAF・blob URL・シートを放し、根を `container` から外す。何度呼んでもよい。ブックは閉じない */
   destroy(): void;
 }
@@ -706,6 +709,10 @@ export function createSheetView(
       table: () => tableEl,
       draw: () => draw(),
       changed: (sel, origin) => options.onSelectionChange?.(sel, origin),
+      copyTooLarge: () => {
+        notices.add('copy-too-large');
+        renderNotices();
+      },
     },
     options.selection,
   );
@@ -777,6 +784,7 @@ export function createSheetView(
     setSelection(sel) {
       if (!closed) selection.set(sel);
     },
+    selectionText: () => (closed ? null : selection.text()),
     destroy,
   };
 }

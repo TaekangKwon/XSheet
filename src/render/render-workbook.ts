@@ -100,6 +100,7 @@ function messageView(root: HTMLElement): WorkbookView {
     // XSheet: 表が無いので選択も無い（ADR-0011）
     getSelection: () => null,
     setSelection: () => undefined,
+    selectionText: () => null,
     destroy: () => {
       root.replaceChildren();
       root.remove();
@@ -257,6 +258,7 @@ export async function renderWorkbook(
     renderForPrint: (target, opts) => view.renderForPrint(target, opts), // XSheet: ADR-0010 §2
     getSelection: () => view.getSelection(), // XSheet: ADR-0011
     setSelection: (sel) => view.setSelection(sel),
+    selectionText: () => view.selectionText(),
     destroy,
   };
 }

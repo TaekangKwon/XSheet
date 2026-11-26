@@ -99,6 +99,8 @@ export interface Viewer2 {
   getSelection(): Selection | null;
   /** 選択を替える（`renderWorkbook` の `setSelection` と同じ。ADR-0011） */
   setSelection(selection: SelectionInput | null): void;
+  /** 選択をコピーする文字（`renderWorkbook` の `selectionText` と同じ。ADR-0011） */
+  selectionText(): string | null;
   /** 表示を外し、ブック・リスナ・blob URL を放す。何度呼んでもよい */
   destroy(): void;
 }
@@ -134,6 +136,7 @@ function discarded(): Viewer2 {
     renderForPrint: replaced,
     getSelection: () => null,
     setSelection: () => undefined,
+    selectionText: () => null,
     destroy: () => undefined,
   };
 }
@@ -289,6 +292,7 @@ export async function view2(
     renderForPrint: (target, printOptions) => wb.renderForPrint(target, printOptions),
     getSelection: () => wb.getSelection(),
     setSelection: (sel) => wb.setSelection(sel),
+    selectionText: () => wb.selectionText(),
     destroy,
   };
   current.set(container, { token, viewer });
