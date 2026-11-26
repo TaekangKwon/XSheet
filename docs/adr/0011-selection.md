@@ -91,7 +91,7 @@ export interface SheetView {
 - 中身（`selection.ts`：帯・クリック・キーボード・コピー）は、`selection` を指定した表示を作るときだけ動的 import で読む。口は `selection-gate.ts`。表示は最初のシートを出す前に読み終えるのを待つので、`renderSheet`・`renderWorkbook` の約束が解決した後は、`getSelection`・`setSelection` がすぐ効く。
 - `selection.ts` は表示の部品を import しない（単独版の部品は部品ごとに別に束ねるので、import すると `xsheet-selection.mjs` に表示の部品が二重に入る）。列の記号の関数は口から受け取る。
 - 読めなかったとき（単独版の ESM で `xsheet-selection.mjs` を置いていない等）は、選択の無い表示として動く。
-- 大きさ：M7-24 の時点で render 65,162（口と表示の口だけ。選択を中に入れると 66,530）、`selection` のチャンク 2,181。キーボード・コピーを足した M7-26 の時点は §5 の後の計測。上限は M7-27 で決め直す。
+- 大きさ：M7-24 の時点で render 65,162（口と表示の口だけ。選択を中に入れると 66,530）、`selection` のチャンク 2,181。M7-26（キーボード・コピーの後）で render 65,378・`selection` 3,851・`xsheet-selection.mjs` 3,405・`xsheet.min.js` 147,906。M7-27 でユーザーの決定により、上限を実測に約 1 割の余裕で render 72,000・`selection` 4,300・`xsheet-selection.mjs` 3,800・`xsheet.min.js` 163,000 にした（02 §8）。
 
 ### 4. キーボード（M7-25・#56）
 

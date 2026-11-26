@@ -346,3 +346,7 @@
 - examples：showcase で行の選択（クリック・↓・行番号の印・`aria-live` の `10:10`）、セルの選択と列記号のクリック（ダーク・150%）、合成の copy のイベントで `Total\t5,230…\r\n`。
 - examples/print：印刷範囲 2 つ（B2:D6・H20:J22）が範囲ごとに 2 ページ、「印刷範囲を無視」でデータの範囲全部。
 - 本物の Ctrl+C（クリップボード）と Excel・メモ帳への貼り付け、Firefox・Edge はユーザーの確認に残した。
+
+## 2026-11-26 M7-27：大きさの上限の見直し（ユーザーの決定）
+- 実測に約 1 割の余裕で、render 65,000 → 72,000、xsheet.min.js 144,000 → 163,000、selection（仮 6,000）→ 4,300、xsheet-selection.mjs（仮 6,000）→ 3,800。理由は 02 §8・ADR-0011 §3。
+- `check:standalone` で xsheet-selection.mjs も読む。size・テスト（115 ファイル・2,444 件）・check:standalone が通る。

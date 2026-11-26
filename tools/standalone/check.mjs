@@ -1,7 +1,7 @@
 // 単独版が使う側の形で動くか確かめる（M6-3・`npm run check:standalone`）。先に `npm run build` で dist/ を作っておくこと。
 // 1. xsheet.min.js（印刷の描画を含む）：jsdom の窓で <script> と同じく読み込み（vm で窓の中で実行する。文字列からのコード生成は止める）、大域の XSheet.view が
 //    fixtures の xlsx をタブ付きで描くこと（図形があり、形の表が中に入っていること）。グラフの xlsx のグラフを svg で描くこと（グラフの描画が中に入っていること）。
-// 2. xsheet.mjs：素の Node（文字列からのコード生成を禁止）で import し、read で開けること。遅れて読む部品（xsheet-geom.mjs・xsheet-chart.mjs・xsheet-print.mjs）が
+// 2. xsheet.mjs：素の Node（文字列からのコード生成を禁止）で import し、read で開けること。遅れて読む部品（xsheet-geom.mjs・xsheet-chart.mjs・xsheet-print.mjs・xsheet-selection.mjs）が
 //    同じフォルダから読めること。
 // 3. xsheet.d.ts・xsheet.d.mts：大域の XSheet・`import type … from 'xsheet'`・`import … from './xsheet.mjs'` の型検査が通ること。
 // 外へは通信しない。
@@ -116,9 +116,10 @@ const settle = (window, ms = 50) =>
     `const geom = await import(${JSON.stringify(pathToFileURL(path.join(dist, 'xsheet-geom.mjs')).href)});`,
     `const chart = await import(${JSON.stringify(pathToFileURL(path.join(dist, 'xsheet-chart.mjs')).href)});`,
     `const print = await import(${JSON.stringify(pathToFileURL(path.join(dist, 'xsheet-print.mjs')).href)});`,
+    `const selection = await import(${JSON.stringify(pathToFileURL(path.join(dist, 'xsheet-selection.mjs')).href)});`,
     `const book = await x.read(readFileSync(${JSON.stringify(fixture)}));`,
     `const sheet = await book.openSheet(book.sheets[0].index);`,
-    `const out = { sheets: book.sheets.length, rows: sheet.rowCount, presets: geom.presetNames().length, chart: typeof chart.layoutChart, print: typeof print.renderPrint, view: typeof x.view };`,
+    `const out = { sheets: book.sheets.length, rows: sheet.rowCount, presets: geom.presetNames().length, chart: typeof chart.layoutChart, print: typeof print.renderPrint, selection: typeof selection.createSelection, view: typeof x.view };`,
     `book.close();`,
     `process.stdout.write(JSON.stringify(out));`,
   ].join('\n');
@@ -135,6 +136,7 @@ const settle = (window, ms = 50) =>
     out.presets < 100 ||
     out.chart !== 'function' ||
     out.print !== 'function' ||
+    out.selection !== 'function' ||
     out.view !== 'function'
   ) {
     throw new Error(`xsheet.mjs の読み取りが足りない（${JSON.stringify(out)}）`);

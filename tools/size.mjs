@@ -22,10 +22,11 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
  * 超えたら、大きくなった理由を確かめてから上限を見直す。
  * render/index は M7-7（2026-11-12）で見直した：ADR-0007 の検索の表示・移動・拡大縮小で 59,489 になったので、約 1 割の余裕で 65,000。
  * core/index は M7-8（2026-11-13）で見直した：ADR-0007 の検索・曜日・和暦（find-text.ts・format-ja.ts）で 36,071 になったので、約 1 割の余裕で 40,000。
+ * render/index は M7-27（2026-11-26）で見直した：印刷範囲（core の print-area.ts）・選択の口・コピーの文言で 65,378 になったので、約 1 割の余裕で 72,000。
  */
 const LIMITS = {
   'core/index': 40_000,
-  'render/index': 65_000,
+  'render/index': 72_000,
   'geom/index': 36_000,
 };
 
@@ -37,8 +38,8 @@ const CHUNK_LIMITS = {
   'chart-draw': 17_500,
   // M7-21（2026-11-26）：印刷の描画（ADR-0010 §2）を遅れて読む部品にした。実測 3,110 に約 1 割の余裕
   print: 3_500,
-  // M7-24（2026-11-26）：選択・キーボード・コピー（ADR-0011 §3）。仮の値。M7-27 で実測に約 1 割の余裕で決め直す
-  selection: 6_000,
+  // M7-27（2026-11-26）：選択・キーボード・コピー（ADR-0011 §3）。実測 3,851 に約 1 割の余裕
+  selection: 4_300,
 };
 
 /**
@@ -46,14 +47,15 @@ const CHUNK_LIMITS = {
  * xsheet.min.js は遅れて読む部品を中に持つ。xsheet.mjs は最初に読む分だけ（部品は別に測る）。
  */
 const STANDALONE_LIMITS = {
-  'xsheet.min.js': 144_000,
+  // M7-27（2026-11-26）：印刷範囲・選択・キーボード・コピーで 147,906 になったので、約 1 割の余裕で 163,000
+  'xsheet.min.js': 163_000,
   'xsheet.mjs': 104_000,
   'xsheet-geom.mjs': 34_000,
   'xsheet-chart.mjs': 28_000,
   // M7-21（2026-11-26）：実測 2,820 に約 1 割の余裕
   'xsheet-print.mjs': 3_200,
-  // M7-24（2026-11-26）：仮の値。M7-27 で決め直す
-  'xsheet-selection.mjs': 6_000,
+  // M7-27（2026-11-26）：実測 3,405 に約 1 割の余裕
+  'xsheet-selection.mjs': 3_800,
 };
 
 /**
