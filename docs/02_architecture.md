@@ -123,7 +123,21 @@ export interface SheetView {
   showSheet(index: number): Promise<void>; // シートを替える（M7-9・ADR-0007 §7。倍率は保ち、ハイライトは消す）
   readonly activeSheet: number | null;  // 選んでいるシートの番号（ADR-0007 §7 版 1.1。showSheet ですぐ替わる・表の無い表示は null）
   readonly scrollElement: HTMLElement | null; // スクロール枠 div.xs-body（M7-19・ADR-0010 §1。destroy まで同じ要素・表の無い表示と destroy の後は null）
+  renderForPrint(target: HTMLElement, options?: PrintOptions): Promise<PrintResult>; // 印刷のページを target に描く（M7-20・ADR-0010 §2。下の PrintOptions）
   destroy(): void;                      // blob URL・リスナ・シートを放す（book は閉じない）
+}
+export interface PrintOptions {         // M7-20・ADR-0010 §2（中身は src/render/print.ts）
+  page?: { width: number; height: number }; // 1 ページの中身（CSS px）。既定 659×978＝A4 縦から Excel の「標準」の余白を引いた大きさ
+  fit?: 'width';                        // 全部の列を 1 ページの幅に縮める（縦だけ分ける）
+  headers?: boolean;                    // 列記号・行番号を各ページに（既定 false）
+  gridlines?: boolean;                  // 目盛り線（既定 false。罫線はいつも出す）
+  maxCells?: number;                    // 描くセルの数の上限（既定 200000。超える行を打ち切る）
+  signal?: AbortSignal;
+}
+export interface PrintResult {
+  readonly pages: number;               // 描いたページの数（表の無い表示・描く物が無いと 0 で、何も足さない）
+  readonly truncated: boolean;          // maxCells で行を打ち切った
+  destroy(): void;                      // 足した div.xs-print を外し、blob URL を放す
 }
 export function renderSheet(container: HTMLElement, book: XlsxBook, sheetIndex: number, options?: RenderOptions): Promise<SheetView>;
 
@@ -265,7 +279,7 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
 | `--xs-backdrop`・`--xs-backdrop-display` | ダーク時の図の白い下地 | `transparent`・`none` | `#ffffff`・`block` | `--ih-xlsx-backdrop*` |
 | `--xs-hit-bg`・`--xs-hit-current-bg` | 検索の一致のハイライト（`xs-hit`）と今のヒット（`is-current`）の地（M7-5・ADR-0007 §2） | `rgba(255, 255, 0, 0.4)`・`#ffa500` | `rgba(255, 255, 0, 0.3)`・`#b45309` | なし（XSheet で足した） |
 
-- `style.css`（`src/style.css`・M3-1）の明るい既定値は詳細度 0 の `:where(:root, :host)` に置くため、使う側が `:root`・テーマの属性・`container` のどこで上書きしても勝つ（Shadow DOM の中に置いても効く）。
+- `style.css`（`src/style.css`・M3-1）の明るい既定値は詳細度 0 の `:where(:root, :host, .xs-print)` に置くため（`.xs-print` は印刷の描画の根。祖先のダークを受け継がずいつもライトにする。ADR-0010 §2-4）、使う側が `:root`・テーマの属性・`container` のどこで上書きしても勝つ（Shadow DOM の中に置いても効く）。
 - ダークの値（この表の「ダークの例」の列）は、M6-2 から `style.css` が持つ（ADR-0003 §2。それまでは使う側が 14 個を写して上書きしていた）：
   - `[data-xs-theme='dark']`：表示の根か、その祖先（`<html>` など）に付ける。`view` の `theme: 'dark'` は表示の根 `div.xs-viewer` に付ける。`renderWorkbook`・`renderSheet` の使う側も同じ属性を使える。
   - `@media (prefers-color-scheme: dark) { [data-xs-theme='auto'] }`：OS・ブラウザの設定に従う（`theme: 'auto'`）。

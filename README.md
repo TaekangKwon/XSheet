@@ -278,8 +278,51 @@ container.addEventListener('click', (e) => {
 | `showSheet(index)` | Switch sheets without rebuilding the view: the zoom is kept and the highlights are cleared. `renderSheet` has it too |
 | `activeSheet` | The index (`SheetInfo.index`) of the selected sheet; it changes as soon as a tab is clicked or `showSheet` is called. `null` when the file could not be opened |
 | `scrollElement` | The element that scrolls the grid (v0.7.0). Read or set its `scrollTop` / `scrollLeft` and listen for its `scroll` event, for example to scroll two views together. It stays the same element until `destroy`; `null` when the file could not be opened and after `destroy`. Do not change its size, style or children. Switching sheets scrolls it back to the top-left, and changing the zoom moves it so that the top-left cell stays in place |
+| `renderForPrint(target, options?)` | Draw the shown sheet split into pages for printing (v0.7.0). See [Printing](#printing-v070) |
 
 - Do not scale the view with a CSS `transform`; `cellAt` and `highlightAt` would point at the wrong cells. Use `setZoom`.
+
+### Printing (v0.7.0)
+
+`renderForPrint(target, options?)` draws the shown sheet into `target`, split into pages, without virtualization. Wide and tall sheets print completely; the browser's own page breaks would cut off the columns past the right edge. The view itself (zoom, scroll position, highlights) is not touched. You open the print dialog yourself, make `@page` the same size as `page`, and call `destroy()` on the result afterwards.
+
+```ts
+const result = await wb.renderForPrint(printHost); // A4 portrait with Excel's "Normal" margins
+window.addEventListener('afterprint', () => result.destroy(), { once: true });
+window.print();
+```
+
+```css
+@page {
+  size: A4 portrait;
+  margin: 0.75in 0.7in; /* the default page (659 × 978 px) is what is left inside these margins */
+}
+#print-host {
+  display: none;
+}
+@media print {
+  body > :not(#print-host) {
+    display: none;
+  }
+  #print-host {
+    display: block;
+  }
+}
+```
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `page` | `{ width: 659, height: 978 }` | Size of one page's content in CSS px (96 px = 1 in). The default is A4 portrait minus Excel's "Normal" margins (0.7 in left and right, 0.75 in top and bottom). A4 landscape is `{ width: 988, height: 649 }` |
+| `fit` | — | `'width'` shrinks the sheet so that all columns fit one page's width; only rows are split into pages |
+| `headers` | `false` | Print column letters and row numbers on every page |
+| `gridlines` | `false` | Print the gridlines. Cell borders are always printed |
+| `maxCells` | `200000` | Most cells to draw (visible rows × visible columns). Rows past the limit are dropped and `truncated` is `true` |
+| `signal` | — | An `AbortSignal`. Aborting rejects with an `AbortError` `DOMException` after removing what was added |
+
+- Pages go down, then across (Excel's default). Each page is a fixed window of `page` size: content crossing a page edge (overflowing text, merged cells, pictures) is cut there, and pages with nothing on them are skipped.
+- It prints the used range: cells, pictures, charts and the columns that overflowing text reaches. Print areas, manual page breaks, print titles, headers/footers and the file's own page setup are not read yet.
+- The promise resolves after pictures and charts have finished loading. The output is always in the light theme, even under `data-xs-theme="dark"`.
+- The result is `{ pages, truncated, destroy() }`. `pages` is `0` (and nothing is added) when there is no sheet or nothing to print. Switching sheets or destroying the view while it is still drawing rejects with an `AbortError`; once it has resolved, the printed pages stay until `destroy()`.
 
 The full API is described in [docs/02_architecture.md](docs/02_architecture.md) §2 (core) and §3 (render and the `view` layer).
 
@@ -301,7 +344,7 @@ The full API is described in [docs/02_architecture.md](docs/02_architecture.md) 
 ## Theming
 
 - For a dark view, pass `theme: 'dark'` to `view` (`'auto'` follows the OS). With `renderWorkbook` and friends, put `data-xs-theme="dark"` (or `"auto"`) on the view root or an ancestor such as `<html>`. The dark values ship in `style.css`; you do not need to copy them.
-- Colors are 16 CSS variables (`--xs-*`). Their defaults have zero specificity (`:where(:root, :host)`), so you can override them anywhere, including inside Shadow DOM.
+- Colors are 16 CSS variables (`--xs-*`). Their defaults have zero specificity (`:where(:root, :host, .xs-print)`), so you can override them anywhere, including inside Shadow DOM. The same defaults sit on the print output (`.xs-print`), which keeps it light.
 
 ```css
 /* change only the accent color of the light theme */

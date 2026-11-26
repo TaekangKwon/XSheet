@@ -90,6 +90,8 @@ export interface ImageLayer {
   update(view: PxRect): void;
   /** すべての blob URL を revoke し、DOM の図を外す。以後 `setSheet`・`update` は何もしない */
   dispose(): void;
+  /** XSheet: 今までに始めた画像・グラフの読み込みが、図へ反映し終わるまで待つ（印刷の描画が使う。ADR-0010 §2-3） */
+  settled(): Promise<void>;
 }
 
 /** 図の種類名（破線枠の文字）の文言のキー。画像の `image` は「表示できない画像」の枠に使う */
@@ -664,6 +666,15 @@ export function createImageLayer(
   let mounted = new Map<number, Figure>();
   let order: number[] = [];
   let disposed = false;
+  // XSheet: 読み込み中の画像・グラフ（settled が待つ。ADR-0010 §2-3）
+  const pending = new Set<Promise<void>>();
+  const track = (p: Promise<void>): void => {
+    pending.add(p);
+    const done = (): void => {
+      pending.delete(p);
+    };
+    p.then(done, done);
+  };
 
   /** DOM の図をすべて外す */
   const unmountAll = (): void => {
@@ -728,7 +739,7 @@ export function createImageLayer(
       return; // 作り済みは mount が先に入れている／描けなかったものは破線枠のまま
     }
     const current = chartStore;
-    void Promise.all([current.load(path), loadChartDraw()]).then(([result, draw]) => {
+    const loading = Promise.all([current.load(path), loadChartDraw()]).then(([result, draw]) => {
       if (!result || !draw || disposed || chartStore !== current) {
         return;
       }
@@ -746,6 +757,7 @@ export function createImageLayer(
         }
       }
     });
+    track(loading); // XSheet: 印刷が待つ（ADR-0010 §2-3）
   };
 
   /** 図 1 つの要素を作る。画像は読み込み済みなら反映し、未読なら読み込みを始める（読み込み中は空） */
@@ -830,7 +842,7 @@ export function createImageLayer(
         applyEntry(fig, known);
       } else {
         const current = store;
-        void current.load(path).then((entry) => {
+        const loading = current.load(path).then((entry) => {
           // 破棄・シートの切替で null になった／別のシートの図になった結果は捨てる
           if (!entry || disposed || store !== current) {
             return;
@@ -840,6 +852,7 @@ export function createImageLayer(
             applyEntry(fig, entry);
           }
         });
+        track(loading); // XSheet: 印刷が待つ（ADR-0010 §2-3）
       }
     }
     return fig;
@@ -913,6 +926,12 @@ export function createImageLayer(
       charts = new Map();
       sheet = null;
       unmountAll();
+    },
+    // XSheet: ADR-0010 §2-3（読み込み中に別の読み込みが始まっても、無くなるまで待つ）
+    async settled() {
+      while (pending.size > 0) {
+        await Promise.allSettled([...pending]);
+      }
     },
   };
 }

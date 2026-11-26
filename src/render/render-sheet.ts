@@ -6,6 +6,7 @@
  */
 import type { TextMatch, XlsxBook } from '../core/index';
 import { resolveMessages, type XSheetMessages } from './messages';
+import type { PrintOptions, PrintResult } from './print';
 import { createSheetView } from './sheet-view';
 import type { Zoom } from './zoom';
 
@@ -115,6 +116,17 @@ export interface SheetView {
    * XSheet: ADR-0010 §1（M7-19）
    */
   readonly scrollElement: HTMLElement | null;
+  /**
+   * 表示中のシートを、印刷のために仮想化せずページに分けて `target` の中に描く（`div.xs-print` を 1 つ足す。`target` 自身には何も付けない）。
+   * 範囲はデータ・図・はみ出しの届く列まで。ページは「下へ、それから右へ」の順で、各ページは `page` の大きさの固定の窓（境で切る）。
+   * 画像・グラフを描き終えてから解決する。今の表示（倍率・位置・ハイライト）には触らない。
+   * 印刷の画面（`window.print()`）は使う側が出し、`@page` の大きさを `page` と同じにする。終わったら結果の `destroy` を呼ぶ。
+   * 見た目はいつもライトのテーマ。目盛り線と見出しは既定で出さない。表の無い表示・何も描く物の無いシートは 0 ページ。
+   * @throws RangeError 正しくない指定
+   * @throws DOMException AbortError（`signal`・表示の `destroy`・シートの切り替えで中断した。足した物は片付けてから拒否する）
+   * XSheet: ADR-0010 §2（M7-20）
+   */
+  renderForPrint(target: HTMLElement, options?: PrintOptions): Promise<PrintResult>;
   /** リスナ・ResizeObserver・blob URL・シートを放し、表示を `container` から外す。何度呼んでもよい。ブックは閉じない */
   destroy(): void;
 }
@@ -178,6 +190,7 @@ export async function renderSheet(
     get scrollElement() {
       return view.scrollElement;
     },
+    renderForPrint: (target, opts) => view.renderForPrint(target, opts), // XSheet: ADR-0010 §2
     destroy: () => view.destroy(),
   };
 }

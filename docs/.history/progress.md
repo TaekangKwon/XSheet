@@ -296,3 +296,9 @@
 - `SheetView`・`WorkbookView`・`view2` に `scrollElement`（`div.xs-body`。表の無い表示・destroy の後は null）を足した（ADR-0010 §1）。
 - テスト `tests/render/scroll-element.test.ts`・view2 の 1 件。README 3 つと 02 §3 に足した。全体 110 ファイル・2,355 件が通る。
 - 例のページ `examples/scroll-sync.html` で、左右どちらをホイールで動かしても相手が縦の割合で付いて来て、送り返しが起きないことを内蔵ブラウザで確かめた（ref-colors.xlsx）。
+
+## 2026-11-26 M7-20：renderForPrint（#54・ブランチ feat/m7-20-print）
+- `src/render/print.ts` を足し、`SheetView`・`WorkbookView`・`view2` に `renderForPrint` を通した（ADR-0010 §2）。写しのファイル（sheet-view・image-layer）には `// XSheet:` の口だけ。テーマは既定値のブロックを `:where(:root, :host, .xs-print)` にしていつもライト。
+- テスト `tests/render/print.test.ts`（31 件）。全体 111 ファイル・2,386 件が通る。README 3 つ・02 §3・§6・guide/theme・ADR-0010 版 1.1（計測・結合セル・空のページ）を直した。
+- 例のページ `examples/print.html` で showcase・ref-drawings・ref-shapes・ref-charts を内蔵ブラウザで見た（下へ→右・空のページを飛ばす・図は境で切れる・グラフ 75 個を待つ・ダークでもライト）。200,000 セルは描画 1.2 秒・417 ページ（取り付けたまま譲ると 27 秒だったので、文書の外で組んでから付ける）。
+- Chrome・Edge・Firefox の印刷のプレビュー（印刷の画面）は未確認。M7-21 の実機で見る。
