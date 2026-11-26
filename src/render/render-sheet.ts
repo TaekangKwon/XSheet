@@ -7,6 +7,7 @@
 import type { TextMatch, XlsxBook } from '../core/index';
 import { resolveMessages, type XSheetMessages } from './messages';
 import type { PrintOptions, PrintResult } from './print';
+import type { Selection, SelectionInput, SelectionMode, SelectionOrigin } from './selection';
 import { createSheetView } from './sheet-view';
 import type { Zoom } from './zoom';
 
@@ -29,6 +30,18 @@ export interface RenderOptions {
    * XSheet: ADR-0007 §7（M7-9）
    */
   headers?: boolean;
+  /**
+   * セル・行番号・列記号のクリックで選べるようにする（既定は無効＝クリックでは選ばない。`setSelection` はいつでも効く）。
+   * `'row'` はセルのクリックでその行の全体（エクスプローラーのプレビューと同じ）、`'cell'` はそのセルを選ぶ。
+   * 行番号・列記号のクリックは、どちらでも行・列の全体。
+   * XSheet: ADR-0011 §1（M7-24）
+   */
+  selection?: SelectionMode;
+  /**
+   * 選択が変わったときに呼ぶ（同じ選択では呼ばない）。`origin` は `'user'`（クリック・キー）か `'api'`（`setSelection`・シートの切り替え）。
+   * XSheet: ADR-0011 §1（M7-24）
+   */
+  onSelectionChange?: (selection: Selection | null, origin: SelectionOrigin) => void;
 }
 
 /** `focusHighlight` の指定（XSheet: ADR-0007 §3） */
@@ -127,6 +140,18 @@ export interface SheetView {
    * XSheet: ADR-0010 §2（M7-20）
    */
   renderForPrint(target: HTMLElement, options?: PrintOptions): Promise<PrintResult>;
+  /**
+   * 今の選択（無ければ null）。
+   * XSheet: ADR-0011 §1（M7-24）
+   */
+  getSelection(): Selection | null;
+  /**
+   * 選択を替える（null で外す）。行・列は表の外でもよい（帯は表の範囲で切る）。セルは結合なら結合の範囲に広げる。
+   * スクロールはしない（見せるには `scrollToCell`）。シートを替えると外れる。
+   * @throws RangeError 種類が正しくない・1 以上の整数でない・Excel の範囲（1,048,576 行・16,384 列）を超える番号
+   * XSheet: ADR-0011 §1（M7-24）
+   */
+  setSelection(selection: SelectionInput | null): void;
   /** リスナ・ResizeObserver・blob URL・シートを放し、表示を `container` から外す。何度呼んでもよい。ブックは閉じない */
   destroy(): void;
 }
@@ -156,6 +181,8 @@ export async function renderSheet(
     nonce: options.nonce,
     zoom: options.zoom,
     headers: options.headers,
+    selection: options.selection, // XSheet: ADR-0011
+    onSelectionChange: options.onSelectionChange,
   });
   let selected = sheetIndex;
   try {
@@ -191,6 +218,8 @@ export async function renderSheet(
       return view.scrollElement;
     },
     renderForPrint: (target, opts) => view.renderForPrint(target, opts), // XSheet: ADR-0010 §2
+    getSelection: () => view.getSelection(), // XSheet: ADR-0011
+    setSelection: (sel) => view.setSelection(sel),
     destroy: () => view.destroy(),
   };
 }

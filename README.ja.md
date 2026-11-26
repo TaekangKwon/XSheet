@@ -348,7 +348,7 @@ API の全体は [docs/02_architecture.md](docs/02_architecture.md) の §2（co
 ## テーマ
 
 - ダークで表示するには、`view` に `theme: 'dark'` を渡します（`'auto'` なら OS の設定に合わせます）。`renderWorkbook` などを使う場合は、表示のルート要素か `<html>` などの祖先要素に `data-xs-theme="dark"`（または `"auto"`）を付けます。ダークの値は `style.css` に含まれているので、自分で書き写す必要はありません。
-- 色は 16 個の CSS 変数（`--xs-*`）で変えられます。既定値の詳細度は 0（`:where(:root, :host, .xs-print)`）なので、Shadow DOM の中を含め、どこからでも上書きできます。印刷の出力（`.xs-print`）にも同じ既定値が直接当たるので、印刷はいつもライトです。
+- 色は 20 個の CSS 変数（`--xs-*`）で変えられます。既定値の詳細度は 0（`:where(:root, :host, .xs-print)`）なので、Shadow DOM の中を含め、どこからでも上書きできます。印刷の出力（`.xs-print`）にも同じ既定値が直接当たるので、印刷はいつもライトです。
 
 ```css
 /* ライトテーマのアクセントカラーだけを変える */

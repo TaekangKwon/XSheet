@@ -42,6 +42,11 @@
   /* XSheet: 検索の一致（.xs-hit）と今のヒット（.xs-hit.is-current）の地（ADR-0007 §2） */
   --xs-hit-bg: rgba(255, 255, 0, 0.4);
   --xs-hit-current-bg: #ffa500;
+  /* XSheet: 選択の帯（.xs-sel）・セルの選択の枠・選んだ行番号と列記号の地と文字（ADR-0011 §2） */
+  --xs-sel-bg: rgba(0, 0, 0, 0.1);
+  --xs-sel-line: #217346;
+  --xs-sel-head-bg: #d2d2d2;
+  --xs-sel-head-fg: #217346;
 }
 
 /* --- 表示の根 ---
@@ -565,6 +570,10 @@
   --xs-backdrop-display: block;
   --xs-hit-bg: rgba(255, 255, 0, 0.3);
   --xs-hit-current-bg: #b45309;
+  --xs-sel-bg: rgba(255, 255, 255, 0.14);
+  --xs-sel-line: #6cc08b;
+  --xs-sel-head-bg: #3a4150;
+  --xs-sel-head-fg: #9fe0b5;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -586,6 +595,10 @@
     --xs-backdrop-display: block;
     --xs-hit-bg: rgba(255, 255, 0, 0.3);
     --xs-hit-current-bg: #b45309;
+    --xs-sel-bg: rgba(255, 255, 255, 0.14);
+    --xs-sel-line: #6cc08b;
+    --xs-sel-head-bg: #3a4150;
+    --xs-sel-head-fg: #9fe0b5;
   }
 }
 
@@ -725,6 +738,29 @@
 /* 塗りをまたぐ自動の色の文字（親の span が background-clip: text で描く）では、片の地が文字を隠すので、片に文字の色を付ける */
 .xs-hit.is-ink {
   color: var(--xs-fg);
+}
+
+/* --- XSheet: セル・行・列の選択（M7-24・ADR-0011 §2・selection.ts）---
+   帯（div.xs-sel）は罫線の層の後・図の層の前の位置指定（z-index 0）。DOM の順でセル・はみ出しの文字・ハイライト・罫線の上、
+   図と sticky の見出し・行番号（z 1・2）の下を通る。位置と大きさは JS が寸法から指定する。クリックは下の表へ通す。
+   行・列の全体は半透明の地、セルは地を付けず枠だけ（Excel と同じ）。選んだ行番号・列記号は is-selected。 */
+.xs-sel {
+  position: absolute;
+  z-index: 0;
+  box-sizing: border-box;
+  background: var(--xs-sel-bg);
+  pointer-events: none;
+}
+
+.xs-sel.is-cell {
+  background: transparent;
+  border: 2px solid var(--xs-sel-line);
+}
+
+.xs-grid .xs-rownum.is-selected,
+.xs-grid thead th.is-selected {
+  background: var(--xs-sel-head-bg);
+  color: var(--xs-sel-head-fg);
 }
 
 /* XSheet: 文字の幅を測る入れ物（navigate.ts。はみ出す文字の中のヒットへ横にスクロールする位置を出す。ADR-0007 §3）。

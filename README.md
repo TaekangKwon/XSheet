@@ -348,7 +348,7 @@ The full API is described in [docs/02_architecture.md](docs/02_architecture.md) 
 ## Theming
 
 - For a dark view, pass `theme: 'dark'` to `view` (`'auto'` follows the OS). With `renderWorkbook` and friends, put `data-xs-theme="dark"` (or `"auto"`) on the view root or an ancestor such as `<html>`. The dark values ship in `style.css`; you do not need to copy them.
-- Colors are 16 CSS variables (`--xs-*`). Their defaults have zero specificity (`:where(:root, :host, .xs-print)`), so you can override them anywhere, including inside Shadow DOM. The same defaults sit on the print output (`.xs-print`), which keeps it light.
+- Colors are 20 CSS variables (`--xs-*`). Their defaults have zero specificity (`:where(:root, :host, .xs-print)`), so you can override them anywhere, including inside Shadow DOM. The same defaults sit on the print output (`.xs-print`), which keeps it light.
 
 ```css
 /* change only the accent color of the light theme */

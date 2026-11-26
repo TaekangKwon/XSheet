@@ -111,6 +111,8 @@ export interface RenderOptions {
   nonce?: string;                       // 書式の <style> に付ける（CSP 用。§3「CSP」）
   zoom?: Zoom;                          // 最初の倍率（M7-7・ADR-0007 §5。0.5〜2.0 か { fit: 'width' }）
   headers?: boolean;                    // 行番号の列と列見出し（既定 true。M7-9・ADR-0007 §7）
+  selection?: 'row' | 'cell';           // クリックで選ぶ物（既定は無効。M7-24・ADR-0011 §1。指定した表示だけ選択の部品を読む）
+  onSelectionChange?: (selection: Selection | null, origin: 'user' | 'api') => void; // 選択が変わった
 }
 export interface SheetView {
   setHighlights(matches: readonly TextMatch[] | null): void; // 検索の一致を光らせる（M7-5・ADR-0007 §2。null・空で消す）
@@ -124,6 +126,8 @@ export interface SheetView {
   readonly activeSheet: number | null;  // 選んでいるシートの番号（ADR-0007 §7 版 1.1。showSheet ですぐ替わる・表の無い表示は null）
   readonly scrollElement: HTMLElement | null; // スクロール枠 div.xs-body（M7-19・ADR-0010 §1。destroy まで同じ要素・表の無い表示と destroy の後は null）
   renderForPrint(target: HTMLElement, options?: PrintOptions): Promise<PrintResult>; // 印刷のページを target に描く（M7-20・ADR-0010 §2。下の PrintOptions）
+  getSelection(): Selection | null;     // 今の選択（M7-24・ADR-0011 §1。selection を指定しない表示では null）
+  setSelection(selection: SelectionInput | null): void; // 選択を替える（スクロールしない。selection を指定しない表示では何もしない）
   destroy(): void;                      // blob URL・リスナ・シートを放す（book は閉じない）
 }
 export interface PrintOptions {         // M7-20・ADR-0010 §2（中身は src/render/print.ts）
@@ -218,7 +222,7 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
 
 | 指定 | 理由 |
 | --- | --- |
-| `script-src 'self'` | ライブラリと形の表（`geom` のチャンク・単独版では `xsheet-geom.mjs`。図形を描くときに動的 import）・グラフの描画（`chart-draw` のチャンク・単独版では `xsheet-chart.mjs`。グラフを描くときに動的 import）・印刷の描画（`print` のチャンク・単独版では `xsheet-print.mjs`。`renderForPrint` で動的 import）を同じ出所から読む。`eval`・`new Function` は使わない（N1）ので `'unsafe-eval'` は要らない |
+| `script-src 'self'` | ライブラリと形の表（`geom` のチャンク・単独版では `xsheet-geom.mjs`。図形を描くときに動的 import）・グラフの描画（`chart-draw` のチャンク・単独版では `xsheet-chart.mjs`。グラフを描くときに動的 import）・印刷の描画（`print` のチャンク・単独版では `xsheet-print.mjs`。`renderForPrint` で動的 import）・選択（`selection` のチャンク・単独版では `xsheet-selection.mjs`。`selection` を指定した表示を作るときに動的 import。M7-24）を同じ出所から読む。`eval`・`new Function` は使わない（N1）ので `'unsafe-eval'` は要らない |
 | `style-src 'nonce-<値>'`（または `'unsafe-inline'`） | 書式の `<style>` 要素（表示の根に 1 枚）と、`view` が自動で入れる表示の CSS の `<style>`（M6-2）。`nonce` を渡すとどちらにも付く。`style.css` を `<link>` で読むなら（`view` では `css: 'none'`）、その `<link>` にも同じ nonce を付けるか、`style-src` に出所（`'self'` など）を足す |
 | `img-src blob:` | 図の画像は blob URL で出す（`data:` の URL は作らない） |
 
@@ -280,15 +284,17 @@ render が要る CSP の指定は次の 3 つ（`examples/index.html` の meta �
 | `--xs-border-ink` | 自動・黒の罫線（墨色） | `#000000` | `#d4d4d4` | `--ih-xlsx-border-ink` |
 | `--xs-backdrop`・`--xs-backdrop-display` | ダーク時の図の白い下地 | `transparent`・`none` | `#ffffff`・`block` | `--ih-xlsx-backdrop*` |
 | `--xs-hit-bg`・`--xs-hit-current-bg` | 検索の一致のハイライト（`xs-hit`）と今のヒット（`is-current`）の地（M7-5・ADR-0007 §2） | `rgba(255, 255, 0, 0.4)`・`#ffa500` | `rgba(255, 255, 0, 0.3)`・`#b45309` | なし（XSheet で足した） |
+| `--xs-sel-bg`・`--xs-sel-line` | 選択の帯（`xs-sel`）の地と、セルの選択の枠（M7-24・ADR-0011 §2） | `rgba(0, 0, 0, 0.1)`・`#217346` | `rgba(255, 255, 255, 0.14)`・`#6cc08b` | なし（XSheet で足した） |
+| `--xs-sel-head-bg`・`--xs-sel-head-fg` | 選んだ行番号・列記号（`is-selected`）の地と文字（M7-24・ADR-0011 §2） | `#d2d2d2`・`#217346` | `#3a4150`・`#9fe0b5` | なし（XSheet で足した） |
 
 - `style.css`（`src/style.css`・M3-1）の明るい既定値は詳細度 0 の `:where(:root, :host, .xs-print)` に置くため（`.xs-print` は印刷の描画の根。祖先のダークを受け継がずいつもライトにする。ADR-0010 §2-4）、使う側が `:root`・テーマの属性・`container` のどこで上書きしても勝つ（Shadow DOM の中に置いても効く）。
 - ダークの値（この表の「ダークの例」の列）は、M6-2 から `style.css` が持つ（ADR-0003 §2。それまでは使う側が 14 個を写して上書きしていた）：
   - `[data-xs-theme='dark']`：表示の根か、その祖先（`<html>` など）に付ける。`view` の `theme: 'dark'` は表示の根 `div.xs-viewer` に付ける。`renderWorkbook`・`renderSheet` の使う側も同じ属性を使える。
   - `@media (prefers-color-scheme: dark) { [data-xs-theme='auto'] }`：OS・ブラウザの設定に従う（`theme: 'auto'`）。
-  - どちらも 16 個すべてと `color-scheme: dark` を持つ。値を替えるときは、属性の付いた要素より内側で `--xs-*` を上書きする（[guide/theme.md](guide/theme.md)）。
+  - どちらも 20 個すべてと `color-scheme: dark` を持つ。値を替えるときは、属性の付いた要素より内側で `--xs-*` を上書きする（[guide/theme.md](guide/theme.md)）。
   - 2 つのブロックとこの表の「ダークの例」の列が同じことを `tests/render/style-css.test.ts` が突き合わせる。
-- 自前のテーマの属性で 16 個を上書きする形も使える。例は `examples/example.css`（M3-2。`npm run examples` で http://localhost:5173/examples/ を開く）。この表の「ダークの例」の列と同じ値で、`tests/render/examples.test.ts` が突き合わせる。
-- `--xs-zoom`（倍率。M7-7）はテーマの変数ではなく、表示の根（`.xs-sheet`）に JS が入れる値で、16 個に数えない。使う側は上書きしない（倍率は `setZoom` で替える）。
+- 自前のテーマの属性で 20 個を上書きする形も使える。例は `examples/example.css`（M3-2。`npm run examples` で http://localhost:5173/examples/ を開く）。この表の「ダークの例」の列と同じ値で、`tests/render/examples.test.ts` が突き合わせる。
+- `--xs-zoom`（倍率。M7-7）はテーマの変数ではなく、表示の根（`.xs-sheet`）に JS が入れる値で、20 個に数えない。使う側は上書きしない（倍率は `setZoom` で替える）。
 - Excel の色（塗り・文字の色・図形の色）は変数ではなく、書式の CSS とインラインの値で入る。ダーク表示の描き分けの規則（塗りのあるセルは Excel の色のまま、白の塗りは「紙」など）は InterHub ADR-0030 のとおり。
 - 変数の表は M3-1 で、InterHub の実際の規則に合わせて直した：グリッド線は `--ih-border` ではなく `--ih-border-soft`（`.ih-data-view th, td` の線）だったため `--xs-grid` の値を替え、見出し行の下の線・タブの枠の `--ih-border` を `--xs-border` に分けた。タブ（`--ih-accent`）と通知の帯（`--ih-warn*`）の変数を足した。この表と `style.css` の既定値は `tests/render/style-css.test.ts` が突き合わせる。
 - Excel に寄せた見た目（Issue #23）：明るい既定値のうち `--xs-cell-bg`（白）・`--xs-grid`・`--xs-border`（少し濃く）を InterHub の値から変えた。ダークの値は変えていない。

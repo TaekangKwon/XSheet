@@ -348,7 +348,7 @@ window.print();
 ## 테마
 
 - 다크 모드로 표시하려면 `view`에 `theme: 'dark'`를 넘기세요(`'auto'`는 OS 설정을 따름). `renderWorkbook` 등을 쓸 때는 표시 영역의 루트나 `<html>` 같은 상위 요소에 `data-xs-theme="dark"`(또는 `"auto"`)를 붙입니다. 다크 값은 `style.css`에 들어 있으므로 따로 복사할 필요가 없습니다.
-- 색은 16개의 CSS 변수(`--xs-*`)로 바꿀 수 있습니다. 기본값의 명시도(specificity)가 0(`:where(:root, :host, .xs-print)`)이라서, Shadow DOM 안을 포함해 어디서든 덮어쓸 수 있습니다. 인쇄 출력(`.xs-print`)에도 같은 기본값이 직접 적용되므로 인쇄는 항상 라이트입니다.
+- 색은 20개의 CSS 변수(`--xs-*`)로 바꿀 수 있습니다. 기본값의 명시도(specificity)가 0(`:where(:root, :host, .xs-print)`)이라서, Shadow DOM 안을 포함해 어디서든 덮어쓸 수 있습니다. 인쇄 출력(`.xs-print`)에도 같은 기본값이 직접 적용되므로 인쇄는 항상 라이트입니다.
 
 ```css
 /* 라이트 테마의 강조색만 바꾸기 */

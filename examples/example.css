@@ -26,6 +26,10 @@
     --xs-backdrop-display: block;
     --xs-hit-bg: rgba(255, 255, 0, 0.3);
     --xs-hit-current-bg: #b45309;
+    --xs-sel-bg: rgba(255, 255, 255, 0.14);
+    --xs-sel-line: #6cc08b;
+    --xs-sel-head-bg: #3a4150;
+    --xs-sel-head-fg: #9fe0b5;
   }
 }
 
@@ -47,6 +51,10 @@
   --xs-backdrop-display: block;
   --xs-hit-bg: rgba(255, 255, 0, 0.3);
   --xs-hit-current-bg: #b45309;
+  --xs-sel-bg: rgba(255, 255, 255, 0.14);
+  --xs-sel-line: #6cc08b;
+  --xs-sel-head-bg: #3a4150;
+  --xs-sel-head-fg: #9fe0b5;
 }
 
 /* ページの枠（ライブラリの変数をそのまま使い、表示と同じ色にそろえる） */

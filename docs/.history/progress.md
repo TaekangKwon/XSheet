@@ -324,3 +324,9 @@
 - `renderForPrint` は印刷範囲を定義の順に、範囲ごとにページを分けて描く。列だけ／行だけの範囲はデータの最後の行・列まで。`maxCells` は全部の範囲を通して数える。`ignorePrintArea` を足した。
 - テスト `tests/core/print-area.test.ts`・print.test の 7 件。全体 112 ファイル・2,405 件が通る。README 3 つ・02・CHANGELOG・04（v0.8.0 の候補の節）・examples/print（印刷範囲を無視）。
 - 未解決：`npm run size` の `xsheet.min.js` が 144,316 で上限 144,000 を超える（render は 64,863／65,000）。選択などを入れた後に M7-27 でまとめて決める。
+
+## 2026-11-26 M7-24：セル・行・列の選択（#55・ブランチ feat/m7-22-print-area）
+- ADR-0011（proposed。#55〜#57 の決めることを推奨の案で表にし、ユーザーの決定を待つ）を書いた。
+- `src/render/selection.ts`（帯 `div.xs-sel`・クリック・見出しの `is-selected`・結合の範囲）と口 `selection-gate.ts`。`selection: 'row' | 'cell'` を指定した表示だけ遅れて読む（選択を render に入れると 66,530 で上限を超えたため）。`getSelection`・`setSelection`・`onSelectionChange` を SheetView・WorkbookView・view2 に。
+- CSS 変数 `--xs-sel-*` 4 個（ダーク 2 つ・examples・02 §6・theme の数を 20 個に）。examples に選択の切り替え。テスト `tests/render/selection.test.ts`（19 件）。全体 113 ファイル・2,424 件が通る。
+- 大きさ：render 65,162（上限 65,000 を 162 超える）・selection のチャンク 2,181。README は M7-26 でまとめて書く。

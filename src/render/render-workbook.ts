@@ -97,6 +97,9 @@ function messageView(root: HTMLElement): WorkbookView {
     activeSheet: null,
     scrollElement: null, // XSheet: 表が無いのでスクロール枠も無い（ADR-0010 §1）
     renderForPrint: (target, opts) => renderPrintLazy(target, null, opts), // XSheet: 0 ページ（指定の確かめだけ。ADR-0010 §2）
+    // XSheet: 表が無いので選択も無い（ADR-0011）
+    getSelection: () => null,
+    setSelection: () => undefined,
     destroy: () => {
       root.replaceChildren();
       root.remove();
@@ -155,6 +158,8 @@ export async function renderWorkbook(
     nonce: options.nonce,
     zoom: options.zoom,
     headers: options.headers,
+    selection: options.selection, // XSheet: ADR-0011
+    onSelectionChange: options.onSelectionChange,
   });
   if (tabsBottom) {
     root.classList.add('xs-tabs-bottom');
@@ -250,6 +255,8 @@ export async function renderWorkbook(
       return view.scrollElement;
     },
     renderForPrint: (target, opts) => view.renderForPrint(target, opts), // XSheet: ADR-0010 §2
+    getSelection: () => view.getSelection(), // XSheet: ADR-0011
+    setSelection: (sel) => view.setSelection(sel),
     destroy,
   };
 }
