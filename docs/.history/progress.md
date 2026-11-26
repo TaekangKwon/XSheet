@@ -350,3 +350,6 @@
 ## 2026-11-26 M7-27：大きさの上限の見直し（ユーザーの決定）
 - 実測に約 1 割の余裕で、render 65,000 → 72,000、xsheet.min.js 144,000 → 163,000、selection（仮 6,000）→ 4,300、xsheet-selection.mjs（仮 6,000）→ 3,800。理由は 02 §8・ADR-0011 §3。
 - `check:standalone` で xsheet-selection.mjs も読む。size・テスト（115 ファイル・2,444 件）・check:standalone が通る。
+
+## 2026-11-26 ADR-0011 を accepted に（ユーザーの決定）
+- 10 点すべてを推奨（作った物）のとおりに決めた。版 1.1（ステータスだけ）。04・handoff を合わせた。
